@@ -1,0 +1,1320 @@
+/**
+ * VTI Media Studio - Main Application Logic
+ * Pure Vanilla JS (Zero Build Step / Works Locally & on GitHub Pages)
+ */
+
+(function () {
+  'use strict';
+
+  /* ==========================================================================
+     유틸리티 함수
+     ========================================================================== */
+  function formatBytes(bytes) {
+    if (!bytes || bytes <= 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    const val = bytes / Math.pow(1024, i);
+    return `${val.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+  }
+
+  function formatDuration(seconds) {
+    if (!seconds || !isFinite(seconds)) return '00:00';
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
+
+  function getBaseName(filename) {
+    const idx = filename.lastIndexOf('.');
+    return idx > 0 ? filename.slice(0, idx) : filename;
+  }
+
+  function showToast(message) {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = message;
+    container.appendChild(toast);
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transition = 'opacity 0.25s ease';
+      setTimeout(() => toast.remove(), 260);
+    }, 2800);
+  }
+
+  function triggerDownload(blobOrUrl, filename) {
+    const a = document.createElement('a');
+    let url = blobOrUrl;
+    let isObjectUrl = false;
+    if (blobOrUrl instanceof Blob) {
+      url = URL.createObjectURL(blobOrUrl);
+      isObjectUrl = true;
+    }
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    if (isObjectUrl) {
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }
+  }
+
+  function loadImageFromFile(file) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        resolve(img);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('이미지를 불러올 수 없습니다.'));
+      };
+      img.src = url;
+    });
+  }
+
+  /* ==========================================================================
+     1. 다크모드 토글 (기본: 화이트 라이트 테마) & 상단 탭 네비게이션
+     ========================================================================== */
+  const htmlEl = document.documentElement;
+  const themeToggleBtn = document.getElementById('themeToggleBtn');
+  const themeLabel = document.getElementById('themeLabel');
+
+  function applyTheme(theme) {
+    htmlEl.setAttribute('data-theme', theme);
+    if (themeLabel) {
+      themeLabel.textContent = theme === 'dark' ? '다크' : '라이트';
+    }
+    try {
+      localStorage.setItem('vti_theme', theme);
+    } catch (e) {
+      // localStorage 차단 환경 무시
+    }
+  }
+
+  // 초기 테마 로드 (기본값: 'light')
+  let savedTheme = 'light';
+  try {
+    savedTheme = localStorage.getItem('vti_theme') || 'light';
+  } catch (e) {
+    savedTheme = 'light';
+  }
+  applyTheme(savedTheme);
+
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener('click', () => {
+      const current = htmlEl.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+      const next = current === 'dark' ? 'light' : 'dark';
+      applyTheme(next);
+      showToast(next === 'dark' ? '다크 모드가 켜졌습니다.' : '화이트(라이트) 모드가 켜졌습니다.');
+    });
+  }
+
+  // 상단 4개 탭 전환
+  const navTabs = document.querySelectorAll('.nav-tab');
+  const tabPanels = document.querySelectorAll('.tab-panel');
+  let activeTabId = 'img-compress';
+
+  function switchTab(targetTab) {
+    activeTabId = targetTab;
+    navTabs.forEach((btn) => {
+      const isMatch = btn.getAttribute('data-tab') === targetTab;
+      btn.classList.toggle('active', isMatch);
+      btn.setAttribute('aria-selected', isMatch ? 'true' : 'false');
+    });
+    tabPanels.forEach((panel) => {
+      panel.classList.toggle('active', panel.id === `tab-${targetTab}`);
+    });
+  }
+
+  navTabs.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const targetTab = btn.getAttribute('data-tab');
+      if (targetTab) switchTab(targetTab);
+    });
+  });
+
+  const brandLogo = document.getElementById('brandLogo');
+  if (brandLogo) {
+    brandLogo.addEventListener('click', () => switchTab('img-compress'));
+  }
+
+  /* ==========================================================================
+     2. 탭 1: 이미지 압축 (Image Compressor)
+     ========================================================================== */
+  const compressState = {
+    items: [] // { id, file, origWidth, origHeight, newWidth, newHeight, compressedBlob, outputExt, thumbUrl }
+  };
+
+  const compressQualityInput = document.getElementById('compressQuality');
+  const compressQualityVal = document.getElementById('compressQualityVal');
+  const compressFormatSelect = document.getElementById('compressFormat');
+  const compressScaleSelect = document.getElementById('compressScale');
+  const compressDropzone = document.getElementById('compressDropzone');
+  const compressFileInput = document.getElementById('compressFileInput');
+  const compressFileList = document.getElementById('compressFileList');
+  const compressSummaryBar = document.getElementById('compressSummaryBar');
+  const recompressAllBtn = document.getElementById('recompressAllBtn');
+  const downloadAllCompressedBtn = document.getElementById('downloadAllCompressedBtn');
+  const clearCompressedBtn = document.getElementById('clearCompressedBtn');
+  const presetChips = document.querySelectorAll('.preset-chips .chip-btn');
+
+  // 품질 슬라이더 이벤트
+  if (compressQualityInput) {
+    compressQualityInput.addEventListener('input', () => {
+      compressQualityVal.textContent = `${compressQualityInput.value}%`;
+      presetChips.forEach((chip) => {
+        chip.classList.toggle('active', chip.getAttribute('data-q') === compressQualityInput.value);
+      });
+    });
+  }
+
+  presetChips.forEach((chip) => {
+    chip.addEventListener('click', () => {
+      const q = chip.getAttribute('data-q');
+      compressQualityInput.value = q;
+      compressQualityVal.textContent = `${q}%`;
+      presetChips.forEach((c) => c.classList.remove('active'));
+      chip.classList.add('active');
+      if (compressState.items.length > 0) {
+        recompressAllItems();
+      }
+    });
+  });
+
+  function calculateTargetDimensions(origW, origH, scaleMode) {
+    let w = origW;
+    let h = origH;
+    if (scaleMode === '0.75') {
+      w = Math.max(1, Math.round(origW * 0.75));
+      h = Math.max(1, Math.round(origH * 0.75));
+    } else if (scaleMode === '0.5') {
+      w = Math.max(1, Math.round(origW * 0.5));
+      h = Math.max(1, Math.round(origH * 0.5));
+    } else if (scaleMode.startsWith('max-')) {
+      const maxW = parseInt(scaleMode.replace('max-', ''), 10);
+      if (origW > maxW) {
+        const ratio = maxW / origW;
+        w = maxW;
+        h = Math.max(1, Math.round(origH * ratio));
+      }
+    }
+    return { width: w, height: h };
+  }
+
+  // PNG 색상 양자화(Bit-depth 최적화)를 통해 투명도를 유지하면서 PNG 용량을 줄이는 함수
+  function quantizeCanvasForPng(ctx, width, height, qualityPercent) {
+    const imgData = ctx.getImageData(0, 0, width, height);
+    const data = imgData.data;
+    // quality 10~98 -> 양자화 스텝 계산 (낮을수록 더 적은 색상 단계를 사용해 압축률 극대화)
+    const levels = Math.max(4, Math.round((qualityPercent / 100) * 48));
+    const step = 255 / (levels - 1);
+
+    let hasAlpha = false;
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] = Math.round(Math.round(data[i] / step) * step);
+      data[i + 1] = Math.round(Math.round(data[i + 1] / step) * step);
+      data[i + 2] = Math.round(Math.round(data[i + 2] / step) * step);
+      if (data[i + 3] < 250) {
+        hasAlpha = true;
+        data[i + 3] = Math.round(Math.round(data[i + 3] / 16) * 16);
+      } else {
+        data[i + 3] = 255;
+      }
+    }
+    ctx.putImageData(imgData, 0, 0);
+    return hasAlpha;
+  }
+
+  function canvasToBlobPromise(canvas, mimeType, quality) {
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => resolve(blob), mimeType, quality);
+    });
+  }
+
+  async function compressSingleImage(item) {
+    const qualityNum = parseInt(compressQualityInput.value, 10);
+    const quality = Math.min(0.98, Math.max(0.1, qualityNum / 100));
+    const formatOption = compressFormatSelect.value;
+    const scaleOption = compressScaleSelect.value;
+
+    const img = await loadImageFromFile(item.file);
+    item.origWidth = img.naturalWidth || img.width;
+    item.origHeight = img.naturalHeight || img.height;
+
+    const { width, height } = calculateTargetDimensions(item.origWidth, item.origHeight, scaleOption);
+    item.newWidth = width;
+    item.newHeight = height;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, 0, 0, width, height);
+
+    let targetMime = item.file.type || 'image/jpeg';
+    let ext = 'jpg';
+
+    if (formatOption === 'image/webp') {
+      targetMime = 'image/webp';
+      ext = 'webp';
+    } else if (formatOption === 'image/jpeg') {
+      targetMime = 'image/jpeg';
+      ext = 'jpg';
+    } else if (formatOption === 'keep') {
+      if (targetMime === 'image/png') ext = 'png';
+      else if (targetMime === 'image/webp') ext = 'webp';
+      else {
+        targetMime = 'image/jpeg';
+        ext = 'jpg';
+      }
+    } else {
+      // 'smart' 모드: 원본이 PNG일 때 양자화 PNG와 WebP를 비교하여 최적 압축 수행
+      if (targetMime === 'image/png') {
+        const hasAlpha = quantizeCanvasForPng(ctx, width, height, qualityNum);
+        const pngBlob = await canvasToBlobPromise(canvas, 'image/png');
+        const webpBlob = await canvasToBlobPromise(canvas, 'image/webp', quality);
+
+        // PNG 양자화 결과가 원본보다 충분히 작으면 PNG 유지, 아니면 고효율 WebP/JPG 선택
+        if (pngBlob && pngBlob.size < item.file.size * 0.85) {
+          item.compressedBlob = pngBlob;
+          item.outputExt = 'png';
+          return;
+        } else if (webpBlob && webpBlob.size < item.file.size) {
+          item.compressedBlob = webpBlob;
+          item.outputExt = 'webp';
+          return;
+        } else if (!hasAlpha) {
+          const jpgBlob = await canvasToBlobPromise(canvas, 'image/jpeg', quality);
+          if (jpgBlob && jpgBlob.size < item.file.size) {
+            item.compressedBlob = jpgBlob;
+            item.outputExt = 'jpg';
+            return;
+          }
+        }
+        item.compressedBlob = pngBlob && pngBlob.size < item.file.size ? pngBlob : item.file;
+        item.outputExt = 'png';
+        return;
+      } else if (targetMime === 'image/webp') {
+        ext = 'webp';
+      } else {
+        targetMime = 'image/jpeg';
+        ext = 'jpg';
+      }
+    }
+
+    // JPG 변환 시 투명 배경을 흰색으로 채움
+    if (targetMime === 'image/jpeg') {
+      const bgCanvas = document.createElement('canvas');
+      bgCanvas.width = width;
+      bgCanvas.height = height;
+      const bgCtx = bgCanvas.getContext('2d');
+      bgCtx.fillStyle = '#ffffff';
+      bgCtx.fillRect(0, 0, width, height);
+      bgCtx.drawImage(canvas, 0, 0);
+      const blob = await canvasToBlobPromise(bgCanvas, 'image/jpeg', quality);
+      item.compressedBlob = blob;
+      item.outputExt = 'jpg';
+      return;
+    }
+
+    if (targetMime === 'image/png') {
+      quantizeCanvasForPng(ctx, width, height, qualityNum);
+      const pngBlob = await canvasToBlobPromise(canvas, 'image/png');
+      item.compressedBlob = pngBlob;
+      item.outputExt = 'png';
+      return;
+    }
+
+    const blob = await canvasToBlobPromise(canvas, targetMime, quality);
+    item.compressedBlob = blob;
+    item.outputExt = ext;
+  }
+
+  function renderCompressList() {
+    compressFileList.innerHTML = '';
+    const hasItems = compressState.items.length > 0;
+    compressSummaryBar.classList.toggle('hidden', !hasItems);
+    recompressAllBtn.disabled = !hasItems;
+    downloadAllCompressedBtn.disabled = !hasItems;
+    clearCompressedBtn.disabled = !hasItems;
+
+    if (!hasItems) return;
+
+    let origSum = 0;
+    let newSum = 0;
+
+    compressState.items.forEach((item) => {
+      const origSize = item.file.size;
+      const newSize = item.compressedBlob ? item.compressedBlob.size : origSize;
+      origSum += origSize;
+      newSum += newSize;
+
+      const diffRatio = origSize > 0 ? ((origSize - newSize) / origSize) * 100 : 0;
+      const ratioText = diffRatio >= 0 ? `-${diffRatio.toFixed(1)}% 절감` : `+${Math.abs(diffRatio).toFixed(1)}%`;
+
+      const row = document.createElement('div');
+      row.className = 'file-item';
+      row.innerHTML = `
+        <div class="file-item-left">
+          <img class="file-thumb" src="${item.thumbUrl}" alt="미리보기" />
+          <div class="file-meta">
+            <div class="file-name">${item.file.name}</div>
+            <div class="file-details">
+              <span>${item.origWidth}×${item.origHeight}</span>
+              <span class="arrow-sep">→</span>
+              <span>${item.newWidth}×${item.newHeight} (${item.outputExt.toUpperCase()})</span>
+              <span>|</span>
+              <span>${formatBytes(origSize)}</span>
+              <span class="arrow-sep">→</span>
+              <span class="size-new">${formatBytes(newSize)}</span>
+              <span class="saving-pill">${ratioText}</span>
+            </div>
+          </div>
+        </div>
+        <div class="file-item-actions">
+          <button type="button" class="btn btn-primary btn-sm dl-single-btn">다운로드</button>
+          <button type="button" class="btn btn-outline btn-sm rm-single-btn">삭제</button>
+        </div>
+      `;
+
+      row.querySelector('.dl-single-btn').addEventListener('click', () => {
+        if (!item.compressedBlob) return;
+        const outName = `${getBaseName(item.file.name)}_compressed.${item.outputExt}`;
+        triggerDownload(item.compressedBlob, outName);
+      });
+
+      row.querySelector('.rm-single-btn').addEventListener('click', () => {
+        URL.revokeObjectURL(item.thumbUrl);
+        compressState.items = compressState.items.filter((x) => x.id !== item.id);
+        renderCompressList();
+      });
+
+      compressFileList.appendChild(row);
+    });
+
+    document.getElementById('compressTotalCount').textContent = `${compressState.items.length}개`;
+    document.getElementById('compressOrigTotal').textContent = formatBytes(origSum);
+    document.getElementById('compressNewTotal').textContent = formatBytes(newSum);
+    const totalSavedPct = origSum > 0 ? Math.max(0, ((origSum - newSum) / origSum) * 100) : 0;
+    document.getElementById('compressSavedBadge').textContent = `${totalSavedPct.toFixed(1)}% 절감 (${formatBytes(Math.max(0, origSum - newSum))})`;
+  }
+
+  async function addFilesToCompressor(fileList) {
+    const validFiles = Array.from(fileList).filter((f) => f.type.startsWith('image/'));
+    if (validFiles.length === 0) {
+      showToast('이미지 파일만 업로드할 수 있습니다.');
+      return;
+    }
+
+    for (const file of validFiles) {
+      const item = {
+        id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        file,
+        origWidth: 0,
+        origHeight: 0,
+        newWidth: 0,
+        newHeight: 0,
+        compressedBlob: null,
+        outputExt: 'jpg',
+        thumbUrl: URL.createObjectURL(file)
+      };
+      try {
+        await compressSingleImage(item);
+        compressState.items.push(item);
+      } catch (err) {
+        URL.revokeObjectURL(item.thumbUrl);
+        showToast(`${file.name} 처리 중 오류가 발생했습니다.`);
+      }
+    }
+    renderCompressList();
+    showToast(`${validFiles.length}개의 이미지 압축이 완료되었습니다.`);
+  }
+
+  async function recompressAllItems() {
+    if (compressState.items.length === 0) return;
+    recompressAllBtn.disabled = true;
+    recompressAllBtn.textContent = '압축 중...';
+    for (const item of compressState.items) {
+      await compressSingleImage(item);
+    }
+    recompressAllBtn.disabled = false;
+    recompressAllBtn.textContent = '설정값으로 다시 압축하기';
+    renderCompressList();
+    showToast('새로운 설정으로 다시 압축되었습니다.');
+  }
+
+  if (compressDropzone) {
+    compressDropzone.addEventListener('click', () => compressFileInput.click());
+    compressDropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      compressDropzone.classList.add('dragover');
+    });
+    compressDropzone.addEventListener('dragleave', () => compressDropzone.classList.remove('dragover'));
+    compressDropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      compressDropzone.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) addFilesToCompressor(e.dataTransfer.files);
+    });
+  }
+
+  if (compressFileInput) {
+    compressFileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) addFilesToCompressor(e.target.files);
+      compressFileInput.value = '';
+    });
+  }
+
+  if (recompressAllBtn) recompressAllBtn.addEventListener('click', recompressAllItems);
+  if (compressFormatSelect) compressFormatSelect.addEventListener('change', recompressAllItems);
+  if (compressScaleSelect) compressScaleSelect.addEventListener('change', recompressAllItems);
+
+  if (downloadAllCompressedBtn) {
+    downloadAllCompressedBtn.addEventListener('click', () => {
+      compressState.items.forEach((item, idx) => {
+        setTimeout(() => {
+          const outName = `${getBaseName(item.file.name)}_compressed.${item.outputExt}`;
+          triggerDownload(item.compressedBlob, outName);
+        }, idx * 180);
+      });
+      showToast('전체 이미지 다운로드를 시작합니다.');
+    });
+  }
+
+  if (clearCompressedBtn) {
+    clearCompressedBtn.addEventListener('click', () => {
+      compressState.items.forEach((item) => URL.revokeObjectURL(item.thumbUrl));
+      compressState.items = [];
+      renderCompressList();
+      showToast('목록을 비웠습니다.');
+    });
+  }
+
+  // 클립보드 붙여넣기 (Ctrl+V) 지원
+  window.addEventListener('paste', (e) => {
+    if (!e.clipboardData || !e.clipboardData.files || e.clipboardData.files.length === 0) return;
+    if (activeTabId === 'img-compress') {
+      addFilesToCompressor(e.clipboardData.files);
+    } else if (activeTabId === 'img-convert') {
+      addFilesToConverter(e.clipboardData.files);
+    }
+  });
+
+  /* ==========================================================================
+     3. 탭 2: 이미지 포맷 변환 (Image Converter - PNG, JPG, WebP, BMP, ICO, PDF)
+     ========================================================================== */
+  const convertState = {
+    targetMime: 'image/png',
+    targetExt: 'png',
+    items: [] // { id, file, width, height, convertedBlob, outExt, thumbUrl }
+  };
+
+  const formatPills = document.querySelectorAll('#convertFormatGrid .format-pill');
+  const convertBgColor = document.getElementById('convertBgColor');
+  const convertBgColorHex = document.getElementById('convertBgColorHex');
+  const icoSizeGroup = document.getElementById('icoSizeGroup');
+  const icoSizeSelect = document.getElementById('icoSizeSelect');
+  const convertDropzone = document.getElementById('convertDropzone');
+  const convertFileInput = document.getElementById('convertFileInput');
+  const convertFileList = document.getElementById('convertFileList');
+  const convertAllBtn = document.getElementById('convertAllBtn');
+  const downloadAllConvertedBtn = document.getElementById('downloadAllConvertedBtn');
+  const clearConvertedBtn = document.getElementById('clearConvertedBtn');
+
+  formatPills.forEach((pill) => {
+    pill.addEventListener('click', () => {
+      formatPills.forEach((p) => p.classList.remove('active'));
+      pill.classList.add('active');
+      convertState.targetMime = pill.getAttribute('data-fmt');
+      convertState.targetExt = pill.getAttribute('data-ext');
+      if (icoSizeGroup) {
+        icoSizeGroup.style.display = convertState.targetExt === 'ico' ? 'block' : 'none';
+      }
+      if (convertState.items.length > 0) {
+        convertAllItems();
+      }
+    });
+  });
+
+  if (convertBgColor) {
+    convertBgColor.addEventListener('input', () => {
+      convertBgColorHex.textContent = convertBgColor.value.toUpperCase();
+      if (convertState.items.length > 0) convertAllItems();
+    });
+  }
+
+  if (icoSizeSelect) {
+    icoSizeSelect.addEventListener('change', () => {
+      if (convertState.items.length > 0) convertAllItems();
+    });
+  }
+
+  // 순수 JS 24-bit BMP 바이너리 인코더
+  function encodeCanvasToBmpBlob(canvas) {
+    const w = canvas.width;
+    const h = canvas.height;
+    const ctx = canvas.getContext('2d');
+    const imgData = ctx.getImageData(0, 0, w, h).data;
+
+    const rowSize = Math.floor((24 * w + 31) / 32) * 4;
+    const pixelArraySize = rowSize * h;
+    const fileSize = 54 + pixelArraySize;
+    const buffer = new ArrayBuffer(fileSize);
+    const view = new DataView(buffer);
+
+    // BITMAPFILEHEADER (14 bytes)
+    view.setUint8(0, 0x42); // 'B'
+    view.setUint8(1, 0x4D); // 'M'
+    view.setUint32(2, fileSize, true);
+    view.setUint32(6, 0, true);
+    view.setUint32(10, 54, true);
+
+    // BITMAPINFOHEADER (40 bytes)
+    view.setUint32(14, 40, true);
+    view.setInt32(18, w, true);
+    view.setInt32(22, -h, true); // top-down
+    view.setUint16(26, 1, true);
+    view.setUint16(28, 24, true);
+    view.setUint32(30, 0, true);
+    view.setUint32(34, pixelArraySize, true);
+    view.setInt32(38, 2835, true);
+    view.setInt32(42, 2835, true);
+    view.setUint32(46, 0, true);
+    view.setUint32(50, 0, true);
+
+    let offset = 54;
+    const padding = rowSize - w * 3;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const idx = (y * w + x) * 4;
+        view.setUint8(offset++, imgData[idx + 2]); // B
+        view.setUint8(offset++, imgData[idx + 1]); // G
+        view.setUint8(offset++, imgData[idx]);     // R
+      }
+      offset += padding;
+    }
+    return new Blob([buffer], { type: 'image/bmp' });
+  }
+
+  // 순수 JS 윈도우 ICO 바이너리 인코더 (PNG 내장 표준 규격)
+  async function encodeCanvasToIcoBlob(sourceCanvas, size) {
+    const icoCanvas = document.createElement('canvas');
+    icoCanvas.width = size;
+    icoCanvas.height = size;
+    const ctx = icoCanvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(sourceCanvas, 0, 0, size, size);
+
+    const pngBlob = await canvasToBlobPromise(icoCanvas, 'image/png');
+    const pngBuf = await pngBlob.arrayBuffer();
+    const pngBytes = new Uint8Array(pngBuf);
+
+    const totalSize = 22 + pngBytes.length;
+    const icoBuffer = new ArrayBuffer(totalSize);
+    const view = new DataView(icoBuffer);
+
+    // ICONDIR (6 bytes)
+    view.setUint16(0, 0, true);
+    view.setUint16(2, 1, true); // 1 = ICO
+    view.setUint16(4, 1, true); // 1 image
+
+    // ICONDIRENTRY (16 bytes)
+    view.setUint8(6, size >= 256 ? 0 : size);
+    view.setUint8(7, size >= 256 ? 0 : size);
+    view.setUint8(8, 0);
+    view.setUint8(9, 0);
+    view.setUint16(10, 1, true);
+    view.setUint16(12, 32, true);
+    view.setUint32(14, pngBytes.length, true);
+    view.setUint32(18, 22, true);
+
+    const outBytes = new Uint8Array(icoBuffer);
+    outBytes.set(pngBytes, 22);
+    return new Blob([icoBuffer], { type: 'image/x-icon' });
+  }
+
+  // 순수 JS PDF 변환기 (JPG 스트림을 내장한 표준 PDF 문서 생성)
+  async function encodeCanvasToPdfBlob(canvas) {
+    const jpgBlob = await canvasToBlobPromise(canvas, 'image/jpeg', 0.92);
+    const jpgBuf = await jpgBlob.arrayBuffer();
+    const jpgBytes = new Uint8Array(jpgBuf);
+
+    const w = canvas.width;
+    const h = canvas.height;
+
+    const encoder = new TextEncoder();
+    const chunks = [];
+    const offsets = [];
+    let byteLength = 0;
+
+    function pushStr(str) {
+      const b = encoder.encode(str);
+      chunks.push(b);
+      byteLength += b.length;
+    }
+
+    function pushBytes(b) {
+      chunks.push(b);
+      byteLength += b.length;
+    }
+
+    pushStr('%PDF-1.4\n');
+
+    offsets.push(byteLength);
+    pushStr('1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n');
+
+    offsets.push(byteLength);
+    pushStr('2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n');
+
+    offsets.push(byteLength);
+    pushStr(`3 0 obj\n<< /Type /Page /Parent 2 0 R /Resources << /XObject << /Im0 4 0 R >> >> /MediaBox [0 0 ${w} ${h}] /Contents 5 0 R >>\nendobj\n`);
+
+    offsets.push(byteLength);
+    pushStr(`4 0 obj\n<< /Type /XObject /Subtype /Image /Width ${w} /Height ${h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpgBytes.length} >>\nstream\n`);
+    pushBytes(jpgBytes);
+    pushStr('\nendstream\nendobj\n');
+
+    const contentStream = `q ${w} 0 0 ${h} 0 0 cm /Im0 Do Q`;
+    offsets.push(byteLength);
+    pushStr(`5 0 obj\n<< /Length ${contentStream.length} >>\nstream\n${contentStream}\nendstream\nendobj\n`);
+
+    const xrefOffset = byteLength;
+    pushStr(`xref\n0 6\n0000000000 65535 f \n`);
+    offsets.forEach((off) => {
+      pushStr(`${String(off).padStart(10, '0')} 00000 n \n`);
+    });
+    pushStr(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`);
+
+    return new Blob(chunks, { type: 'application/pdf' });
+  }
+
+  async function convertSingleImage(item) {
+    const img = await loadImageFromFile(item.file);
+    const w = img.naturalWidth || img.width;
+    const h = img.naturalHeight || img.height;
+    item.width = w;
+    item.height = h;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+
+    const needsSolidBg =
+      convertState.targetMime === 'image/jpeg' ||
+      convertState.targetMime === 'image/bmp' ||
+      convertState.targetMime === 'application/pdf';
+
+    if (needsSolidBg) {
+      ctx.fillStyle = convertBgColor ? convertBgColor.value : '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    ctx.drawImage(img, 0, 0, w, h);
+    item.outExt = convertState.targetExt;
+
+    if (convertState.targetMime === 'image/bmp') {
+      item.convertedBlob = encodeCanvasToBmpBlob(canvas);
+    } else if (convertState.targetMime === 'image/x-icon') {
+      const icoSize = parseInt(icoSizeSelect ? icoSizeSelect.value : '256', 10);
+      item.convertedBlob = await encodeCanvasToIcoBlob(canvas, icoSize);
+    } else if (convertState.targetMime === 'application/pdf') {
+      item.convertedBlob = await encodeCanvasToPdfBlob(canvas);
+    } else {
+      item.convertedBlob = await canvasToBlobPromise(canvas, convertState.targetMime, 0.92);
+    }
+  }
+
+  function renderConvertList() {
+    convertFileList.innerHTML = '';
+    const hasItems = convertState.items.length > 0;
+    convertAllBtn.disabled = !hasItems;
+    downloadAllConvertedBtn.disabled = !hasItems;
+    clearConvertedBtn.disabled = !hasItems;
+
+    if (!hasItems) return;
+
+    convertState.items.forEach((item) => {
+      const newSize = item.convertedBlob ? item.convertedBlob.size : 0;
+      const row = document.createElement('div');
+      row.className = 'file-item';
+      row.innerHTML = `
+        <div class="file-item-left">
+          <img class="file-thumb" src="${item.thumbUrl}" alt="미리보기" />
+          <div class="file-meta">
+            <div class="file-name">${item.file.name}</div>
+            <div class="file-details">
+              <span>${item.width}×${item.height} px</span>
+              <span>|</span>
+              <span>원본: ${formatBytes(item.file.size)}</span>
+              <span class="arrow-sep">→</span>
+              <span class="size-new">${item.outExt.toUpperCase()} (${formatBytes(newSize)})</span>
+            </div>
+          </div>
+        </div>
+        <div class="file-item-actions">
+          <button type="button" class="btn btn-primary btn-sm dl-conv-btn">${item.outExt.toUpperCase()} 다운로드</button>
+          <button type="button" class="btn btn-outline btn-sm rm-conv-btn">삭제</button>
+        </div>
+      `;
+
+      row.querySelector('.dl-conv-btn').addEventListener('click', () => {
+        if (!item.convertedBlob) return;
+        const outName = `${getBaseName(item.file.name)}.${item.outExt}`;
+        triggerDownload(item.convertedBlob, outName);
+      });
+
+      row.querySelector('.rm-conv-btn').addEventListener('click', () => {
+        URL.revokeObjectURL(item.thumbUrl);
+        convertState.items = convertState.items.filter((x) => x.id !== item.id);
+        renderConvertList();
+      });
+
+      convertFileList.appendChild(row);
+    });
+  }
+
+  async function addFilesToConverter(fileList) {
+    const validFiles = Array.from(fileList).filter((f) => f.type.startsWith('image/') || /\.(svg|ico|bmp|webp|avif)$/i.test(f.name));
+    if (validFiles.length === 0) {
+      showToast('변환 가능한 이미지 파일을 선택해 주세요.');
+      return;
+    }
+
+    for (const file of validFiles) {
+      const item = {
+        id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        file,
+        width: 0,
+        height: 0,
+        convertedBlob: null,
+        outExt: convertState.targetExt,
+        thumbUrl: URL.createObjectURL(file)
+      };
+      try {
+        await convertSingleImage(item);
+        convertState.items.push(item);
+      } catch (err) {
+        URL.revokeObjectURL(item.thumbUrl);
+        showToast(`${file.name} 변환 중 오류가 발생했습니다.`);
+      }
+    }
+    renderConvertList();
+    showToast(`${validFiles.length}개의 파일이 ${convertState.targetExt.toUpperCase()} 포맷으로 변환되었습니다.`);
+  }
+
+  async function convertAllItems() {
+    if (convertState.items.length === 0) return;
+    for (const item of convertState.items) {
+      await convertSingleImage(item);
+    }
+    renderConvertList();
+    showToast(`전체 파일이 ${convertState.targetExt.toUpperCase()} 포맷으로 변환되었습니다.`);
+  }
+
+  if (convertDropzone) {
+    convertDropzone.addEventListener('click', () => convertFileInput.click());
+    convertDropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      convertDropzone.classList.add('dragover');
+    });
+    convertDropzone.addEventListener('dragleave', () => convertDropzone.classList.remove('dragover'));
+    convertDropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      convertDropzone.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) addFilesToConverter(e.dataTransfer.files);
+    });
+  }
+
+  if (convertFileInput) {
+    convertFileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) addFilesToConverter(e.target.files);
+      convertFileInput.value = '';
+    });
+  }
+
+  if (convertAllBtn) convertAllBtn.addEventListener('click', convertAllItems);
+
+  if (downloadAllConvertedBtn) {
+    downloadAllConvertedBtn.addEventListener('click', () => {
+      convertState.items.forEach((item, idx) => {
+        setTimeout(() => {
+          const outName = `${getBaseName(item.file.name)}.${item.outExt}`;
+          triggerDownload(item.convertedBlob, outName);
+        }, idx * 180);
+      });
+      showToast('변환된 파일 전체 다운로드를 시작합니다.');
+    });
+  }
+
+  if (clearConvertedBtn) {
+    clearConvertedBtn.addEventListener('click', () => {
+      convertState.items.forEach((item) => URL.revokeObjectURL(item.thumbUrl));
+      convertState.items = [];
+      renderConvertList();
+      showToast('목록을 비웠습니다.');
+    });
+  }
+
+  /* ==========================================================================
+     4. 탭 3: 동영상 압축 (Video Compressor)
+     ========================================================================== */
+  const videoState = {
+    file: null,
+    fileUrl: null,
+    origWidth: 0,
+    origHeight: 0,
+    duration: 0,
+    isCompressing: false,
+    recorder: null,
+    animFrameId: null
+  };
+
+  const videoDropzone = document.getElementById('videoDropzone');
+  const videoFileInput = document.getElementById('videoFileInput');
+  const videoWorkCard = document.getElementById('videoWorkCard');
+  const videoFileName = document.getElementById('videoFileName');
+  const videoMetaInfo = document.getElementById('videoMetaInfo');
+  const changeVideoBtn = document.getElementById('changeVideoBtn');
+  const origVideoPlayer = document.getElementById('origVideoPlayer');
+  const compressedVideoBox = document.getElementById('compressedVideoBox');
+  const compressedVideoPlayer = document.getElementById('compressedVideoPlayer');
+  const downloadCompressedVideoBtn = document.getElementById('downloadCompressedVideoBtn');
+  const videoResultStatText = document.getElementById('videoResultStatText');
+  const videoResolution = document.getElementById('videoResolution');
+  const videoBitratePreset = document.getElementById('videoBitratePreset');
+  const videoFps = document.getElementById('videoFps');
+  const videoMuteAudio = document.getElementById('videoMuteAudio');
+  const videoEstimatedSize = document.getElementById('videoEstimatedSize');
+  const startVideoCompressBtn = document.getElementById('startVideoCompressBtn');
+  const cancelVideoCompressBtn = document.getElementById('cancelVideoCompressBtn');
+  const videoProgressPanel = document.getElementById('videoProgressPanel');
+  const videoProgressBar = document.getElementById('videoProgressBar');
+  const videoProgressPercent = document.getElementById('videoProgressPercent');
+  const videoProgressStatus = document.getElementById('videoProgressStatus');
+
+  function updateVideoEstimate() {
+    if (!videoState.file || !videoState.duration) {
+      videoEstimatedSize.textContent = '영상을 선택하세요';
+      return;
+    }
+    const vBitrate = parseInt(videoBitratePreset.value, 10);
+    const aBitrate = videoMuteAudio.checked ? 0 : 128000;
+    const totalBitsPerSec = vBitrate + aBitrate;
+    const estBytes = (totalBitsPerSec / 8) * videoState.duration;
+    const savingPct = Math.max(0, ((videoState.file.size - estBytes) / videoState.file.size) * 100);
+    videoEstimatedSize.textContent = `약 ${formatBytes(estBytes)} (${savingPct > 0 ? `약 ${savingPct.toFixed(0)}% 절감 예상` : '원본과 유사'})`;
+  }
+
+  [videoResolution, videoBitratePreset, videoFps, videoMuteAudio].forEach((el) => {
+    if (el) el.addEventListener('change', updateVideoEstimate);
+  });
+
+  function loadVideoFile(file) {
+    if (!file || !file.type.startsWith('video/')) {
+      showToast('올바른 동영상 파일을 선택해 주세요.');
+      return;
+    }
+    if (videoState.fileUrl) URL.revokeObjectURL(videoState.fileUrl);
+    videoState.file = file;
+    videoState.fileUrl = URL.createObjectURL(file);
+
+    origVideoPlayer.src = videoState.fileUrl;
+    compressedVideoBox.classList.add('hidden');
+    videoProgressPanel.classList.add('hidden');
+    videoDropzone.classList.add('hidden');
+    videoWorkCard.classList.remove('hidden');
+    startVideoCompressBtn.disabled = false;
+
+    origVideoPlayer.onloadedmetadata = () => {
+      videoState.origWidth = origVideoPlayer.videoWidth || 1280;
+      videoState.origHeight = origVideoPlayer.videoHeight || 720;
+      videoState.duration = origVideoPlayer.duration || 0;
+
+      videoFileName.textContent = file.name;
+      videoMetaInfo.textContent = `원본 용량: ${formatBytes(file.size)} · 해상도: ${videoState.origWidth}×${videoState.origHeight} · 길이: ${formatDuration(videoState.duration)}`;
+      updateVideoEstimate();
+    };
+  }
+
+  if (videoDropzone) {
+    videoDropzone.addEventListener('click', () => videoFileInput.click());
+    videoDropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      videoDropzone.classList.add('dragover');
+    });
+    videoDropzone.addEventListener('dragleave', () => videoDropzone.classList.remove('dragover'));
+    videoDropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      videoDropzone.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) loadVideoFile(e.dataTransfer.files[0]);
+    });
+  }
+
+  if (videoFileInput) {
+    videoFileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) loadVideoFile(e.target.files[0]);
+      videoFileInput.value = '';
+    });
+  }
+
+  if (changeVideoBtn) {
+    changeVideoBtn.addEventListener('click', () => {
+      if (videoState.isCompressing) return;
+      videoFileInput.click();
+    });
+  }
+
+  function getSupportedVideoMime() {
+    const candidates = [
+      { mime: 'video/mp4;codecs=avc1,mp4a.40.2', ext: 'mp4' },
+      { mime: 'video/mp4;codecs=avc1', ext: 'mp4' },
+      { mime: 'video/mp4', ext: 'mp4' },
+      { mime: 'video/webm;codecs=vp9,opus', ext: 'webm' },
+      { mime: 'video/webm;codecs=vp8,opus', ext: 'webm' },
+      { mime: 'video/webm', ext: 'webm' }
+    ];
+    for (const c of candidates) {
+      if (window.MediaRecorder && MediaRecorder.isTypeSupported(c.mime)) {
+        return c;
+      }
+    }
+    return { mime: '', ext: 'webm' };
+  }
+
+  function getTargetVideoSize(origW, origH, resMode) {
+    if (resMode === 'keep') return { width: origW, height: origH };
+    const targetH = parseInt(resMode, 10);
+    const shortSide = Math.min(origW, origH);
+    if (shortSide <= targetH) return { width: origW, height: origH };
+    const scale = targetH / shortSide;
+    // 인코더 호환성을 위해 짝수 픽셀로 맞춤
+    const w = Math.max(2, Math.round((origW * scale) / 2) * 2);
+    const h = Math.max(2, Math.round((origH * scale) / 2) * 2);
+    return { width: w, height: h };
+  }
+
+  async function startVideoCompression() {
+    if (!videoState.file || videoState.isCompressing) return;
+
+    videoState.isCompressing = true;
+    startVideoCompressBtn.disabled = true;
+    cancelVideoCompressBtn.classList.remove('hidden');
+    compressedVideoBox.classList.add('hidden');
+    videoProgressPanel.classList.remove('hidden');
+    videoProgressBar.style.width = '0%';
+    videoProgressPercent.textContent = '0%';
+    videoProgressStatus.textContent = '동영상 인코딩 준비 중...';
+
+    const { width, height } = getTargetVideoSize(
+      videoState.origWidth,
+      videoState.origHeight,
+      videoResolution.value
+    );
+    const fps = parseInt(videoFps.value, 10) || 30;
+    const vBitrate = parseInt(videoBitratePreset.value, 10) || 1500000;
+    const muteAudio = videoMuteAudio.checked;
+
+    const procVideo = document.createElement('video');
+    procVideo.src = videoState.fileUrl;
+    procVideo.muted = muteAudio;
+    procVideo.playsInline = true;
+    procVideo.crossOrigin = 'anonymous';
+
+    await new Promise((resolve, reject) => {
+      procVideo.onloadeddata = resolve;
+      procVideo.onerror = reject;
+    });
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+
+    const canvasStream = canvas.captureStream(fps);
+    let audioCtx = null;
+
+    if (!muteAudio) {
+      try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const source = audioCtx.createMediaElementSource(procVideo);
+        const dest = audioCtx.createMediaStreamDestination();
+        source.connect(dest);
+        dest.stream.getAudioTracks().forEach((track) => canvasStream.addTrack(track));
+      } catch (e) {
+        // 오디오 트랙이 없거나 추출 불가 시 비디오만 인코딩
+      }
+    }
+
+    const supported = getSupportedVideoMime();
+    const recorderOptions = {
+      videoBitsPerSecond: vBitrate
+    };
+    if (supported.mime) {
+      recorderOptions.mimeType = supported.mime;
+    }
+
+    const chunks = [];
+    const recorder = new MediaRecorder(canvasStream, recorderOptions);
+    videoState.recorder = recorder;
+
+    recorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) chunks.push(e.data);
+    };
+
+    recorder.onstop = () => {
+      if (videoState.animFrameId) cancelAnimationFrame(videoState.animFrameId);
+      if (audioCtx) audioCtx.close().catch(() => {});
+      procVideo.pause();
+      procVideo.src = '';
+
+      if (!videoState.isCompressing) {
+        // 사용자가 취소한 경우
+        videoProgressPanel.classList.add('hidden');
+        startVideoCompressBtn.disabled = false;
+        cancelVideoCompressBtn.classList.add('hidden');
+        return;
+      }
+
+      videoState.isCompressing = false;
+      startVideoCompressBtn.disabled = false;
+      cancelVideoCompressBtn.classList.add('hidden');
+
+      const outBlob = new Blob(chunks, { type: supported.mime || 'video/webm' });
+      const outUrl = URL.createObjectURL(outBlob);
+      compressedVideoPlayer.src = outUrl;
+      compressedVideoBox.classList.remove('hidden');
+
+      const origSize = videoState.file.size;
+      const newSize = outBlob.size;
+      const savedRatio = origSize > 0 ? ((origSize - newSize) / origSize) * 100 : 0;
+
+      videoProgressBar.style.width = '100%';
+      videoProgressPercent.textContent = '100%';
+      videoProgressStatus.textContent = '동영상 압축이 완료되었습니다!';
+
+      videoResultStatText.textContent = `${formatBytes(origSize)} → ${formatBytes(newSize)} (${savedRatio >= 0 ? `-${savedRatio.toFixed(1)}% 절감` : '완료'}) · ${width}×${height}`;
+      downloadCompressedVideoBtn.href = outUrl;
+      downloadCompressedVideoBtn.download = `${getBaseName(videoState.file.name)}_compressed.${supported.ext}`;
+      showToast('동영상 압축이 완료되었습니다!');
+    };
+
+    function drawFrame() {
+      if (!procVideo.paused && !procVideo.ended) {
+        ctx.drawImage(procVideo, 0, 0, width, height);
+        if (videoState.duration > 0) {
+          const pct = Math.min(99, Math.round((procVideo.currentTime / videoState.duration) * 100));
+          videoProgressBar.style.width = `${pct}%`;
+          videoProgressPercent.textContent = `${pct}%`;
+          videoProgressStatus.textContent = `실시간 하드웨어 압축 인코딩 중... (${formatDuration(procVideo.currentTime)} / ${formatDuration(videoState.duration)})`;
+        }
+        videoState.animFrameId = requestAnimationFrame(drawFrame);
+      }
+    }
+
+    procVideo.onended = () => {
+      if (recorder.state === 'recording') recorder.stop();
+    };
+
+    recorder.start(250);
+    await procVideo.play();
+    drawFrame();
+  }
+
+  if (startVideoCompressBtn) {
+    startVideoCompressBtn.addEventListener('click', () => {
+      startVideoCompression().catch((err) => {
+        videoState.isCompressing = false;
+        startVideoCompressBtn.disabled = false;
+        cancelVideoCompressBtn.classList.add('hidden');
+        showToast('동영상 압축을 시작할 수 없습니다: ' + err.message);
+      });
+    });
+  }
+
+  if (cancelVideoCompressBtn) {
+    cancelVideoCompressBtn.addEventListener('click', () => {
+      if (!videoState.isCompressing) return;
+      videoState.isCompressing = false;
+      if (videoState.recorder && videoState.recorder.state === 'recording') {
+        videoState.recorder.stop();
+      }
+      showToast('동영상 압축을 중지했습니다.');
+    });
+  }
+
+  /* ==========================================================================
+     5. 탭 4: 유튜브 다운로드 (YouTube Downloader - 내장 위젯 & 썸네일 직접 저장)
+     ========================================================================== */
+  const ytForm = document.getElementById('ytForm');
+  const ytUrlInput = document.getElementById('ytUrlInput');
+  const ytPasteBtn = document.getElementById('ytPasteBtn');
+  const ytResultContainer = document.getElementById('ytResultContainer');
+  const ytThumbImg = document.getElementById('ytThumbImg');
+  const ytIdBadge = document.getElementById('ytIdBadge');
+  const ytVideoTitle = document.getElementById('ytVideoTitle');
+  const ytVideoAuthor = document.getElementById('ytVideoAuthor');
+  const ytEmbedFrame1 = document.getElementById('ytEmbedFrame1');
+  const ytEmbedFrame2 = document.getElementById('ytEmbedFrame2');
+  const gwSsyoutube = document.getElementById('gwSsyoutube');
+  const gwY2mate = document.getElementById('gwY2mate');
+  const gwCobalt = document.getElementById('gwCobalt');
+  const gwSnapsave = document.getElementById('gwSnapsave');
+  const ytEngineTabs = document.querySelectorAll('#ytEngineTabs .engine-tab');
+  const thumbDlBtns = document.querySelectorAll('.thumb-dl-btn');
+
+  let currentYtVideoId = '';
+  let currentYtFullUrl = '';
+
+  function extractYouTubeId(inputUrl) {
+    if (!inputUrl) return null;
+    const trimmed = inputUrl.trim();
+    // 이미 11자리 ID만 입력한 경우
+    if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
+
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/|youtube\.com\/live\/)([a-zA-Z0-9_-]{11})/,
+      /[?&]v=([a-zA-Z0-9_-]{11})/
+    ];
+    for (const reg of patterns) {
+      const match = trimmed.match(reg);
+      if (match && match[1]) return match[1];
+    }
+    return null;
+  }
+
+  async function fetchYouTubeMeta(videoUrl, videoId) {
+    ytVideoTitle.textContent = '유튜브 영상 정보를 불러오는 중...';
+    ytVideoAuthor.textContent = '';
+    try {
+      const res = await fetch(`https://noembed.com/embed?url=${encodeURIComponent(videoUrl)}`);
+      if (!res.ok) throw new Error('메타데이터 응답 오류');
+      const data = await res.json();
+      ytVideoTitle.textContent = data.title || `YouTube Video (${videoId})`;
+      ytVideoAuthor.textContent = data.author_name ? `채널: ${data.author_name}` : '';
+    } catch (e) {
+      ytVideoTitle.textContent = `유튜브 영상 (ID: ${videoId})`;
+      ytVideoAuthor.textContent = '우측 추출기에서 화질을 선택해 바로 다운로드하세요.';
+    }
+  }
+
+  function loadYouTubeVideo(rawUrl) {
+    const videoId = extractYouTubeId(rawUrl);
+    if (!videoId) {
+      showToast('올바른 유튜브 주소(URL)를 입력해 주세요.');
+      return;
+    }
+
+    currentYtVideoId = videoId;
+    currentYtFullUrl = `https://www.youtube.com/watch?v=${videoId}`;
+
+    // 썸네일 및 기본 정보 세팅
+    ytThumbImg.src = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+    ytThumbImg.onload = () => {
+      // maxresdefault 존재 여부 확인 후 교체
+      const hdImg = new Image();
+      hdImg.onload = () => {
+        if (hdImg.naturalWidth > 120) {
+          ytThumbImg.src = hdImg.src;
+        }
+      };
+      hdImg.src = `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
+    };
+    ytIdBadge.textContent = `ID: ${videoId}`;
+    fetchYouTubeMeta(currentYtFullUrl, videoId);
+
+    // 내장 클라우드 추출기 1 (화질별 MP4 / MP3 올인원 카드 위젯)
+    ytEmbedFrame1.src = `https://loader.to/api/card2/?url=${encodeURIComponent(currentYtFullUrl)}`;
+
+    // 내장 클라우드 추출기 2 (버튼형 고속 추출 위젯)
+    ytEmbedFrame2.src = `https://loader.to/api/button/?url=${encodeURIComponent(currentYtFullUrl)}&f=mp4`;
+
+    // 외부 다이렉트 게이트웨이 주소 세팅
+    if (gwSsyoutube) gwSsyoutube.href = `https://www.ssyoutube.com/watch?v=${videoId}`;
+    if (gwY2mate) gwY2mate.href = `https://www.youtubepp.com/watch?v=${videoId}`;
+
+    ytResultContainer.classList.remove('hidden');
+    showToast('유튜브 영상을 성공적으로 불러왔습니다!');
+  }
+
+  if (ytForm) {
+    ytForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      loadYouTubeVideo(ytUrlInput.value);
+    });
+  }
+
+  if (ytPasteBtn) {
+    ytPasteBtn.addEventListener('click', async () => {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          ytUrlInput.value = text;
+          loadYouTubeVideo(text);
+        } else {
+          showToast('클립보드가 비어 있습니다.');
+        }
+      } catch (e) {
+        ytUrlInput.focus();
+        showToast('입력창에 Ctrl+V를 눌러 붙여넣어 주세요.');
+      }
+    });
+  }
+
+  // 추출 서버 탭 전환
+  ytEngineTabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      ytEngineTabs.forEach((t) => t.classList.remove('active'));
+      tab.classList.add('active');
+      const engine = tab.getAttribute('data-engine');
+      document.getElementById('engineViewLoader').classList.toggle('active', engine === 'loader');
+      document.getElementById('engineViewWidget2').classList.toggle('active', engine === 'widget2');
+      document.getElementById('engineViewDirect').classList.toggle('active', engine === 'direct');
+    });
+  });
+
+  // Cobalt / SnapSave 클릭 시 자동으로 클립보드에 유튜브 주소 복사
+  [gwCobalt, gwSnapsave].forEach((link) => {
+    if (!link) return;
+    link.addEventListener('click', () => {
+      if (currentYtFullUrl && navigator.clipboard) {
+        navigator.clipboard.writeText(currentYtFullUrl).catch(() => {});
+        showToast('유튜브 주소가 자동 복사되었습니다! 열리는 사이트에 붙여넣기(Ctrl+V) 하세요.');
+      }
+    });
+  });
+
+  // 고화질 썸네일 직접 파일 다운로드 (새 창 열기가 아닌 즉시 .jpg 저장)
+  thumbDlBtns.forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      if (!currentYtVideoId) return;
+      const res = btn.getAttribute('data-res') || 'maxresdefault';
+      const thumbUrl = `https://i.ytimg.com/vi/${currentYtVideoId}/${res}.jpg`;
+      try {
+        const response = await fetch(thumbUrl);
+        if (!response.ok) throw new Error('해상도 없음');
+        const blob = await response.blob();
+        triggerDownload(blob, `youtube_${currentYtVideoId}_${res}.jpg`);
+        showToast('썸네일 이미지 다운로드가 완료되었습니다.');
+      } catch (e) {
+        // maxresdefault가 없는 영상이거나 CORS 제한 시 폴백
+        const fallbackUrl = `https://i.ytimg.com/vi/${currentYtVideoId}/hqdefault.jpg`;
+        try {
+          const response2 = await fetch(fallbackUrl);
+          const blob2 = await response2.blob();
+          triggerDownload(blob2, `youtube_${currentYtVideoId}_hq.jpg`);
+          showToast('고화질(HQ) 썸네일로 다운로드되었습니다.');
+        } catch (err) {
+          window.open(thumbUrl, '_blank');
+        }
+      }
+    });
+  });
+})();
