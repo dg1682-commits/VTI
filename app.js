@@ -1280,6 +1280,28 @@
     });
   });
 
+  // 광고 새 창(팝업) 자동 차단 스위치 제어
+  const blockPopupToggle = document.getElementById('blockPopupToggle');
+  if (blockPopupToggle) {
+    blockPopupToggle.addEventListener('change', () => {
+      const val = blockPopupToggle.checked
+        ? 'allow-scripts allow-same-origin allow-downloads allow-forms'
+        : 'allow-scripts allow-same-origin allow-downloads allow-forms allow-popups allow-popups-to-escape-sandbox';
+      if (ytEmbedFrame1) ytEmbedFrame1.setAttribute('sandbox', val);
+      if (ytEmbedFrame2) ytEmbedFrame2.setAttribute('sandbox', val);
+      // 설정 반영을 위해 현재 로드된 iframe 새로고침
+      if (currentYtFullUrl) {
+        if (ytEmbedFrame1 && ytEmbedFrame1.src !== 'about:blank') ytEmbedFrame1.src = ytEmbedFrame1.src;
+        if (ytEmbedFrame2 && ytEmbedFrame2.src !== 'about:blank') ytEmbedFrame2.src = ytEmbedFrame2.src;
+      }
+      showToast(
+        blockPopupToggle.checked
+          ? '광고 새 창(팝업) 자동 차단이 켜졌습니다.'
+          : '새 창 열기가 허용되었습니다.'
+      );
+    });
+  }
+
   // Cobalt / SnapSave 클릭 시 자동으로 클립보드에 유튜브 주소 복사
   [gwCobalt, gwSnapsave].forEach((link) => {
     if (!link) return;

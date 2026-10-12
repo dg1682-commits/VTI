@@ -513,8 +513,12 @@
 
             <!-- 엔진 1: 내장형 멀티 포맷 추출 위젯 (화질별 MP4 / MP3 카드) -->
             <div class="engine-view active" id="engineViewLoader">
-              <div class="iframe-notice">
+              <div class="iframe-notice" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
                 <span>💡 아래 박스 안에서 <strong>MP4 화질(720p, 1080p 등)</strong>이나 <strong>MP3</strong>를 고른 뒤 <strong>Download</strong> 버튼을 누르면 바로 추출됩니다.</span>
+                <label class="checkbox-label" style="font-size:0.82rem; font-weight:700; margin:0;">
+                  <input type="checkbox" id="blockPopupToggle" checked />
+                  <span>광고 새 창(팝업) 자동 차단</span>
+                </label>
               </div>
               <div class="embed-frame-wrap">
                 <iframe
@@ -523,6 +527,7 @@
                   scrolling="yes"
                   allowTransparency="true"
                   referrerpolicy="no-referrer"
+                  sandbox="allow-scripts allow-same-origin allow-downloads allow-forms"
                   title="유튜브 다운로드 서버 1"
                 ></iframe>
               </div>
@@ -540,6 +545,7 @@
                   scrolling="no"
                   allowTransparency="true"
                   referrerpolicy="no-referrer"
+                  sandbox="allow-scripts allow-same-origin allow-downloads allow-forms"
                   title="유튜브 다운로드 서버 2"
                 ></iframe>
               </div>
