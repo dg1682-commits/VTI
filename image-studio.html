@@ -330,8 +330,34 @@
 
       <div class="ctx-v-sep"></div>
 
-      <span class="ctx-label-text">모서리 곡률:</span>
-      <input type="number" id="ctxRadiusInput" class="font-size-num" min="0" max="100" value="0" title="모서리 둥글기 (px)" />
+      <!-- 모서리 곡률(굴곡) 조절 -->
+      <span class="ctx-label-text">굴곡:</span>
+      <input type="range" id="ctxRadiusSlider" min="0" max="100" value="0" style="width:70px; accent-color:#7c3aed;" title="모서리 둥글기 (px)" />
+      <span id="ctxRadiusVal" style="font-size:0.75rem; font-weight:700; min-width:24px;">0</span>
+
+      <!-- 화살표 전용 컨트롤 (화살표 선택 시 노출) -->
+      <div id="ctxArrowControls" style="display:none; align-items:center; gap:8px;">
+        <div class="ctx-v-sep"></div>
+        <span class="ctx-label-text">머리크기:</span>
+        <input type="range" id="ctxArrowHeadSlider" min="15" max="60" value="35" style="width:60px; accent-color:#2563eb;" title="화살표 머리 비율" />
+        <span class="ctx-label-text">몸통두께:</span>
+        <input type="range" id="ctxArrowStemSlider" min="10" max="70" value="35" style="width:60px; accent-color:#2563eb;" title="화살표 줄기 두께" />
+      </div>
+
+      <!-- 별 전용 컨트롤 (별 선택 시 노출) -->
+      <div id="ctxStarControls" style="display:none; align-items:center; gap:8px;">
+        <div class="ctx-v-sep"></div>
+        <span class="ctx-label-text">꼭지점:</span>
+        <select id="ctxStarPointsSelect" class="preset-select" style="width:58px;" title="별 꼭지점 수">
+          <option value="4">4각</option>
+          <option value="5" selected>5각</option>
+          <option value="6">6각</option>
+          <option value="8">8각</option>
+          <option value="12">12각</option>
+        </select>
+        <span class="ctx-label-text">내부비율:</span>
+        <input type="range" id="ctxStarRatioSlider" min="20" max="80" value="50" style="width:60px; accent-color:#f59e0b;" title="별 안쪽 파임 정도" />
+      </div>
     </div>
 
     <!-- 공통 우측 컨트롤 (투명도, 위치/순서, 복제, 삭제) -->
@@ -422,82 +448,284 @@
         </div>
       </div>
 
-      <!-- 2) 텍스트 패널 (캔바 스타일 텍스트 조합) -->
+      <!-- 2) 텍스트 패널 (Adobe Express 스타일 편집 & 효과 서브 탭) -->
       <div class="drawer-page-view" id="drawerText">
-        <div class="drawer-group-title">기본 텍스트 추가</div>
-        <button type="button" class="btn-canva-add-text btn-add-title" id="btnAddHeading">
-          <strong>제목 추가</strong>
-        </button>
-        <button type="button" class="btn-canva-add-text btn-add-subtitle" id="btnAddSubheading">
-          <span>소제목 추가</span>
-        </button>
-        <button type="button" class="btn-canva-add-text btn-add-body" id="btnAddBodyText">
-          <small>본문 텍스트 추가</small>
-        </button>
+        <!-- 상단 서브 탭 -->
+        <div class="drawer-subtabs-row">
+          <button type="button" class="drawer-subtab-btn active" id="tabTextAdd">추가 / 편집</button>
+          <button type="button" class="drawer-subtab-btn" id="tabTextEffects">✨ 텍스트 효과</button>
+        </div>
 
-        <div class="drawer-group-title" style="margin-top:20px;">디자인 텍스트 스타일 조합</div>
-        <div class="design-text-pack-list">
-          <button type="button" class="pack-card pack-yellow-bold" data-pack="yellow-bold">
-            <span style="font-family:'Black Han Sans';">유튜브 옐로우 아웃라인</span>
+        <!-- 서브 1: 추가 / 기본 텍스트 -->
+        <div id="subviewTextAdd">
+          <div class="drawer-group-title">기본 텍스트 추가</div>
+          <button type="button" class="btn-canva-add-text btn-add-title" id="btnAddHeading">
+            <strong>제목 추가</strong>
           </button>
-          <button type="button" class="pack-card pack-clean-black" data-pack="clean-black">
-            <span style="font-family:'Pretendard';">깔끔한 모던 블랙헤드</span>
+          <button type="button" class="btn-canva-add-text btn-add-subtitle" id="btnAddSubheading">
+            <span>소제목 추가</span>
           </button>
-          <button type="button" class="pack-card pack-highlight-box" data-pack="highlight-box">
-            <span>형광펜 강조 라벨 박스</span>
+          <button type="button" class="btn-canva-add-text btn-add-body" id="btnAddBodyText">
+            <small>본문 텍스트 추가</small>
           </button>
-          <button type="button" class="pack-card pack-handwrite" data-pack="handwrite">
-            <span style="font-family:'Nanum Pen Script'; font-size:1.4rem;">감성 손글씨 캘리그라피</span>
-          </button>
+
+          <div class="drawer-group-title" style="margin-top:20px;">인기 디자인 조합 팩</div>
+          <div class="design-text-pack-list">
+            <button type="button" class="pack-card pack-yellow-bold" data-pack="yellow-bold">
+              <span style="font-family:'Black Han Sans';">유튜브 옐로우 아웃라인</span>
+            </button>
+            <button type="button" class="pack-card pack-clean-black" data-pack="clean-black">
+              <span style="font-family:'Pretendard';">깔끔한 모던 블랙헤드</span>
+            </button>
+            <button type="button" class="pack-card pack-highlight-box" data-pack="highlight-box">
+              <span>형광펜 강조 라벨 박스</span>
+            </button>
+            <button type="button" class="pack-card pack-handwrite" data-pack="handwrite">
+              <span style="font-family:'Nanum Pen Script'; font-size:1.4rem;">감성 손글씨 캘리그라피</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 서브 2: Adobe Express 스타일 효과 프리셋 갤러리 -->
+        <div id="subviewTextEffects" style="display: none;">
+          <div class="drawer-group-title">그림자 효과 (Shadows)</div>
+          <div class="effects-preset-grid">
+            <button type="button" class="effect-preset-card active" data-shadow-preset="none">
+              <span class="preview-symbol">⊘</span>
+              <span>없음</span>
+            </button>
+            <button type="button" class="effect-preset-card" data-shadow-preset="classic">
+              <span class="preview-sample shadow-classic">Ag</span>
+              <span>클래식</span>
+            </button>
+            <button type="button" class="effect-preset-card" data-shadow-preset="smooth">
+              <span class="preview-sample shadow-smooth">Ag</span>
+              <span>매끄러운</span>
+            </button>
+            <button type="button" class="effect-preset-card" data-shadow-preset="lift">
+              <span class="preview-sample shadow-lift">Ag</span>
+              <span>리프트</span>
+            </button>
+            <button type="button" class="effect-preset-card" data-shadow-preset="glow">
+              <span class="preview-sample shadow-glow">Ag</span>
+              <span>글로우</span>
+            </button>
+            <button type="button" class="effect-preset-card" data-shadow-preset="halo">
+              <span class="preview-sample shadow-halo">Ag</span>
+              <span>후광</span>
+            </button>
+            <button type="button" class="effect-preset-card" data-shadow-preset="strong">
+              <span class="preview-sample shadow-strong">Ag</span>
+              <span>강한 (팝아트)</span>
+            </button>
+            <button type="button" class="effect-preset-card" data-shadow-preset="haze">
+              <span class="preview-sample shadow-haze">Ag</span>
+              <span>헤이즈</span>
+            </button>
+            <button type="button" class="effect-preset-card" data-shadow-preset="neon">
+              <span class="preview-sample shadow-neon">Ag</span>
+              <span>핫핑크 네온</span>
+            </button>
+          </div>
+
+          <div class="drawer-group-title" style="margin-top:20px;">모양 & 배경 라벨 (Shapes)</div>
+          <div class="effects-preset-grid">
+            <button type="button" class="effect-preset-card active" data-shape-preset="none">
+              <span class="preview-symbol">⊘</span>
+              <span>없음</span>
+            </button>
+            <button type="button" class="effect-preset-card" data-shape-preset="highlight">
+              <span class="shape-badge bg-yellow">abc</span>
+              <span>형광펜</span>
+            </button>
+            <button type="button" class="effect-preset-card" data-shape-preset="darkblock">
+              <span class="shape-badge bg-dark">abc</span>
+              <span>블랙 박스</span>
+            </button>
+            <button type="button" class="effect-preset-card" data-shape-preset="purplepill">
+              <span class="shape-badge bg-purple-pill">abc</span>
+              <span>캡슐 라벨</span>
+            </button>
+            <button type="button" class="effect-preset-card" data-shape-preset="outline-thick">
+              <span class="shape-badge outline-yt">Ag</span>
+              <span>유튜브 외곽선</span>
+            </button>
+            <button type="button" class="effect-preset-card" data-shape-preset="outline-neon">
+              <span class="shape-badge outline-cyan">Ag</span>
+              <span>네온 아웃라인</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      <!-- 3) 요소 / 도형 패널 -->
+      <!-- 3) 요소 / 도형 패널 (35+종 풍부한 기하학/다각형/별/화살표/말풍선) -->
       <div class="drawer-page-view" id="drawerElements">
-        <div class="drawer-group-title">기본 기하학 도형 & 벡터 요소</div>
-        <div class="shapes-2col-grid">
-          <button type="button" class="shape-pick-btn" id="btnAddRect">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+        <!-- 카테고리 1: 기본 기하학 -->
+        <div class="drawer-group-title">기본 기하학 (Basic)</div>
+        <div class="shapes-category-grid">
+          <button type="button" class="shape-pick-btn" data-shape-type="rect" title="직사각형">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="1"/></svg>
             <span>직사각형</span>
           </button>
-          <button type="button" class="shape-pick-btn" id="btnAddRoundRect">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="7"/></svg>
+          <button type="button" class="shape-pick-btn" data-shape-type="roundRect" title="둥근 사각">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="6"/></svg>
             <span>둥근 사각</span>
           </button>
-          <button type="button" class="shape-pick-btn" id="btnAddCircle">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>
-            <span>원형 / 타원</span>
+          <button type="button" class="shape-pick-btn" data-shape-type="circle" title="원형 / 타원">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>
+            <span>원형</span>
           </button>
-          <button type="button" class="shape-pick-btn" id="btnAddTriangle">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 3 22 21 2 21"/></svg>
-            <span>삼각형</span>
+          <button type="button" class="shape-pick-btn" data-shape-type="ellipse" title="타원">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="12" rx="10" ry="6"/></svg>
+            <span>타원</span>
           </button>
-          <button type="button" class="shape-pick-btn" id="btnAddDiamond">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 22 12 12 22 2 12"/></svg>
-            <span>마름모</span>
-          </button>
-          <button type="button" class="shape-pick-btn" id="btnAddStar">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-            <span>5각 별</span>
-          </button>
-          <button type="button" class="shape-pick-btn" id="btnAddHeart">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-            <span>하트</span>
-          </button>
-          <button type="button" class="shape-pick-btn" id="btnAddArrow">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-            <span>화살표</span>
-          </button>
-          <button type="button" class="shape-pick-btn" id="btnAddBubble">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            <span>말풍선</span>
-          </button>
-          <button type="button" class="shape-pick-btn" id="btnAddPill">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="10" rx="5"/></svg>
+          <button type="button" class="shape-pick-btn" data-shape-type="pill" title="알약 배지">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="10" rx="5"/></svg>
             <span>알약 배지</span>
           </button>
         </div>
 
+        <!-- 카테고리 2: 다각형 & 기하학 -->
+        <div class="drawer-group-title" style="margin-top:16px;">다각형 (Polygons)</div>
+        <div class="shapes-category-grid">
+          <button type="button" class="shape-pick-btn" data-shape-type="triangle" title="정삼각형">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 3 22 21 2 21"/></svg>
+            <span>정삼각형</span>
+          </button>
+          <button type="button" class="shape-pick-btn" data-shape-type="rightTriangle" title="직각삼각형">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="4 3 20 21 4 21"/></svg>
+            <span>직각삼각</span>
+          </button>
+          <button type="button" class="shape-pick-btn" data-shape-type="diamond" title="마름모 (다이아몬드)">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 22 12 12 22 2 12"/></svg>
+            <span>마름모</span>
+          </button>
+          <button type="button" class="shape-pick-btn" data-shape-type="parallelogram" title="평행사변형">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="7 4 22 4 17 20 2 20"/></svg>
+            <span>평행사변</span>
+          </button>
+          <button type="button" class="shape-pick-btn" data-shape-type="trapezoid" title="사다리꼴">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="6 5 18 5 22 19 2 19"/></svg>
+            <span>사다리꼴</span>
+          </button>
+          <button type="button" class="shape-pick-btn" data-shape-type="pentagon" title="오각형">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 22 9.5 18 21 6 21 2 9.5"/></svg>
+            <span>오각형</span>
+          </button>
+          <button type="button" class="shape-pick-btn" data-shape-type="hexagon" title="육각형">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 21 7 21 17 12 22 3 17 3 7"/></svg>
+            <span>육각형</span>
+          </button>
+          <button type="button" class="shape-pick-btn" data-shape-type="octagon" title="팔각형">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="7.8 2 16.2 2 22 7.8 22 16.2 16.2 22 7.8 22 2 16.2 2 7.8"/></svg>
+            <span>팔각형</span>
+          </button>
+        </div>
+
+        <!-- 카테고리 3: 별 & 감성 기호 -->
+        <div class="drawer-group-title" style="margin-top:16px;">별 & 기호 (Stars & Symbols)</div>
+        <div class="shapes-category-grid">
+          <button type="button" class="shape-pick-btn" data-shape-type="star" title="5각 별">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <span>5각 별</span>
+          </button>
+          <button type="button" class="shape-pick-btn" data-shape-type="star4" title="4각 반짝 별">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 14.5 9.5 22 12 14.5 14.5 12 22 9.5 14.5 2 12 9.5 9.5"/></svg>
+            <span>4각 별</span>
+          </button>
+          <button type="button" class="shape-pick-btn" data-shape-type="star6" title="6각 별">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15 7.5 21 8.5 16.5 13 18 19 12 16 6 19 7.5 13 3 8.5 9 7.5"/></svg>
+            <span>6각 별</span>
+          </button>
+          <button type="button" class="shape-pick-btn" data-shape-type="star8" title="8각 별">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 14 7 19 5 17 10 22 12 17 14 19 19 14 17 12 22 10 17 5 19 7 14 2 12 7 10 5 5 10 7"/></svg>
+            <span>8각 별</span>
+          </button>
+          <button type="button" class="shape-pick-btn" data-shape-type="heart" title="하트">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            <span>하트</span>
+          </button>
+          <button type="button" class="shape-pick-btn" data-shape-type="cross" title="십자가">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="9 2 15 2 15 9 22 9 22 15 15 15 15 22 9 22 9 15 2 15 2 9 9 9"/></svg>
+            <span>십자가</span>
+          </button>
+          <button type="button" class="shape-pick-btn" data-shape-type="lightning" title="번개">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            <span>번개</span>
+          </button>
+          <button type="button" class="shape-pick-btn" data-shape-type="shield" title="방패 (보안)">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span>방패</span>
+          </button>
+          <button type="button" class="shape-pick-btn" data-shape-type="clover" title="클로버">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm0 0a4 4 0 1 0 4-4 4 4 0 0 0-4 4zm0 0a4 4 0 1 0 4 4 4 4 0 0 0-4-4zm0 0a4 4 0 1 0-4 4 4 4 0 0 0 4-4z"/></svg>
+            <span>클로버</span>
+          </button>
+          <button type="button" class="shape-pick-btn" data-shape-type="crescent" title="초승달">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <span>초승달</span>
+          </button>
+        </div>
+
+        <!-- 카테고리 4: 화살표 & 포인터 -->
+        <div class="drawer-group-title" style="margin-top:16px;">화살표 & 포인터 (Arrows)</div>
+        <div class="shapes-category-grid">
+          <button type="button" class="shape-pick-btn" data-shape-type="arrow" title="오른쪽 화살표">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="2 9 14 9 14 4 22 12 14 20 14 15 2 15"/></svg>
+            <span>우측 화살표</span>
+          </button>
+          <button type="button" class="shape-pick-btn" data-shape-type="arrowLeft" title="왼쪽 화살표">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 9 10 9 10 4 2 12 10 20 10 15 22 15"/></svg>
+            <span>좌측 화살표</span>
+          </button>
+          <button type="button" class="shape-pick-btn" data-shape-type="arrowUp" title="위쪽 화살표">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="9 22 9 10 4 10 12 2 20 10 15 10 15 22"/></svg>
+            <span>상향 화살표</span>
+          </button>
+          <button type="button" class="shape-pick-btn" data-shape-type="arrowDown" title="아래쪽 화살표">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="9 2 9 14 4 14 12 22 20 14 15 14 15 2"/></svg>
+            <span>하향 화살표</span>
+          </button>
+          <button type="button" class="shape-pick-btn" data-shape-type="arrowBoth" title="양방향 화살표">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="2 12 7 6 7 9 17 9 17 6 22 12 17 18 17 15 7 15 7 18"/></svg>
+            <span>양방향 화살표</span>
+          </button>
+          <button type="button" class="shape-pick-btn" data-shape-type="chevron" title="셰브론 (꺾임)">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            <span>셰브론</span>
+          </button>
+        </div>
+
+        <!-- 카테고리 5: 말풍선 & 배지 -->
+        <div class="drawer-group-title" style="margin-top:16px;">말풍선 & 배지 (Bubbles)</div>
+        <div class="shapes-category-grid">
+          <button type="button" class="shape-pick-btn" data-shape-type="bubble" title="둥근 말풍선">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+            <span>둥근 말풍선</span>
+          </button>
+          <button type="button" class="shape-pick-btn" data-shape-type="bubbleRect" title="사각 말풍선">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span>사각 말풍선</span>
+          </button>
+          <button type="button" class="shape-pick-btn" data-shape-type="bubbleCloud" title="생각 구름">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+            <span>생각 구름</span>
+          </button>
+          <button type="button" class="shape-pick-btn" data-shape-type="ribbon" title="리본 배지">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="4 2 20 2 20 22 12 17 4 22"/></svg>
+            <span>리본 배지</span>
+          </button>
+          <button type="button" class="shape-pick-btn" data-shape-type="gearBadge" title="톱니바퀴 배지">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span>톱니 배지</span>
+          </button>
+          <button type="button" class="shape-pick-btn" data-shape-type="ticket" title="할인 티켓 / 쿠폰">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 9a3 3 0 0 1 0 6v3a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-3a3 3 0 0 1 0-6V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"/></svg>
+            <span>티켓 쿠폰</span>
+          </button>
+        </div>
+
+        <!-- 스티커 & 강조 이모지 -->
         <div class="drawer-group-title" style="margin-top:20px;">스티커 & 강조 이모지</div>
         <div class="sticker-badges-grid">
           <button type="button" class="sticker-btn" data-sticker="🔥">🔥 HOT</button>
@@ -526,9 +754,56 @@
         </div>
       </div>
 
-      <!-- 5) 배경 패널 -->
+      <!-- 5) 배경 패널 (단색, 커스텀 그라데이션, 투명 배경) -->
       <div class="drawer-page-view" id="drawerBackground">
-        <div class="drawer-group-title">화사한 단색 컬러</div>
+        <!-- A. 투명 배경 토글 카드 (PNG 투명화) -->
+        <div class="drawer-group-title">🏁 투명 배경 (PNG 저장 시 투명화)</div>
+        <button type="button" class="btn-transparent-toggle" id="btnSetTransparentBg">
+          <div class="checker-icon-box"></div>
+          <div class="checker-text-box">
+            <strong>투명 배경 활성화</strong>
+            <small>PNG 저장 시 배경 없이 누끼 요소만 내보냅니다</small>
+          </div>
+        </button>
+
+        <!-- B. 커스텀 그라데이션 직접 설정 -->
+        <div class="drawer-group-title" style="margin-top:20px;">🎨 직접 그라데이션 만들기</div>
+        <div class="custom-grad-builder-box">
+          <div class="grad-builder-row">
+            <div class="grad-color-item">
+              <label>시작 색상</label>
+              <div class="tool-color-btn color-box-inline">
+                <span class="color-circle-preview" id="gradFromPreview" style="background:#fbcfe8;"></span>
+                <input type="color" id="gradFromPicker" value="#fbcfe8" />
+              </div>
+            </div>
+            <div class="grad-color-item">
+              <label>끝 색상</label>
+              <div class="tool-color-btn color-box-inline">
+                <span class="color-circle-preview" id="gradToPreview" style="background:#fed7aa;"></span>
+                <input type="color" id="gradToPicker" value="#fed7aa" />
+              </div>
+            </div>
+          </div>
+
+          <div class="grad-angle-row">
+            <div class="grad-angle-label">
+              <span>그라데이션 각도</span>
+              <strong id="gradAngleVal">135°</strong>
+            </div>
+            <input type="range" id="gradAngleSlider" min="0" max="360" value="135" />
+          </div>
+
+          <!-- 실시간 프리뷰 바 -->
+          <div class="grad-live-preview-bar" id="gradLivePreviewBar" style="background: linear-gradient(135deg, #fbcfe8, #fed7aa);"></div>
+
+          <button type="button" class="btn-apply-custom-grad" id="btnApplyCustomGrad">
+            ✨ 이 그라데이션으로 배경 적용하기
+          </button>
+        </div>
+
+        <!-- C. 화사한 단색 컬러 칩 -->
+        <div class="drawer-group-title" style="margin-top:20px;">화사한 단색 컬러</div>
         <div class="bg-palette-grid">
           <button type="button" class="bg-color-chip" style="background:#ffffff; border:1px solid #cbd5e1;" data-color="#ffffff" title="화이트"></button>
           <button type="button" class="bg-color-chip" style="background:#f8fafc;" data-color="#f8fafc" title="연회색"></button>
@@ -540,7 +815,8 @@
           <button type="button" class="bg-color-chip" style="background:#18181b;" data-color="#18181b" title="리치 블랙"></button>
         </div>
 
-        <div class="drawer-group-title" style="margin-top:20px;">파스텔 & 모던 그라데이션</div>
+        <!-- D. 프리셋 그라데이션 카드 -->
+        <div class="drawer-group-title" style="margin-top:20px;">인기 추천 그라데이션</div>
         <div class="bg-grad-list">
           <button type="button" class="bg-grad-card grad-sunset-peach" data-grad="sunset-peach">선셋 피치 그라데이션</button>
           <button type="button" class="bg-grad-card grad-soft-lavender" data-grad="soft-lavender">소프트 라벤더</button>
@@ -705,11 +981,13 @@
           <div class="shortcut-item"><kbd>Ctrl</kbd> + <kbd>Y</kbd> <span>다시 실행 (Redo)</span></div>
           <div class="shortcut-item"><kbd>Ctrl</kbd> + <kbd>C</kbd> / <kbd>V</kbd> <span>레이어 복사 / 붙여넣기</span></div>
           <div class="shortcut-item"><kbd>Ctrl</kbd> + <kbd>D</kbd> <span>선택 레이어 즉시 복제</span></div>
+          <div class="shortcut-item"><kbd>Alt</kbd> + <kbd>드래그</kbd> <span>오브제 즉시 복제 (포토샵)</span></div>
+          <div class="shortcut-item"><kbd>모서리 핸들</kbd> <span>글자 크기(폰트) 비례 조절</span></div>
           <div class="shortcut-item"><kbd>방향키 ↑↓←→</kbd> <span>1px 미세 이동</span></div>
           <div class="shortcut-item"><kbd>Shift</kbd> + <kbd>방향키</kbd> <span>10px 빠른 이동</span></div>
           <div class="shortcut-item"><kbd>[</kbd> / <kbd>]</kbd> <span>레이어 뒤로 / 앞으로</span></div>
           <div class="shortcut-item"><kbd>Ctrl</kbd> + <kbd>[</kbd> / <kbd>]</kbd> <span>레이어 맨 뒤로 / 맨 앞으로</span></div>
-          <div class="shortcut-item"><kbd>Space</kbd> + <kbd>드래그</kbd> <span>캔버스 화면 이동 (Pan)</span></div>
+          <div class="shortcut-item"><kbd>Space</kbd> + <kbd>드래그</kbd> <span>캔버스 화면 이동 (스크롤 방지)</span></div>
           <div class="shortcut-item"><kbd>Ctrl</kbd> + <kbd>마우스 휠</kbd> <span>캔버스 줌인 / 줌아웃</span></div>
           <div class="shortcut-item"><kbd>Ctrl</kbd> + <kbd>0</kbd> <span>캔버스 화면 크기에 맞춤 (Fit)</span></div>
           <div class="shortcut-item"><kbd>더블클릭</kbd> <span>텍스트 캔버스 인라인 타이핑</span></div>

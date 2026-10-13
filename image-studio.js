@@ -81,7 +81,7 @@
   const bgBoxRadiusSlider = document.getElementById('bgBoxRadiusSlider');
   const bgBoxRadiusVal = document.getElementById('bgBoxRadiusVal');
 
-  // 도형 전용 컨트롤 (테두리 및 스타일 고도화)
+  // 도형 전용 컨트롤 (테두리 및 스타일 고도화, 굴곡, 화살표, 별 조절)
   const ctxShapeGroup = document.getElementById('ctxShapeGroup');
   const ctxFillColorPicker = document.getElementById('ctxFillColorPicker');
   const ctxFillColorPreview = document.getElementById('ctxFillColorPreview');
@@ -91,7 +91,14 @@
   const ctxStrokeWidthMinus = document.getElementById('ctxStrokeWidthMinus');
   const ctxStrokeWidthPlus = document.getElementById('ctxStrokeWidthPlus');
   const ctxStrokeStyleSelect = document.getElementById('ctxStrokeStyleSelect');
-  const ctxRadiusInput = document.getElementById('ctxRadiusInput');
+  const ctxRadiusSlider = document.getElementById('ctxRadiusSlider');
+  const ctxRadiusVal = document.getElementById('ctxRadiusVal');
+  const ctxArrowControls = document.getElementById('ctxArrowControls');
+  const ctxArrowHeadSlider = document.getElementById('ctxArrowHeadSlider');
+  const ctxArrowStemSlider = document.getElementById('ctxArrowStemSlider');
+  const ctxStarControls = document.getElementById('ctxStarControls');
+  const ctxStarPointsSelect = document.getElementById('ctxStarPointsSelect');
+  const ctxStarRatioSlider = document.getElementById('ctxStarRatioSlider');
 
   // 공통 컨트롤
   const ctxOpacitySlider = document.getElementById('ctxOpacitySlider');
@@ -106,19 +113,27 @@
   const btnCloseDrawer = document.getElementById('btnCloseDrawer');
   const drawerPageViews = document.querySelectorAll('.drawer-page-view');
 
+  // 텍스트 서브탭 (추가/편집 vs 텍스트 효과)
+  const tabTextAdd = document.getElementById('tabTextAdd');
+  const tabTextEffects = document.getElementById('tabTextEffects');
+  const subviewTextAdd = document.getElementById('subviewTextAdd');
+  const subviewTextEffects = document.getElementById('subviewTextEffects');
+
   const btnAddHeading = document.getElementById('btnAddHeading');
   const btnAddSubheading = document.getElementById('btnAddSubheading');
   const btnAddBodyText = document.getElementById('btnAddBodyText');
-  const btnAddRect = document.getElementById('btnAddRect');
-  const btnAddRoundRect = document.getElementById('btnAddRoundRect');
-  const btnAddCircle = document.getElementById('btnAddCircle');
-  const btnAddTriangle = document.getElementById('btnAddTriangle');
-  const btnAddDiamond = document.getElementById('btnAddDiamond');
-  const btnAddStar = document.getElementById('btnAddStar');
-  const btnAddHeart = document.getElementById('btnAddHeart');
-  const btnAddArrow = document.getElementById('btnAddArrow');
-  const btnAddBubble = document.getElementById('btnAddBubble');
-  const btnAddPill = document.getElementById('btnAddPill');
+
+  // 배경 컨트롤 (투명 배경 & 커스텀 그라데이션)
+  const btnSetTransparentBg = document.getElementById('btnSetTransparentBg');
+  const gradFromPicker = document.getElementById('gradFromPicker');
+  const gradFromPreview = document.getElementById('gradFromPreview');
+  const gradToPicker = document.getElementById('gradToPicker');
+  const gradToPreview = document.getElementById('gradToPreview');
+  const gradAngleSlider = document.getElementById('gradAngleSlider');
+  const gradAngleVal = document.getElementById('gradAngleVal');
+  const gradLivePreviewBar = document.getElementById('gradLivePreviewBar');
+  const btnApplyCustomGrad = document.getElementById('btnApplyCustomGrad');
+
   const sideUploadInput = document.getElementById('sideUploadInput');
   const sidebarDropzone = document.getElementById('sidebarDropzone');
   const uploadedGalleryGrid = document.getElementById('uploadedGalleryGrid');
@@ -351,16 +366,31 @@
   function renderCanvas() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // 1. 배경 채우기
-    if (state.bgType === 'gradient' && state.bgGradient) {
-      const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-      grad.addColorStop(0, state.bgGradient.from);
-      grad.addColorStop(1, state.bgGradient.to);
+    // 1. 배경 채우기 (투명 / 그라데이션 / 단색)
+    if (state.bgType === 'transparent') {
+      if (canvasPaperShadowWrap) canvasPaperShadowWrap.classList.add('is-transparent-bg');
+      // 투명 배경일 때는 채우기 생략 (알파 채널 보존)
+    } else if (state.bgType === 'gradient' && state.bgGradient) {
+      if (canvasPaperShadowWrap) canvasPaperShadowWrap.classList.remove('is-transparent-bg');
+      const angle = state.bgGradient.angle !== undefined ? state.bgGradient.angle : 135;
+      const angleRad = ((angle - 90) * Math.PI) / 180;
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      const r = Math.hypot(canvas.width, canvas.height) / 2;
+      const x0 = cx - Math.cos(angleRad) * r;
+      const y0 = cy - Math.sin(angleRad) * r;
+      const x1 = cx + Math.cos(angleRad) * r;
+      const y1 = cy + Math.sin(angleRad) * r;
+      const grad = ctx.createLinearGradient(x0, y0, x1, y1);
+      grad.addColorStop(0, state.bgGradient.from || '#fbcfe8');
+      grad.addColorStop(1, state.bgGradient.to || '#fed7aa');
       ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
     } else {
-      ctx.fillStyle = state.bgColor;
+      if (canvasPaperShadowWrap) canvasPaperShadowWrap.classList.remove('is-transparent-bg');
+      ctx.fillStyle = state.bgColor || '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // 2. 레이어 렌더링
     state.layers.forEach(layer => {
@@ -384,7 +414,15 @@
         ctx.shadowOffsetY = layer.shadowOffset || 6;
       }
 
-      if (['rect', 'roundRect', 'circle', 'triangle', 'diamond', 'star', 'heart', 'arrow', 'bubble', 'pill'].includes(layer.type)) {
+      const shapeTypes = [
+        'rect', 'roundRect', 'circle', 'ellipse', 'pill',
+        'triangle', 'rightTriangle', 'diamond', 'parallelogram', 'trapezoid', 'pentagon', 'hexagon', 'octagon',
+        'star', 'star4', 'star6', 'star8', 'heart', 'cross', 'lightning', 'shield', 'clover', 'crescent',
+        'arrow', 'arrowLeft', 'arrowUp', 'arrowDown', 'arrowBoth', 'chevron',
+        'bubble', 'bubbleRect', 'bubbleCloud', 'ribbon', 'gearBadge', 'ticket'
+      ];
+
+      if (shapeTypes.includes(layer.type)) {
         renderShapeLayer(ctx, layer);
       } else if (layer.type === 'image' && layer._imgEl && layer._imgEl.complete) {
         ctx.drawImage(layer._imgEl, layer.x, layer.y, layer.width, layer.height);
@@ -449,7 +487,7 @@
     }
   }
 
-  // 10종 벡터 도형 정밀 렌더러 (채우기, 테두리 두께/스타일/색상 완벽 지원)
+  // 35+종 풍부한 벡터 도형 정밀 렌더러 (채우기, 테두리 두께/스타일/색상, 굴곡, 화살표 머리/줄기, 별 파라미터 완벽 지원)
   function renderShapeLayer(c, layer) {
     const lx = layer.x;
     const ly = layer.y;
@@ -457,17 +495,30 @@
     const lh = layer.height;
     const cx = lx + lw / 2;
     const cy = ly + lh / 2;
+    const radius = layer.borderRadius || 0;
 
     c.beginPath();
 
+    // 1) 기본 기하학
     if (layer.type === 'rect') {
-      c.rect(lx, ly, lw, lh);
+      if (radius > 0) drawRoundedRect(c, lx, ly, lw, lh, radius);
+      else c.rect(lx, ly, lw, lh);
     } else if (layer.type === 'roundRect') {
-      drawRoundedRect(c, lx, ly, lw, lh, layer.borderRadius || 18);
-    } else if (layer.type === 'circle') {
+      drawRoundedRect(c, lx, ly, lw, lh, radius > 0 ? radius : 20);
+    } else if (layer.type === 'circle' || layer.type === 'ellipse') {
       c.ellipse(cx, cy, lw / 2, lh / 2, 0, 0, Math.PI * 2);
-    } else if (layer.type === 'triangle') {
+    } else if (layer.type === 'pill') {
+      drawRoundedRect(c, lx, ly, lw, lh, Math.min(lw, lh) / 2);
+    }
+
+    // 2) 다각형
+    else if (layer.type === 'triangle') {
       c.moveTo(cx, ly);
+      c.lineTo(lx + lw, ly + lh);
+      c.lineTo(lx, ly + lh);
+      c.closePath();
+    } else if (layer.type === 'rightTriangle') {
+      c.moveTo(lx, ly);
       c.lineTo(lx + lw, ly + lh);
       c.lineTo(lx, ly + lh);
       c.closePath();
@@ -477,8 +528,39 @@
       c.lineTo(cx, ly + lh);
       c.lineTo(lx, cy);
       c.closePath();
-    } else if (layer.type === 'star') {
-      drawStar(c, cx, cy, 5, lw / 2, lw / 4);
+    } else if (layer.type === 'parallelogram') {
+      const shift = lw * 0.22;
+      c.moveTo(lx + shift, ly);
+      c.lineTo(lx + lw, ly);
+      c.lineTo(lx + lw - shift, ly + lh);
+      c.lineTo(lx, ly + lh);
+      c.closePath();
+    } else if (layer.type === 'trapezoid') {
+      const inset = lw * 0.2;
+      c.moveTo(lx + inset, ly);
+      c.lineTo(lx + lw - inset, ly);
+      c.lineTo(lx + lw, ly + lh);
+      c.lineTo(lx, ly + lh);
+      c.closePath();
+    } else if (layer.type === 'pentagon') {
+      drawRegularPolygon(c, cx, cy, 5, Math.min(lw, lh) / 2, -Math.PI / 2);
+    } else if (layer.type === 'hexagon') {
+      drawRegularPolygon(c, cx, cy, 6, Math.min(lw, lh) / 2, -Math.PI / 2);
+    } else if (layer.type === 'octagon') {
+      drawRegularPolygon(c, cx, cy, 8, Math.min(lw, lh) / 2, Math.PI / 8);
+    }
+
+    // 3) 별 & 기호
+    else if (layer.type === 'star') {
+      const pts = layer.starPoints || 5;
+      const innerRatio = layer.starInnerRatio !== undefined ? layer.starInnerRatio : 0.45;
+      drawStar(c, cx, cy, pts, Math.min(lw, lh) / 2, (Math.min(lw, lh) / 2) * innerRatio);
+    } else if (layer.type === 'star4') {
+      drawStar(c, cx, cy, 4, Math.min(lw, lh) / 2, (Math.min(lw, lh) / 2) * 0.3);
+    } else if (layer.type === 'star6') {
+      drawStar(c, cx, cy, 6, Math.min(lw, lh) / 2, (Math.min(lw, lh) / 2) * 0.55);
+    } else if (layer.type === 'star8') {
+      drawStar(c, cx, cy, 8, Math.min(lw, lh) / 2, (Math.min(lw, lh) / 2) * 0.5);
     } else if (layer.type === 'heart') {
       const topCurveHeight = lh * 0.3;
       c.moveTo(cx, ly + topCurveHeight);
@@ -487,28 +569,172 @@
       c.bezierCurveTo(cx, ly + (lh + topCurveHeight) / 1.4, lx + lw, ly + (lh + topCurveHeight) / 2, lx + lw, ly + topCurveHeight);
       c.bezierCurveTo(lx + lw, ly, cx, ly, cx, ly + topCurveHeight);
       c.closePath();
-    } else if (layer.type === 'arrow') {
-      const arrowHeadW = lw * 0.35;
-      const stemH = lh * 0.4;
-      c.moveTo(lx, cy - stemH / 2);
-      c.lineTo(lx + lw - arrowHeadW, cy - stemH / 2);
-      c.lineTo(lx + lw - arrowHeadW, ly);
+    } else if (layer.type === 'cross') {
+      const t = Math.min(lw, lh) * 0.3;
+      c.moveTo(cx - t / 2, ly);
+      c.lineTo(cx + t / 2, ly);
+      c.lineTo(cx + t / 2, cy - t / 2);
+      c.lineTo(lx + lw, cy - t / 2);
+      c.lineTo(lx + lw, cy + t / 2);
+      c.lineTo(cx + t / 2, cy + t / 2);
+      c.lineTo(cx + t / 2, ly + lh);
+      c.lineTo(cx - t / 2, ly + lh);
+      c.lineTo(cx - t / 2, cy + t / 2);
+      c.lineTo(lx, cy + t / 2);
+      c.lineTo(lx, cy - t / 2);
+      c.lineTo(cx - t / 2, cy - t / 2);
+      c.closePath();
+    } else if (layer.type === 'lightning') {
+      c.moveTo(lx + lw * 0.55, ly);
+      c.lineTo(lx + lw * 0.1, cy + lh * 0.05);
+      c.lineTo(lx + lw * 0.5, cy + lh * 0.05);
+      c.lineTo(lx + lw * 0.45, ly + lh);
+      c.lineTo(lx + lw * 0.9, cy - lh * 0.05);
+      c.lineTo(lx + lw * 0.52, cy - lh * 0.05);
+      c.closePath();
+    } else if (layer.type === 'shield') {
+      c.moveTo(lx, ly);
+      c.lineTo(lx + lw, ly);
       c.lineTo(lx + lw, cy);
-      c.lineTo(lx + lw - arrowHeadW, ly + lh);
-      c.lineTo(lx + lw - arrowHeadW, cy + stemH / 2);
+      c.quadraticCurveTo(lx + lw, ly + lh, cx, ly + lh);
+      c.quadraticCurveTo(lx, ly + lh, lx, cy);
+      c.closePath();
+    } else if (layer.type === 'clover') {
+      const cr = Math.min(lw, lh) * 0.25;
+      c.arc(cx - cr * 0.7, cy - cr * 0.7, cr, 0, Math.PI * 2);
+      c.arc(cx + cr * 0.7, cy - cr * 0.7, cr, 0, Math.PI * 2);
+      c.arc(cx - cr * 0.7, cy + cr * 0.7, cr, 0, Math.PI * 2);
+      c.arc(cx + cr * 0.7, cy + cr * 0.7, cr, 0, Math.PI * 2);
+    } else if (layer.type === 'crescent') {
+      c.arc(cx, cy, Math.min(lw, lh) / 2, 0.4 * Math.PI, 1.6 * Math.PI, false);
+      c.arc(cx + lw * 0.25, cy, Math.min(lw, lh) * 0.45, 1.5 * Math.PI, 0.5 * Math.PI, true);
+      c.closePath();
+    }
+
+    // 4) 화살표 & 포인터 (머리 크기 및 줄기 두께 비율 조절 지원!)
+    else if (layer.type === 'arrow') {
+      const headRatio = layer.arrowHeadRatio !== undefined ? layer.arrowHeadRatio : 0.35;
+      const stemRatio = layer.arrowStemRatio !== undefined ? layer.arrowStemRatio : 0.35;
+      const headW = lw * headRatio;
+      const stemH = lh * stemRatio;
+      c.moveTo(lx, cy - stemH / 2);
+      c.lineTo(lx + lw - headW, cy - stemH / 2);
+      c.lineTo(lx + lw - headW, ly);
+      c.lineTo(lx + lw, cy);
+      c.lineTo(lx + lw - headW, ly + lh);
+      c.lineTo(lx + lw - headW, cy + stemH / 2);
       c.lineTo(lx, cy + stemH / 2);
       c.closePath();
-    } else if (layer.type === 'bubble') {
+    } else if (layer.type === 'arrowLeft') {
+      const headRatio = layer.arrowHeadRatio !== undefined ? layer.arrowHeadRatio : 0.35;
+      const stemRatio = layer.arrowStemRatio !== undefined ? layer.arrowStemRatio : 0.35;
+      const headW = lw * headRatio;
+      const stemH = lh * stemRatio;
+      c.moveTo(lx + lw, cy - stemH / 2);
+      c.lineTo(lx + headW, cy - stemH / 2);
+      c.lineTo(lx + headW, ly);
+      c.lineTo(lx, cy);
+      c.lineTo(lx + headW, ly + lh);
+      c.lineTo(lx + headW, cy + stemH / 2);
+      c.lineTo(lx + lw, cy + stemH / 2);
+      c.closePath();
+    } else if (layer.type === 'arrowUp') {
+      const headRatio = layer.arrowHeadRatio !== undefined ? layer.arrowHeadRatio : 0.35;
+      const stemRatio = layer.arrowStemRatio !== undefined ? layer.arrowStemRatio : 0.35;
+      const headH = lh * headRatio;
+      const stemW = lw * stemRatio;
+      c.moveTo(cx - stemW / 2, ly + lh);
+      c.lineTo(cx - stemW / 2, ly + headH);
+      c.lineTo(lx, ly + headH);
+      c.lineTo(cx, ly);
+      c.lineTo(lx + lw, ly + headH);
+      c.lineTo(cx + stemW / 2, ly + headH);
+      c.lineTo(cx + stemW / 2, ly + lh);
+      c.closePath();
+    } else if (layer.type === 'arrowDown') {
+      const headRatio = layer.arrowHeadRatio !== undefined ? layer.arrowHeadRatio : 0.35;
+      const stemRatio = layer.arrowStemRatio !== undefined ? layer.arrowStemRatio : 0.35;
+      const headH = lh * headRatio;
+      const stemW = lw * stemRatio;
+      c.moveTo(cx - stemW / 2, ly);
+      c.lineTo(cx - stemW / 2, ly + lh - headH);
+      c.lineTo(lx, ly + lh - headH);
+      c.lineTo(cx, ly + lh);
+      c.lineTo(lx + lw, ly + lh - headH);
+      c.lineTo(cx + stemW / 2, ly + lh - headH);
+      c.lineTo(cx + stemW / 2, ly);
+      c.closePath();
+    } else if (layer.type === 'arrowBoth') {
+      const headW = lw * 0.28;
+      const stemH = lh * 0.35;
+      c.moveTo(lx + headW, cy - stemH / 2);
+      c.lineTo(lx + lw - headW, cy - stemH / 2);
+      c.lineTo(lx + lw - headW, ly);
+      c.lineTo(lx + lw, cy);
+      c.lineTo(lx + lw - headW, ly + lh);
+      c.lineTo(lx + lw - headW, cy + stemH / 2);
+      c.lineTo(lx + headW, cy + stemH / 2);
+      c.lineTo(lx + headW, ly + lh);
+      c.lineTo(lx, cy);
+      c.lineTo(lx + headW, ly);
+      c.closePath();
+    } else if (layer.type === 'chevron') {
+      const t = lw * 0.3;
+      c.moveTo(lx, ly);
+      c.lineTo(lx + lw - t, cy);
+      c.lineTo(lx, ly + lh);
+      c.lineTo(lx + t, ly + lh);
+      c.lineTo(lx + lw, cy);
+      c.lineTo(lx + t, ly);
+      c.closePath();
+    }
+
+    // 5) 말풍선 & 배지
+    else if (layer.type === 'bubble') {
       const tailW = lw * 0.18;
       const tailH = lh * 0.22;
       const bodyH = lh - tailH;
-      drawRoundedRect(c, lx, ly, lw, bodyH, layer.borderRadius || 12);
+      drawRoundedRect(c, lx, ly, lw, bodyH, radius > 0 ? radius : 14);
       c.moveTo(lx + lw * 0.25, ly + bodyH);
       c.lineTo(lx + lw * 0.25, ly + lh);
       c.lineTo(lx + lw * 0.25 + tailW, ly + bodyH);
       c.closePath();
-    } else if (layer.type === 'pill') {
-      drawRoundedRect(c, lx, ly, lw, lh, Math.min(lw, lh) / 2);
+    } else if (layer.type === 'bubbleRect') {
+      const tailW = lw * 0.18;
+      const tailH = lh * 0.22;
+      const bodyH = lh - tailH;
+      if (radius > 0) drawRoundedRect(c, lx, ly, lw, bodyH, radius);
+      else c.rect(lx, ly, lw, bodyH);
+      c.moveTo(lx + lw * 0.2, ly + bodyH);
+      c.lineTo(lx + lw * 0.1, ly + lh);
+      c.lineTo(lx + lw * 0.38, ly + bodyH);
+      c.closePath();
+    } else if (layer.type === 'bubbleCloud') {
+      const cr = Math.min(lw, lh) * 0.25;
+      c.arc(cx - cr, cy, cr * 0.8, 0, Math.PI * 2);
+      c.arc(cx, cy - cr * 0.6, cr, 0, Math.PI * 2);
+      c.arc(cx + cr, cy, cr * 0.8, 0, Math.PI * 2);
+      c.arc(cx, cy + cr * 0.5, cr * 0.9, 0, Math.PI * 2);
+    } else if (layer.type === 'ribbon') {
+      const cut = lw * 0.15;
+      c.moveTo(lx, ly);
+      c.lineTo(lx + lw, ly);
+      c.lineTo(lx + lw - cut, cy);
+      c.lineTo(lx + lw, ly + lh);
+      c.lineTo(lx, ly + lh);
+      c.lineTo(lx + cut, cy);
+      c.closePath();
+    } else if (layer.type === 'gearBadge') {
+      drawStar(c, cx, cy, 12, Math.min(lw, lh) / 2, (Math.min(lw, lh) / 2) * 0.82);
+    } else if (layer.type === 'ticket') {
+      const rH = lh * 0.2;
+      c.moveTo(lx + 8, ly);
+      c.lineTo(lx + lw - 8, ly);
+      c.arc(lx + lw, cy, rH, 1.5 * Math.PI, 0.5 * Math.PI, true);
+      c.lineTo(lx + lw - 8, ly + lh);
+      c.lineTo(lx + 8, ly + lh);
+      c.arc(lx, cy, rH, 0.5 * Math.PI, 1.5 * Math.PI, true);
+      c.closePath();
     }
 
     // 채우기
@@ -618,6 +844,19 @@
       rot += step;
     }
     c.lineTo(cx, cy - outerRadius);
+    c.closePath();
+  }
+
+  function drawRegularPolygon(c, cx, cy, sides, radius, startAngle) {
+    const angle = (Math.PI * 2) / sides;
+    c.beginPath();
+    for (let i = 0; i < sides; i++) {
+      const a = startAngle + i * angle;
+      const x = cx + radius * Math.cos(a);
+      const y = cy + radius * Math.sin(a);
+      if (i === 0) c.moveTo(x, y);
+      else c.lineTo(x, y);
+    }
     c.closePath();
   }
 
@@ -1004,6 +1243,26 @@
     }
 
     if (hitLayer) {
+      // 🌟 Alt + 드래그 즉시 복제 (포토샵 스타일!)
+      if (e.altKey) {
+        const clone = JSON.parse(JSON.stringify(hitLayer));
+        clone.id = 'layer_' + Date.now();
+        clone.name = `${hitLayer.name} 복사`;
+        if (hitLayer.type === 'image' && hitLayer._imgEl) clone._imgEl = hitLayer._imgEl;
+        state.layers.push(clone);
+        selectLayer(clone.id);
+        state.dragState = {
+          isDragging: true,
+          mode: 'move',
+          startX: coords.x,
+          startY: coords.y,
+          initialLayer: { ...clone }
+        };
+        pushHistory();
+        showToast('Alt+드래그: 오브제가 복제되었습니다.');
+        return;
+      }
+
       selectLayer(hitLayer.id);
       state.dragState = {
         isDragging: true,
@@ -1111,7 +1370,7 @@
       selected.y = Math.round(ty);
     }
 
-    // C. 8방향 리사이즈 정밀 연산
+    // C. 8방향 리사이즈 정밀 연산 (텍스트 레이어 모서리 드래그 시 폰트 크기 비례 확대/축소!)
     else if (state.dragState.mode === 'resize') {
       const h = state.dragState.handle;
       const minSize = 15;
@@ -1142,6 +1401,17 @@
         selected.width = Math.max(minSize, Math.round(init.width - dx));
       } else if (h === 'mr') {
         selected.width = Math.max(minSize, Math.round(init.width + dx));
+      }
+
+      // 🌟 1. 텍스트 박스 모서리 리사이즈 시 글자 크기(fontSize) 비례 연동!
+      if (selected.type === 'text' && ['tl', 'tr', 'br', 'bl'].includes(h)) {
+        const scale = selected.width / Math.max(10, init.width);
+        selected.fontSize = Math.max(10, Math.min(350, Math.round(init.fontSize * scale)));
+        if (ctxFontSizeInput) ctxFontSizeInput.value = selected.fontSize;
+
+        // 글자 크기에 맞춰 줄 높이/박스 높이 자동 보정
+        const lines = String(selected.text).split('\n');
+        selected.height = Math.round(lines.length * (selected.fontSize * (selected.lineHeight || 1.2)) + 14);
       }
     }
 
@@ -1234,7 +1504,13 @@
       bgBoxRadiusSlider.value = selected.bgBoxRadius || 8;
       bgBoxRadiusVal.textContent = `${selected.bgBoxRadius || 8}px`;
 
-    } else if (['rect', 'roundRect', 'circle', 'triangle', 'diamond', 'star', 'heart', 'arrow', 'bubble', 'pill'].includes(selected.type)) {
+    } else if ([
+      'rect', 'roundRect', 'circle', 'ellipse', 'pill',
+      'triangle', 'rightTriangle', 'diamond', 'parallelogram', 'trapezoid', 'pentagon', 'hexagon', 'octagon',
+      'star', 'star4', 'star6', 'star8', 'heart', 'cross', 'lightning', 'shield', 'clover', 'crescent',
+      'arrow', 'arrowLeft', 'arrowUp', 'arrowDown', 'arrowBoth', 'chevron',
+      'bubble', 'bubbleRect', 'bubbleCloud', 'ribbon', 'gearBadge', 'ticket'
+    ].includes(selected.type)) {
       ctxTextGroup.style.display = 'none';
       ctxShapeGroup.style.display = 'flex';
       ctxFillColorPicker.value = selected.fillColor || '#7c3aed';
@@ -1246,17 +1522,42 @@
       }
       if (ctxStrokeWidthInput) ctxStrokeWidthInput.value = selected.strokeWidth || 0;
       if (ctxStrokeStyleSelect) ctxStrokeStyleSelect.value = selected.strokeStyle || 'solid';
-      ctxRadiusInput.value = selected.borderRadius || 0;
+
+      // 굴곡(곡률) 슬라이더 동기화
+      if (ctxRadiusSlider) {
+        ctxRadiusSlider.value = selected.borderRadius || 0;
+        if (ctxRadiusVal) ctxRadiusVal.textContent = String(selected.borderRadius || 0);
+      }
+
+      // 화살표 전용 컨트롤 동기화
+      if (ctxArrowControls) {
+        const isArrow = ['arrow', 'arrowLeft', 'arrowUp', 'arrowDown', 'arrowBoth'].includes(selected.type);
+        ctxArrowControls.style.display = isArrow ? 'flex' : 'none';
+        if (isArrow) {
+          if (ctxArrowHeadSlider) ctxArrowHeadSlider.value = Math.round((selected.arrowHeadRatio !== undefined ? selected.arrowHeadRatio : 0.35) * 100);
+          if (ctxArrowStemSlider) ctxArrowStemSlider.value = Math.round((selected.arrowStemRatio !== undefined ? selected.arrowStemRatio : 0.35) * 100);
+        }
+      }
+
+      // 별 전용 컨트롤 동기화
+      if (ctxStarControls) {
+        const isStar = ['star', 'star4', 'star6', 'star8'].includes(selected.type);
+        ctxStarControls.style.display = isStar ? 'flex' : 'none';
+        if (isStar) {
+          if (ctxStarPointsSelect) ctxStarPointsSelect.value = String(selected.starPoints || 5);
+          if (ctxStarRatioSlider) ctxStarRatioSlider.value = Math.round((selected.starInnerRatio !== undefined ? selected.starInnerRatio : 0.45) * 100);
+        }
+      }
     } else {
       ctxTextGroup.style.display = 'none';
       ctxShapeGroup.style.display = 'none';
     }
   }
 
-  // 도형 서식 바인딩 (채우기, 테두리 색상/두께/스타일, 곡률)
+  // 도형 서식 바인딩 (채우기, 테두리 색상/두께/스타일, 곡률, 화살표, 별 조절)
   ctxFillColorPicker.addEventListener('input', () => {
     const s = getSelectedLayer();
-    if (s && ['rect', 'roundRect', 'circle', 'triangle', 'diamond', 'star', 'heart', 'arrow', 'bubble', 'pill'].includes(s.type)) {
+    if (s) {
       s.fillColor = ctxFillColorPicker.value;
       ctxFillColorPreview.style.backgroundColor = s.fillColor;
       renderCanvas();
@@ -1322,14 +1623,64 @@
     });
   }
 
-  ctxRadiusInput.addEventListener('input', () => {
-    const s = getSelectedLayer();
-    if (s) {
-      s.borderRadius = Math.max(0, parseInt(ctxRadiusInput.value, 10) || 0);
-      renderCanvas();
-    }
-  });
-  ctxRadiusInput.addEventListener('change', pushHistory);
+  // 🌟 7. 모서리 굴곡(Radius) 조절 연동
+  if (ctxRadiusSlider) {
+    ctxRadiusSlider.addEventListener('input', () => {
+      const s = getSelectedLayer();
+      if (s) {
+        s.borderRadius = Math.max(0, parseInt(ctxRadiusSlider.value, 10) || 0);
+        if (ctxRadiusVal) ctxRadiusVal.textContent = String(s.borderRadius);
+        renderCanvas();
+      }
+    });
+    ctxRadiusSlider.addEventListener('change', pushHistory);
+  }
+
+  // 🌟 화살표 머리/줄기 두께 조절 연동
+  if (ctxArrowHeadSlider) {
+    ctxArrowHeadSlider.addEventListener('input', () => {
+      const s = getSelectedLayer();
+      if (s) {
+        s.arrowHeadRatio = parseInt(ctxArrowHeadSlider.value, 10) / 100;
+        renderCanvas();
+      }
+    });
+    ctxArrowHeadSlider.addEventListener('change', pushHistory);
+  }
+
+  if (ctxArrowStemSlider) {
+    ctxArrowStemSlider.addEventListener('input', () => {
+      const s = getSelectedLayer();
+      if (s) {
+        s.arrowStemRatio = parseInt(ctxArrowStemSlider.value, 10) / 100;
+        renderCanvas();
+      }
+    });
+    ctxArrowStemSlider.addEventListener('change', pushHistory);
+  }
+
+  // 🌟 별 꼭지점 수 및 내부 비율 조절 연동
+  if (ctxStarPointsSelect) {
+    ctxStarPointsSelect.addEventListener('change', () => {
+      const s = getSelectedLayer();
+      if (s) {
+        s.starPoints = parseInt(ctxStarPointsSelect.value, 10) || 5;
+        renderCanvas();
+        pushHistory();
+      }
+    });
+  }
+
+  if (ctxStarRatioSlider) {
+    ctxStarRatioSlider.addEventListener('input', () => {
+      const s = getSelectedLayer();
+      if (s) {
+        s.starInnerRatio = parseInt(ctxStarRatioSlider.value, 10) / 100;
+        renderCanvas();
+      }
+    });
+    ctxStarRatioSlider.addEventListener('change', pushHistory);
+  }
 
   // 폰트 변경
   ctxFontSelect.addEventListener('change', () => {
@@ -1637,6 +1988,8 @@
     }
   });
 
+  let draggedLayerId = null;
+
   function renderLayerList() {
     layersScrollList.innerHTML = '';
     layerCountBadge.textContent = `${state.layers.length}개`;
@@ -1645,9 +1998,21 @@
       const layer = state.layers[i];
       const card = document.createElement('div');
       card.className = `layer-card-item ${layer.id === state.selectedId ? 'active' : ''}`;
+      card.setAttribute('draggable', 'true');
+      card.setAttribute('data-layer-id', layer.id);
 
-      const iconMap = { text: '🔤', image: '🖼️', rect: '⬛', circle: '⚪', pill: '💊', star: '⭐', sticker: '✨' };
+      const iconMap = {
+        text: '🔤', image: '🖼️', sticker: '✨',
+        rect: '⬛', roundRect: '▢', circle: '⚪', ellipse: '⬭', pill: '💊',
+        triangle: '▲', rightTriangle: '⊿', diamond: '◆', parallelogram: '▱', trapezoid: '⏢',
+        pentagon: '⬟', hexagon: '⬡', octagon: '🛑',
+        star: '⭐', star4: '✦', star6: '✡', star8: '✴', heart: '❤️', cross: '➕', lightning: '⚡', shield: '🛡️', clover: '🍀', crescent: '🌙',
+        arrow: '➔', arrowLeft: '⬅', arrowUp: '⬆', arrowDown: '⬇', arrowBoth: '⬌', chevron: '❯',
+        bubble: '💬', bubbleRect: '🗨️', bubbleCloud: '💭', ribbon: '🎗️', gearBadge: '⚙️', ticket: '🎟️'
+      };
+
       card.innerHTML = `
+        <span class="layer-drag-handle" title="드래그하여 순서 변경">⋮⋮</span>
         <span class="layer-item-icon">${iconMap[layer.type] || '📄'}</span>
         <span class="layer-item-name">${layer.name}</span>
         <div class="layer-item-actions">
@@ -1660,6 +2025,7 @@
         if (e.target.closest('.btn-mini-layer')) return;
         selectLayer(layer.id);
       });
+
       card.querySelector('.btn-vis').addEventListener('click', (e) => {
         e.stopPropagation();
         layer.visible = !layer.visible;
@@ -1667,6 +2033,7 @@
         renderLayerList();
         pushHistory();
       });
+
       card.querySelector('.btn-del').addEventListener('click', (e) => {
         e.stopPropagation();
         state.layers = state.layers.filter(l => l.id !== layer.id);
@@ -1674,6 +2041,63 @@
         renderCanvas();
         renderLayerList();
         pushHistory();
+      });
+
+      // 🌟 2. 레이어 드래그 앤 드롭 순서 변경 (HTML5 DnD)
+      card.addEventListener('dragstart', (e) => {
+        draggedLayerId = layer.id;
+        card.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', layer.id);
+      });
+
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+        document.querySelectorAll('.layer-card-item').forEach(c => c.classList.remove('drop-above', 'drop-below'));
+        draggedLayerId = null;
+      });
+
+      card.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        const rect = card.getBoundingClientRect();
+        const isTop = (e.clientY - rect.top) < (rect.height / 2);
+        card.classList.toggle('drop-above', isTop);
+        card.classList.toggle('drop-below', !isTop);
+      });
+
+      card.addEventListener('dragleave', () => {
+        card.classList.remove('drop-above', 'drop-below');
+      });
+
+      card.addEventListener('drop', (e) => {
+        e.preventDefault();
+        card.classList.remove('drop-above', 'drop-below');
+        const sourceId = draggedLayerId || e.dataTransfer.getData('text/plain');
+        const targetId = layer.id;
+        if (!sourceId || sourceId === targetId) return;
+
+        const fromIdx = state.layers.findIndex(l => l.id === sourceId);
+        if (fromIdx === -1) return;
+        const [movedLayer] = state.layers.splice(fromIdx, 1);
+
+        let toIdx = state.layers.findIndex(l => l.id === targetId);
+        if (toIdx === -1) return;
+
+        const rect = card.getBoundingClientRect();
+        const isTop = (e.clientY - rect.top) < (rect.height / 2);
+        // layersScrollList는 역순(배열의 끝이 최상단 카드)으로 렌더링되므로:
+        // 카드의 위쪽(top)에 떨어지면 배열에서는 targetId보다 뒤쪽(더 높은 인덱스)에 들어가야 함
+        if (isTop) {
+          state.layers.splice(toIdx + 1, 0, movedLayer);
+        } else {
+          state.layers.splice(toIdx, 0, movedLayer);
+        }
+
+        renderCanvas();
+        renderLayerList();
+        pushHistory();
+        showToast('레이어 순서가 변경되었습니다.');
       });
 
       layersScrollList.appendChild(card);
@@ -1782,31 +2206,81 @@
     });
   });
 
-  if (btnAddRect) btnAddRect.addEventListener('click', () => addShape('rect', 360, 240, '#7c3aed', '직사각형'));
-  if (btnAddRoundRect) btnAddRoundRect.addEventListener('click', () => addShape('roundRect', 360, 240, '#6366f1', '둥근 사각'));
-  if (btnAddCircle) btnAddCircle.addEventListener('click', () => addShape('circle', 240, 240, '#ef4444', '원형 / 타원'));
-  if (btnAddTriangle) btnAddTriangle.addEventListener('click', () => addShape('triangle', 260, 240, '#10b981', '삼각형'));
-  if (btnAddDiamond) btnAddDiamond.addEventListener('click', () => addShape('diamond', 240, 240, '#06b6d4', '마름모'));
-  if (btnAddStar) btnAddStar.addEventListener('click', () => addShape('star', 220, 220, '#f59e0b', '5각 별'));
-  if (btnAddHeart) btnAddHeart.addEventListener('click', () => addShape('heart', 240, 220, '#ec4899', '하트'));
-  if (btnAddArrow) btnAddArrow.addEventListener('click', () => addShape('arrow', 320, 160, '#3b82f6', '화살표'));
-  if (btnAddBubble) btnAddBubble.addEventListener('click', () => addShape('bubble', 300, 200, '#8b5cf6', '말풍선'));
-  if (btnAddPill) btnAddPill.addEventListener('click', () => addShape('pill', 300, 70, '#3b82f6', '알약 배지'));
+  // 35+종 벡터 도형 설정 맵
+  const SHAPE_CONFIGS = {
+    // 1) 기본 기하학
+    rect: { w: 360, h: 240, color: '#7c3aed', name: '직사각형', radius: 0 },
+    roundRect: { w: 360, h: 240, color: '#6366f1', name: '둥근 사각', radius: 20 },
+    circle: { w: 240, h: 240, color: '#ef4444', name: '원형', radius: 0 },
+    ellipse: { w: 320, h: 200, color: '#ec4899', name: '타원', radius: 0 },
+    pill: { w: 300, h: 70, color: '#3b82f6', name: '알약 배지', radius: 35 },
 
-  function addShape(type, w, h, color, name) {
+    // 2) 다각형
+    triangle: { w: 260, h: 240, color: '#10b981', name: '정삼각형' },
+    rightTriangle: { w: 260, h: 240, color: '#059669', name: '직각삼각형' },
+    diamond: { w: 240, h: 240, color: '#06b6d4', name: '마름모' },
+    parallelogram: { w: 320, h: 200, color: '#0284c7', name: '평행사변형' },
+    trapezoid: { w: 320, h: 200, color: '#2563eb', name: '사다리꼴' },
+    pentagon: { w: 240, h: 240, color: '#8b5cf6', name: '오각형' },
+    hexagon: { w: 250, h: 240, color: '#a855f7', name: '육각형' },
+    octagon: { w: 240, h: 240, color: '#d946ef', name: '팔각형' },
+
+    // 3) 별 & 기호
+    star: { w: 220, h: 220, color: '#f59e0b', name: '5각 별', starPoints: 5, starInnerRatio: 0.45 },
+    star4: { w: 220, h: 220, color: '#fbbf24', name: '4각 별', starPoints: 4, starInnerRatio: 0.3 },
+    star6: { w: 220, h: 220, color: '#f59e0b', name: '6각 별', starPoints: 6, starInnerRatio: 0.55 },
+    star8: { w: 220, h: 220, color: '#d97706', name: '8각 별', starPoints: 8, starInnerRatio: 0.5 },
+    heart: { w: 240, h: 220, color: '#ec4899', name: '하트' },
+    cross: { w: 220, h: 220, color: '#ef4444', name: '십자가' },
+    lightning: { w: 180, h: 260, color: '#eab308', name: '번개' },
+    shield: { w: 220, h: 260, color: '#4f46e5', name: '방패' },
+    clover: { w: 240, h: 240, color: '#22c55e', name: '클로버' },
+    crescent: { w: 200, h: 220, color: '#eab308', name: '초승달' },
+
+    // 4) 화살표 & 포인터
+    arrow: { w: 320, h: 160, color: '#3b82f6', name: '우측 화살표', arrowHeadRatio: 0.35, arrowStemRatio: 0.35 },
+    arrowLeft: { w: 320, h: 160, color: '#3b82f6', name: '좌측 화살표', arrowHeadRatio: 0.35, arrowStemRatio: 0.35 },
+    arrowUp: { w: 160, h: 320, color: '#2563eb', name: '상향 화살표', arrowHeadRatio: 0.35, arrowStemRatio: 0.35 },
+    arrowDown: { w: 160, h: 320, color: '#2563eb', name: '하향 화살표', arrowHeadRatio: 0.35, arrowStemRatio: 0.35 },
+    arrowBoth: { w: 340, h: 160, color: '#1d4ed8', name: '양방향 화살표' },
+    chevron: { w: 220, h: 220, color: '#3b82f6', name: '셰브론' },
+
+    // 5) 말풍선 & 배지
+    bubble: { w: 300, h: 200, color: '#8b5cf6', name: '둥근 말풍선', radius: 14 },
+    bubbleRect: { w: 300, h: 200, color: '#7c3aed', name: '사각 말풍선', radius: 8 },
+    bubbleCloud: { w: 320, h: 220, color: '#6366f1', name: '생각 구름' },
+    ribbon: { w: 260, h: 280, color: '#f43f5e', name: '리본 배지' },
+    gearBadge: { w: 240, h: 240, color: '#f59e0b', name: '톱니 배지' },
+    ticket: { w: 320, h: 160, color: '#06b6d4', name: '티켓 쿠폰' }
+  };
+
+  // 35+종 모든 도형 버튼 일괄 바인딩
+  document.querySelectorAll('.shape-pick-btn[data-shape-type]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const type = btn.getAttribute('data-shape-type');
+      addShape(type);
+    });
+  });
+
+  function addShape(type) {
+    const cfg = SHAPE_CONFIGS[type] || { w: 240, h: 240, color: '#7c3aed', name: '도형' };
     const newL = {
       id: 'layer_' + Date.now(),
       type: type,
-      name: name,
-      fillColor: color,
+      name: cfg.name,
+      fillColor: cfg.color,
       strokeColor: '#000000',
       strokeWidth: 0,
       strokeStyle: 'solid',
-      borderRadius: type === 'roundRect' ? 18 : type === 'pill' ? Math.min(w, h) / 2 : 0,
-      x: Math.round((state.canvasWidth - w) / 2),
-      y: Math.round((state.canvasHeight - h) / 2),
-      width: w,
-      height: h,
+      borderRadius: cfg.radius !== undefined ? cfg.radius : 0,
+      arrowHeadRatio: cfg.arrowHeadRatio !== undefined ? cfg.arrowHeadRatio : 0.35,
+      arrowStemRatio: cfg.arrowStemRatio !== undefined ? cfg.arrowStemRatio : 0.35,
+      starPoints: cfg.starPoints !== undefined ? cfg.starPoints : 5,
+      starInnerRatio: cfg.starInnerRatio !== undefined ? cfg.starInnerRatio : 0.45,
+      x: Math.round((state.canvasWidth - cfg.w) / 2),
+      y: Math.round((state.canvasHeight - cfg.h) / 2),
+      width: cfg.w,
+      height: cfg.h,
       rotation: 0,
       opacity: 1,
       visible: true,
@@ -1819,7 +2293,147 @@
     state.layers.push(newL);
     selectLayer(newL.id);
     pushHistory();
-    showToast(`${name}이(가) 추가되었습니다.`);
+    showToast(`${cfg.name}이(가) 추가되었습니다.`);
+  }
+
+  // 🌟 6. 텍스트 패널: [추가/편집] vs [✨ 텍스트 효과] 서브 탭 전환
+  if (tabTextAdd && tabTextEffects) {
+    tabTextAdd.addEventListener('click', () => {
+      tabTextAdd.classList.add('active');
+      tabTextEffects.classList.remove('active');
+      if (subviewTextAdd) subviewTextAdd.style.display = 'block';
+      if (subviewTextEffects) subviewTextEffects.style.display = 'none';
+    });
+    tabTextEffects.addEventListener('click', () => {
+      tabTextEffects.classList.add('active');
+      tabTextAdd.classList.remove('active');
+      if (subviewTextAdd) subviewTextAdd.style.display = 'none';
+      if (subviewTextEffects) subviewTextEffects.style.display = 'block';
+    });
+  }
+
+  // 🌟 6. Adobe Express 스타일 텍스트 그림자 효과 프리셋 9종 바인딩
+  document.querySelectorAll('.effect-preset-card[data-shadow-preset]').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.effect-preset-card[data-shadow-preset]').forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+      const preset = card.getAttribute('data-shadow-preset');
+      let s = getSelectedLayer();
+      if (!s || s.type !== 'text') {
+        addNewTextLayer('디자인 텍스트', 64, "'Black Han Sans', sans-serif", '#0f172a', true);
+        s = getSelectedLayer();
+      }
+
+      if (preset === 'none') {
+        s.hasShadow = false;
+      } else if (preset === 'classic') {
+        s.hasShadow = true; s.shadowColor = 'rgba(0,0,0,0.45)'; s.shadowBlur = 0; s.shadowOffset = 4;
+      } else if (preset === 'smooth') {
+        s.hasShadow = true; s.shadowColor = 'rgba(0,0,0,0.4)'; s.shadowBlur = 12; s.shadowOffset = 6;
+      } else if (preset === 'lift') {
+        s.hasShadow = true; s.shadowColor = 'rgba(0,0,0,0.5)'; s.shadowBlur = 20; s.shadowOffset = 12;
+      } else if (preset === 'glow') {
+        s.hasShadow = true; s.shadowColor = '#7c3aed'; s.shadowBlur = 16; s.shadowOffset = 0;
+      } else if (preset === 'halo') {
+        s.hasShadow = true; s.shadowColor = '#f59e0b'; s.shadowBlur = 18; s.shadowOffset = 0;
+      } else if (preset === 'strong') {
+        s.hasShadow = true; s.shadowColor = '#000000'; s.shadowBlur = 0; s.shadowOffset = 6;
+      } else if (preset === 'haze') {
+        s.hasShadow = true; s.shadowColor = 'rgba(15, 23, 42, 0.7)'; s.shadowBlur = 25; s.shadowOffset = 0;
+      } else if (preset === 'neon') {
+        s.hasShadow = true; s.shadowColor = '#ec4899'; s.shadowBlur = 20; s.shadowOffset = 0;
+      }
+
+      syncContextToolbar();
+      renderCanvas();
+      pushHistory();
+      showToast('그림자 프리셋이 적용되었습니다.');
+    });
+  });
+
+  // 🌟 6. Adobe Express 스타일 모양 & 배경 라벨 프리셋 6종 바인딩
+  document.querySelectorAll('.effect-preset-card[data-shape-preset]').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.effect-preset-card[data-shape-preset]').forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+      const preset = card.getAttribute('data-shape-preset');
+      let s = getSelectedLayer();
+      if (!s || s.type !== 'text') {
+        addNewTextLayer('디자인 텍스트', 64, "'Black Han Sans', sans-serif", '#0f172a', true);
+        s = getSelectedLayer();
+      }
+
+      if (preset === 'none') {
+        s.hasBgBox = false; s.hasOutline = false;
+      } else if (preset === 'highlight') {
+        s.hasBgBox = true; s.bgBoxColor = '#fef08a'; s.bgBoxRadius = 4;
+      } else if (preset === 'darkblock') {
+        s.hasBgBox = true; s.bgBoxColor = '#0f172a'; s.bgBoxRadius = 6; s.textColor = '#ffffff';
+      } else if (preset === 'purplepill') {
+        s.hasBgBox = true; s.bgBoxColor = '#7c3aed'; s.bgBoxRadius = 30; s.textColor = '#ffffff';
+      } else if (preset === 'outline-thick') {
+        s.hasOutline = true; s.outlineColor = '#000000'; s.outlineWidth = 8;
+      } else if (preset === 'outline-neon') {
+        s.hasOutline = true; s.outlineColor = '#06b6d4'; s.outlineWidth = 6;
+      }
+
+      syncContextToolbar();
+      renderCanvas();
+      pushHistory();
+      showToast('모양 및 외곽선 프리셋이 적용되었습니다.');
+    });
+  });
+
+  // 🌟 3. 투명 배경 토글 (PNG 저장 시 투명화)
+  if (btnSetTransparentBg) {
+    btnSetTransparentBg.addEventListener('click', () => {
+      if (state.bgType === 'transparent') {
+        state.bgType = 'color';
+        state.bgColor = '#ffffff';
+        btnSetTransparentBg.classList.remove('active');
+        if (canvasPaperShadowWrap) canvasPaperShadowWrap.classList.remove('is-transparent-bg');
+        showToast('배경이 흰색으로 복원되었습니다.');
+      } else {
+        state.bgType = 'transparent';
+        btnSetTransparentBg.classList.add('active');
+        if (canvasPaperShadowWrap) canvasPaperShadowWrap.classList.add('is-transparent-bg');
+        showToast('🏁 투명 배경 활성화 (PNG 저장 시 투명화)');
+      }
+      renderCanvas();
+      pushHistory();
+    });
+  }
+
+  // 🌟 3. 직접 그라데이션 만들기 (각도 & 색상 2개)
+  function updateCustomGradLivePreview() {
+    if (!gradFromPicker || !gradToPicker || !gradAngleSlider) return;
+    const from = gradFromPicker.value;
+    const to = gradToPicker.value;
+    const angle = gradAngleSlider.value;
+    if (gradFromPreview) gradFromPreview.style.backgroundColor = from;
+    if (gradToPreview) gradToPreview.style.backgroundColor = to;
+    if (gradAngleVal) gradAngleVal.textContent = `${angle}°`;
+    if (gradLivePreviewBar) gradLivePreviewBar.style.background = `linear-gradient(${angle}deg, ${from}, ${to})`;
+  }
+
+  if (gradFromPicker) gradFromPicker.addEventListener('input', updateCustomGradLivePreview);
+  if (gradToPicker) gradToPicker.addEventListener('input', updateCustomGradLivePreview);
+  if (gradAngleSlider) gradAngleSlider.addEventListener('input', updateCustomGradLivePreview);
+
+  if (btnApplyCustomGrad) {
+    btnApplyCustomGrad.addEventListener('click', () => {
+      state.bgType = 'gradient';
+      state.bgGradient = {
+        from: gradFromPicker.value,
+        to: gradToPicker.value,
+        angle: parseInt(gradAngleSlider.value, 10)
+      };
+      if (btnSetTransparentBg) btnSetTransparentBg.classList.remove('active');
+      if (canvasPaperShadowWrap) canvasPaperShadowWrap.classList.remove('is-transparent-bg');
+      renderCanvas();
+      pushHistory();
+      showToast('직접 만든 그라데이션 배경이 적용되었습니다!');
+    });
   }
 
   // 스티커
@@ -2054,7 +2668,7 @@
   // ==========================================================================
   window.addEventListener('keydown', (e) => {
     // 텍스트/입력창 포커스 중일 때
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
       if (e.key === 'Escape') {
         closeCustomCanvasModal();
         closeConfirmModal(false);
@@ -2063,11 +2677,15 @@
       return;
     }
 
-    // 스페이스바: 캔버스 팬 모드 준비
-    if (e.code === 'Space' && !state.isSpaceDown) {
+    // 🌟 5. 스페이스바 브라우저 창 스크롤(PageDown) 완벽 차단 및 손바닥 팬 모드 준비
+    if (e.code === 'Space' || e.key === ' ') {
       e.preventDefault();
-      state.isSpaceDown = true;
-      document.body.classList.add('space-pressed');
+      e.stopPropagation();
+      if (!state.isSpaceDown) {
+        state.isSpaceDown = true;
+        document.body.classList.add('space-pressed');
+        canvas.style.cursor = 'grab';
+      }
       return;
     }
 
@@ -2164,7 +2782,7 @@
   });
 
   window.addEventListener('keyup', (e) => {
-    if (e.code === 'Space') {
+    if (e.code === 'Space' || e.key === ' ') {
       state.isSpaceDown = false;
       document.body.classList.remove('space-pressed');
       if (!state.isPanning) {
@@ -2359,67 +2977,75 @@
       showToast(`${scale}X 고해상도 이미지 렌더링 중...`);
 
       setTimeout(() => {
-        let exportCanvas = canvas;
-        if (scale > 1) {
-          exportCanvas = document.createElement('canvas');
-          exportCanvas.width = canvas.width * scale;
-          exportCanvas.height = canvas.height * scale;
-          const eCtx = exportCanvas.getContext('2d');
-          eCtx.scale(scale, scale);
+        const exportCanvas = document.createElement('canvas');
+        exportCanvas.width = canvas.width * scale;
+        exportCanvas.height = canvas.height * scale;
+        const eCtx = exportCanvas.getContext('2d');
+        eCtx.scale(scale, scale);
 
-          if (state.bgType === 'gradient' && state.bgGradient) {
-            const grad = eCtx.createLinearGradient(0, 0, canvas.width, canvas.height);
-            grad.addColorStop(0, state.bgGradient.from);
-            grad.addColorStop(1, state.bgGradient.to);
-            eCtx.fillStyle = grad;
-          } else {
-            eCtx.fillStyle = state.bgColor;
-          }
+        // 🌟 3. 배경 처리 (투명 PNG 선택 시 완전 투명 알파 채널 유지)
+        if (state.bgType === 'transparent' && format === 'png') {
+          eCtx.clearRect(0, 0, canvas.width, canvas.height);
+        } else if (state.bgType === 'gradient' && state.bgGradient) {
+          const angle = state.bgGradient.angle !== undefined ? state.bgGradient.angle : 135;
+          const angleRad = ((angle - 90) * Math.PI) / 180;
+          const cx = canvas.width / 2;
+          const cy = canvas.height / 2;
+          const r = Math.hypot(canvas.width, canvas.height) / 2;
+          const x0 = cx - Math.cos(angleRad) * r;
+          const y0 = cy - Math.sin(angleRad) * r;
+          const x1 = cx + Math.cos(angleRad) * r;
+          const y1 = cy + Math.sin(angleRad) * r;
+          const grad = eCtx.createLinearGradient(x0, y0, x1, y1);
+          grad.addColorStop(0, state.bgGradient.from || '#fbcfe8');
+          grad.addColorStop(1, state.bgGradient.to || '#fed7aa');
+          eCtx.fillStyle = grad;
           eCtx.fillRect(0, 0, canvas.width, canvas.height);
-
-          state.layers.forEach(layer => {
-            if (!layer.visible) return;
-            eCtx.save();
-            eCtx.globalAlpha = layer.opacity;
-            const cx = layer.x + layer.width / 2;
-            const cy = layer.y + layer.height / 2;
-            eCtx.translate(cx, cy);
-            eCtx.rotate((layer.rotation * Math.PI) / 180);
-            eCtx.translate(-cx, -cy);
-
-            if (layer.hasShadow) {
-              eCtx.shadowColor = layer.shadowColor || 'rgba(0,0,0,0.45)';
-              eCtx.shadowBlur = layer.shadowBlur || 8;
-              eCtx.shadowOffsetX = layer.shadowOffset || 6;
-              eCtx.shadowOffsetY = layer.shadowOffset || 6;
-            }
-
-            if (layer.type === 'rect') {
-              eCtx.fillStyle = layer.fillColor || '#7c3aed';
-              if (layer.borderRadius > 0) drawRoundedRect(eCtx, layer.x, layer.y, layer.width, layer.height, layer.borderRadius);
-              else eCtx.fillRect(layer.x, layer.y, layer.width, layer.height);
-              eCtx.fill();
-            } else if (layer.type === 'circle') {
-              eCtx.fillStyle = layer.fillColor || '#ef4444';
-              eCtx.beginPath();
-              eCtx.ellipse(cx, cy, layer.width / 2, layer.height / 2, 0, 0, Math.PI * 2);
-              eCtx.fill();
-            } else if (layer.type === 'pill') {
-              eCtx.fillStyle = layer.fillColor || '#3b82f6';
-              drawRoundedRect(eCtx, layer.x, layer.y, layer.width, layer.height, layer.height / 2);
-              eCtx.fill();
-            } else if (layer.type === 'star') {
-              eCtx.fillStyle = layer.fillColor || '#f59e0b';
-              drawStar(eCtx, cx, cy, 5, layer.width / 2, layer.width / 4);
-              eCtx.fill();
-            } else if (layer.type === 'text') {
-              renderTextLayer(eCtx, layer);
-            } else if (layer.type === 'image' && layer._imgEl) {
-              eCtx.drawImage(layer._imgEl, layer.x, layer.y, layer.width, layer.height);
-            }
-            eCtx.restore();
-          });
+        } else {
+          eCtx.fillStyle = state.bgColor || '#ffffff';
+          eCtx.fillRect(0, 0, canvas.width, canvas.height);
         }
+
+        // 35+종 모든 레이어 정밀 렌더링
+        state.layers.forEach(layer => {
+          if (!layer.visible) return;
+          eCtx.save();
+          eCtx.globalAlpha = layer.opacity !== undefined ? layer.opacity : 1.0;
+          const cx = layer.x + layer.width / 2;
+          const cy = layer.y + layer.height / 2;
+          eCtx.translate(cx, cy);
+          eCtx.rotate((layer.rotation * Math.PI) / 180);
+          eCtx.translate(-cx, -cy);
+
+          if (layer.hasShadow) {
+            eCtx.shadowColor = layer.shadowColor || 'rgba(0,0,0,0.45)';
+            eCtx.shadowBlur = layer.shadowBlur || 8;
+            eCtx.shadowOffsetX = layer.shadowOffset || 6;
+            eCtx.shadowOffsetY = layer.shadowOffset || 6;
+          }
+
+          const shapeTypes = [
+            'rect', 'roundRect', 'circle', 'ellipse', 'pill',
+            'triangle', 'rightTriangle', 'diamond', 'parallelogram', 'trapezoid', 'pentagon', 'hexagon', 'octagon',
+            'star', 'star4', 'star6', 'star8', 'heart', 'cross', 'lightning', 'shield', 'clover', 'crescent',
+            'arrow', 'arrowLeft', 'arrowUp', 'arrowDown', 'arrowBoth', 'chevron',
+            'bubble', 'bubbleRect', 'bubbleCloud', 'ribbon', 'gearBadge', 'ticket'
+          ];
+
+          if (shapeTypes.includes(layer.type)) {
+            renderShapeLayer(eCtx, layer);
+          } else if (layer.type === 'image' && layer._imgEl && layer._imgEl.complete) {
+            eCtx.drawImage(layer._imgEl, layer.x, layer.y, layer.width, layer.height);
+          } else if (layer.type === 'text') {
+            renderTextLayer(eCtx, layer);
+          } else if (layer.type === 'sticker') {
+            eCtx.font = `${layer.fontSize || 80}px sans-serif`;
+            eCtx.textAlign = 'center';
+            eCtx.textBaseline = 'middle';
+            eCtx.fillText(layer.text, cx, cy);
+          }
+          eCtx.restore();
+        });
 
         const mime = format === 'jpeg' ? 'image/jpeg' : format === 'webp' ? 'image/webp' : 'image/png';
         const ext = format === 'jpeg' ? 'jpg' : format;

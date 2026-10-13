@@ -1730,3 +1730,420 @@ body.is-panning .canvas-interactive-overlay {
   color: var(--text-secondary);
   font-weight: 600;
 }
+
+/* ==========================================================================
+   8. 고도화 스타일: 35+종 도형 그리드 & 커스텀 그라데이션 & 레이어 DnD & 투명 체커보드
+   ========================================================================== */
+
+/* 도형 카테고리별 반응형 그리드 */
+.shapes-category-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.shapes-category-grid .shape-pick-btn {
+  height: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 4px 2px;
+}
+
+.shapes-category-grid .shape-pick-btn:hover {
+  background-color: var(--bg-active);
+  border-color: var(--canva-purple);
+  color: var(--canva-purple);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(124, 58, 237, 0.12);
+}
+
+.shapes-category-grid .shape-pick-btn svg {
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.shapes-category-grid .shape-pick-btn:hover svg {
+  transform: scale(1.1);
+  stroke: var(--canva-purple);
+}
+
+.shapes-category-grid .shape-pick-btn span {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+}
+
+/* 투명 배경 (PNG 투명화) 토글 버튼 */
+.btn-transparent-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background-color: var(--bg-subtle);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.18s ease;
+  font-family: inherit;
+}
+
+.btn-transparent-toggle:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--border-strong);
+}
+
+.btn-transparent-toggle.active {
+  background-color: #f5f3ff;
+  border-color: var(--canva-purple);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+}
+
+.checker-icon-box {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background-image: 
+    linear-gradient(45deg, #cbd5e1 25%, transparent 25%), 
+    linear-gradient(-45deg, #cbd5e1 25%, transparent 25%), 
+    linear-gradient(45deg, transparent 75%, #cbd5e1 75%), 
+    linear-gradient(-45deg, transparent 75%, #cbd5e1 75%);
+  background-size: 12px 12px;
+  background-position: 0 0, 0 6px, 6px -6px, -6px 0px;
+  background-color: #ffffff;
+  flex-shrink: 0;
+}
+
+.checker-text-box {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.checker-text-box strong {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.checker-text-box small {
+  font-size: 0.70rem;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+/* 캔버스 체커보드 투명 배경 패턴 */
+.canvas-paper-shadow-wrap.is-transparent-bg {
+  background-image: 
+    linear-gradient(45deg, #cbd5e1 25%, transparent 25%), 
+    linear-gradient(-45deg, #cbd5e1 25%, transparent 25%), 
+    linear-gradient(45deg, transparent 75%, #cbd5e1 75%), 
+    linear-gradient(-45deg, transparent 75%, #cbd5e1 75%) !important;
+  background-size: 20px 20px !important;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px !important;
+  background-color: #ffffff !important;
+}
+
+/* 커스텀 그라데이션 빌더 */
+.custom-grad-builder-box {
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.grad-builder-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.grad-color-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.grad-color-item label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.color-box-inline {
+  width: 100%;
+  height: 34px;
+  background-color: #ffffff;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+}
+
+.color-box-inline input[type="color"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.grad-angle-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.grad-angle-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.grad-angle-row input[type="range"] {
+  width: 100%;
+  accent-color: var(--canva-purple);
+  cursor: pointer;
+}
+
+.grad-live-preview-bar {
+  width: 100%;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: background 0.1s linear;
+}
+
+.btn-apply-custom-grad {
+  width: 100%;
+  height: 36px;
+  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.btn-apply-custom-grad:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+/* 우측 레이어 카드 드래그 앤 드롭 스타일 */
+.layer-card-item {
+  user-select: none;
+  position: relative;
+}
+
+.layer-card-item.dragging {
+  opacity: 0.35;
+  background-color: var(--bg-hover) !important;
+  border: 2px dashed var(--canva-purple) !important;
+  transform: scale(0.98);
+}
+
+.layer-card-item.drop-above::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: var(--canva-purple);
+  border-radius: 2px;
+  box-shadow: 0 0 6px rgba(124, 58, 237, 0.6);
+  z-index: 10;
+}
+
+.layer-card-item.drop-below::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: var(--canva-purple);
+  border-radius: 2px;
+  box-shadow: 0 0 6px rgba(124, 58, 237, 0.6);
+  z-index: 10;
+}
+
+.layer-card-item .layer-drag-handle {
+  cursor: grab;
+  color: var(--text-dim);
+  font-size: 0.82rem;
+  padding: 0 2px;
+  display: flex;
+  align-items: center;
+}
+.layer-card-item .layer-drag-handle:active {
+  cursor: grabbing;
+}
+
+/* 텍스트 효과 프리셋 카드 그리드 & 썸네일 스타일 */
+.effects-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.effect-preset-card {
+  height: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background-color: var(--bg-subtle);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 6px 4px;
+  font-family: inherit;
+}
+
+.effect-preset-card:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--canva-purple);
+  transform: translateY(-2px);
+}
+
+.effect-preset-card.active {
+  border-color: var(--canva-purple);
+  background-color: #f5f3ff;
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.2);
+}
+
+.effect-preset-card span {
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.preview-sample {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.preview-symbol {
+  font-size: 1.1rem;
+  color: var(--text-dim);
+}
+
+/* 그림자 프리셋 샘플 */
+.preview-sample.shadow-classic {
+  color: #0f172a;
+  text-shadow: 2px 2px 0px rgba(0,0,0,0.3);
+}
+
+.preview-sample.shadow-smooth {
+  color: #0f172a;
+  text-shadow: 0px 4px 10px rgba(0,0,0,0.35);
+}
+
+.preview-sample.shadow-lift {
+  color: #0f172a;
+  text-shadow: 0px 8px 14px rgba(0,0,0,0.45);
+}
+
+.preview-sample.shadow-glow {
+  color: #ffffff;
+  text-shadow: 0px 0px 10px #7c3aed, 0px 0px 20px #7c3aed;
+}
+
+.preview-sample.shadow-halo {
+  color: #ffffff;
+  text-shadow: 0px 0px 8px #f59e0b, 0px 0px 16px #f59e0b;
+}
+
+.preview-sample.shadow-strong {
+  color: #facc15;
+  text-shadow: 3px 3px 0px #000000;
+}
+
+.preview-sample.shadow-haze {
+  color: #0f172a;
+  text-shadow: 0px 0px 16px rgba(15, 23, 42, 0.6);
+}
+
+.preview-sample.shadow-neon {
+  color: #ffffff;
+  text-shadow: 0px 0px 6px #ec4899, 0px 0px 14px #ec4899;
+}
+
+/* 모양 라벨 뱃지 샘플 */
+.shape-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 3px;
+  line-height: 1;
+}
+
+.shape-badge.bg-yellow {
+  background-color: #fef08a;
+  color: #854d0e;
+}
+
+.shape-badge.bg-dark {
+  background-color: #0f172a;
+  color: #ffffff;
+}
+
+.shape-badge.bg-purple-pill {
+  background-color: #7c3aed;
+  color: #ffffff;
+  border-radius: 9999px;
+  padding: 3px 8px;
+}
+
+.shape-badge.outline-yt {
+  background-color: transparent;
+  color: #facc15;
+  -webkit-text-stroke: 1px #000000;
+  font-weight: 900;
+}
+
+.shape-badge.outline-cyan {
+  background-color: transparent;
+  color: #06b6d4;
+  -webkit-text-stroke: 1px #0891b2;
+  font-weight: 900;
+}
+
