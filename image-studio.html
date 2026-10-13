@@ -1,132 +1,124 @@
 <!DOCTYPE html>
-<html lang="ko" data-theme="dark">
+<html lang="ko" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>궁디 이미지 스튜디오 PRO | 웹 포토샵 & 캔바 에디터</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%236366f1'/%3E%3Cpath d='M18 46 L28 26 L36 38 L42 30 L48 46 Z' fill='%23ffffff'/%3E%3Ccircle cx='24' cy='22' r='4.5' fill='%23ffffff'/%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="image-studio.css?v=20261013_02" />
+  <title>궁디 이미지 스튜디오 | 캔바 & 망고보드 스타일 웹 에디터</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%237c3aed'/%3E%3Cpath d='M18 46 L28 26 L36 38 L42 30 L48 46 Z' fill='%23ffffff'/%3E%3Ccircle cx='24' cy='22' r='4.5' fill='%23ffffff'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="image-studio.css?v=20261013_03" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Jua&family=Noto+Sans+KR:wght@400;500;600;700;900&family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Jua&family=Nanum+Gothic:wght@400;700;800&family=Nanum+Pen+Script&family=Noto+Sans+KR:wght@300;400;500;700;900&family=Noto+Serif+KR:wght@400;700&family=Pretendard:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
-<body class="studio-app">
+<body class="canva-app light-theme">
+
   <!-- ==========================================
-       1. 최상단 네비게이션 툴바 (Global Top Bar)
+       1. 최상단 글로벌 헤더 (Canva Style White Topbar)
        ========================================== -->
-  <header class="studio-topbar">
-    <div class="topbar-left">
-      <a href="index.html" class="topbar-brand" title="메인 허브로 나가기">
-        <div class="brand-icon-box">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+  <header class="canva-header">
+    <div class="header-left">
+      <a href="index.html" class="canva-brand" title="메인 허브로 이동">
+        <div class="brand-logo-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+            <rect x="3" y="3" width="18" height="18" rx="3"></rect>
             <circle cx="8.5" cy="8.5" r="1.5"></circle>
             <polyline points="21 15 16 10 5 21"></polyline>
           </svg>
         </div>
-        <div class="brand-text-wrap">
-          <span class="brand-name">궁디 이미지 스튜디오</span>
-          <span class="badge-pro">PRO</span>
-        </div>
+        <span class="brand-title">궁디 스튜디오</span>
       </a>
 
-      <div class="topbar-divider"></div>
+      <div class="h-divider"></div>
 
-      <!-- 프로젝트 제목 인라인 편집 -->
-      <div class="project-title-box">
-        <input type="text" id="projectTitleInput" class="project-title-input" value="무제 썸네일 디자인" title="클릭하여 프로젝트 이름 변경" />
-        <span class="save-status-indicator" id="saveStatusIndicator" title="모든 변경사항이 메모리에 안전하게 저장되었습니다">저장됨</span>
+      <!-- 파일명 인라인 수정 -->
+      <div class="doc-title-wrap">
+        <input type="text" id="docTitleInput" class="doc-title-input" value="새 썸네일 디자인" title="클릭하여 파일명 수정" />
+        <span class="cloud-save-badge" id="cloudSaveBadge">✓ 자동 저장됨</span>
       </div>
 
-      <div class="topbar-divider"></div>
+      <div class="h-divider"></div>
 
-      <!-- 파일 프로젝트 관리 (저장 / 불러오기 / 실행취소) -->
-      <div class="topbar-action-group">
-        <label for="loadProjectInput" class="btn-topbar" title="저장된 궁디 프로젝트 파일(.gdp-img) 불러오기">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-          <span>열기</span>
+      <!-- 프로젝트 저장 / 불러오기 / 실행취소 -->
+      <div class="header-file-actions">
+        <label for="loadProjectInput" class="btn-head-pill" title="저장된 프로젝트 파일(.gdp-img) 열기">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+          <span>불러오기</span>
         </label>
         <input type="file" id="loadProjectInput" accept=".gdp-img,.json" style="display: none;" />
 
-        <button type="button" class="btn-topbar" id="saveProjectBtn" title="현재 프로젝트를 .gdp-img 파일로 저장">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-          <span>프로젝트 저장</span>
+        <button type="button" class="btn-head-pill" id="saveProjectBtn" title="프로젝트를 .gdp-img 파일로 저장">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+          <span>저장</span>
         </button>
 
-        <button type="button" class="btn-icon-topbar" id="undoBtn" title="실행 취소 (Ctrl+Z)" disabled>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path></svg>
+        <button type="button" class="btn-head-icon" id="undoBtn" title="실행 취소 (Ctrl+Z)" disabled>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path></svg>
         </button>
-        <button type="button" class="btn-icon-topbar" id="redoBtn" title="다시 실행 (Ctrl+Y)" disabled>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"></path><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"></path></svg>
+        <button type="button" class="btn-head-icon" id="redoBtn" title="다시 실행 (Ctrl+Y)" disabled>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"></path><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"></path></svg>
         </button>
       </div>
     </div>
 
-    <!-- 중앙: 뷰포트 배율 및 정렬 자석 가이드 -->
-    <div class="topbar-center">
-      <div class="snap-toggle-box">
-        <button type="button" class="btn-toggle-tool active" id="btnSnapToggle" title="스마트 정렬 가이드 자석 (중앙/외곽 자동 스냅)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3v7a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3"></path><line x1="4" y1="3" x2="8" y2="3"></line><line x1="16" y1="3" x2="20" y2="3"></line></svg>
-          <span>스냅 가이드</span>
-        </button>
-      </div>
-
-      <div class="zoom-pill-group">
-        <button type="button" class="btn-zoom-sub" id="zoomOutBtn" title="축소 (Ctrl + -)">−</button>
-        <span class="zoom-display-val" id="zoomValLabel">100%</span>
-        <button type="button" class="btn-zoom-sub" id="zoomInBtn" title="확대 (Ctrl + +)">+</button>
-        <button type="button" class="btn-zoom-fit" id="zoomFitBtn" title="화면에 캔버스 맞춤">맞춤</button>
-      </div>
-    </div>
-
-    <!-- 우측: 캔버스 크기 프리셋 & 고해상도 내보내기 -->
-    <div class="topbar-right">
-      <div class="canvas-res-picker">
-        <select id="canvasPresetSelect" class="topbar-select" title="캔버스 규격 프리셋">
+    <!-- 중앙: 캔버스 크기 프리셋 & 줌 컨트롤 -->
+    <div class="header-center">
+      <div class="preset-pill-box">
+        <label class="preset-label">캔버스:</label>
+        <select id="canvasPresetSelect" class="preset-select">
           <option value="1280x720" selected>유튜브 썸네일 (1280 × 720)</option>
           <option value="1080x1080">인스타그램 피드 (1080 × 1080)</option>
-          <option value="1080x1920">인스타 스토리 / 쇼츠 (1080 × 1920)</option>
-          <option value="1200x630">페이스북 / 블로그 배너 (1200 × 630)</option>
+          <option value="1080x1920">인스타 스토리 / 릴스 (1080 × 1920)</option>
+          <option value="1200x630">블로그 / 웹 배너 (1200 × 630)</option>
           <option value="1920x1080">FHD 와이드 (1920 × 1080)</option>
           <option value="800x800">정방형 아이콘 (800 × 800)</option>
           <option value="custom">직접 크기 입력...</option>
         </select>
       </div>
 
+      <div class="zoom-pill-box">
+        <button type="button" class="btn-zoom-step" id="zoomOutBtn" title="축소 (Ctrl + -)">−</button>
+        <span class="zoom-val-text" id="zoomValLabel">100%</span>
+        <button type="button" class="btn-zoom-step" id="zoomInBtn" title="확대 (Ctrl + +)">+</button>
+        <button type="button" class="btn-zoom-fit" id="zoomFitBtn" title="화면에 맞추기">맞춤</button>
+      </div>
+    </div>
+
+    <!-- 우측: 고해상도 다운로드 (Canva Style Purple Button) -->
+    <div class="header-right">
       <div class="export-dropdown-wrap">
-        <button type="button" class="btn-export-main" id="exportMainBtn">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-          <span>내보내기</span>
+        <button type="button" class="btn-canva-download" id="exportMainBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <span>다운로드</span>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </button>
-        <div class="export-menu-popover" id="exportMenuPopover">
-          <div class="export-popover-header">다운로드 포맷 선택</div>
-          <button type="button" class="export-option-item" data-format="png" data-scale="1">
-            <div class="opt-badge">PNG</div>
-            <div class="opt-info">
+        <div class="export-popover" id="exportMenuPopover">
+          <div class="export-popover-title">파일 형식 선택</div>
+          <button type="button" class="export-popover-item" data-format="png" data-scale="1">
+            <span class="file-tag tag-png">PNG</span>
+            <div class="file-desc">
               <strong>PNG 고화질 이미지</strong>
-              <span>투명 배경 유지 · 그래픽/썸네일 추천</span>
+              <span>투명 배경 유지 · 복잡한 이미지에 적합</span>
             </div>
           </button>
-          <button type="button" class="export-option-item" data-format="png" data-scale="2">
-            <div class="opt-badge opt-2x">2X</div>
-            <div class="opt-info">
-              <strong>2배 고해상도 PNG (레티나/인쇄용)</strong>
-              <span>초고화질 2560px 스케일링 무손실 저장</span>
+          <button type="button" class="export-popover-item" data-format="png" data-scale="2">
+            <span class="file-tag tag-2x">2X</span>
+            <div class="file-desc">
+              <strong>초고화질 2배 인쇄용 (2560px)</strong>
+              <span>깨짐 없는 무손실 고선명도 렌더링</span>
             </div>
           </button>
-          <button type="button" class="export-option-item" data-format="jpeg" data-scale="1">
-            <div class="opt-badge opt-jpg">JPG</div>
-            <div class="opt-info">
-              <strong>JPG 표준 압축 (92%)</strong>
-              <span>웹 업로드 및 블로그 최적화 용량</span>
+          <button type="button" class="export-popover-item" data-format="jpeg" data-scale="1">
+            <span class="file-tag tag-jpg">JPG</span>
+            <div class="file-desc">
+              <strong>JPG 표준 압축 이미지</strong>
+              <span>가벼운 파일 크기 · 웹 공유 최적화</span>
             </div>
           </button>
-          <button type="button" class="export-option-item" data-format="webp" data-scale="1">
-            <div class="opt-badge opt-webp">WEBP</div>
-            <div class="opt-info">
-              <strong>WebP 초경량 포맷</strong>
-              <span>차세대 웹 최적화 고속 로딩</span>
+          <button type="button" class="export-popover-item" data-format="webp" data-scale="1">
+            <span class="file-tag tag-webp">WEBP</span>
+            <div class="file-desc">
+              <strong>WebP 차세대 웹 포맷</strong>
+              <span>최신 웹사이트 빠른 로딩 추천</span>
             </div>
           </button>
         </div>
@@ -135,107 +127,322 @@
   </header>
 
   <!-- ==========================================
-       2. 메인 워크스페이스 컨테이너
+       2. 상단 캔바 스타일 컨텍스트 서식 툴바 (Floating Context Toolbar)
        ========================================== -->
-  <div class="studio-main-body">
-    <!-- 좌측 1차 탭 독 (Dock: 캔바 스타일 아이콘) -->
-    <nav class="side-dock-nav">
-      <button type="button" class="dock-tab-btn active" data-tab="templates" title="템플릿 프리셋">
+  <div class="canva-context-toolbar" id="contextToolbar">
+    <!-- 기본 상태 (선택 없음): 캔버스 배경 설정 -->
+    <div class="ctx-group ctx-canvas-bg" id="ctxCanvasBgGroup">
+      <span class="ctx-label-text">캔버스 배경:</span>
+      <div class="color-picker-pill" title="캔버스 배경색">
+        <span class="color-circle-preview" id="ctxCanvasBgPreview" style="background:#ffffff;"></span>
+        <input type="color" id="ctxCanvasBgPicker" value="#ffffff" />
+      </div>
+      <span class="ctx-hint-msg">💡 텍스트나 요소를 클릭하면 전용 서식 툴바가 열립니다. (더블클릭 시 캔버스에서 바로 타이핑!)</span>
+    </div>
+
+    <!-- 텍스트 선택 시 전용 툴바 (Canva / 망고보드 완벽 재현) -->
+    <div class="ctx-group ctx-text-tools" id="ctxTextGroup" style="display: none;">
+      <!-- 1) 폰트 서체 선택 -->
+      <div class="font-select-wrap">
+        <select id="ctxFontSelect" class="font-dropdown" title="폰트 서체 변경">
+          <option value="'Pretendard', sans-serif" style="font-family:'Pretendard';" selected>프리텐다드 (Pretendard)</option>
+          <option value="'Black Han Sans', sans-serif" style="font-family:'Black Han Sans';">블랙 한 산스 (유튜브 강렬한 제목)</option>
+          <option value="'Do Hyeon', sans-serif" style="font-family:'Do Hyeon';">도현체 (개성있는 예능체)</option>
+          <option value="'Jua', sans-serif" style="font-family:'Jua';">주아체 (둥글둥글 귀여운체)</option>
+          <option value="'Nanum Gothic', sans-serif" style="font-family:'Nanum Gothic';">나눔고딕 (부드러운 본문)</option>
+          <option value="'Noto Serif KR', serif" style="font-family:'Noto Serif KR';">본명조 (고급스러운 명조)</option>
+          <option value="'Nanum Pen Script', cursive" style="font-family:'Nanum Pen Script';">나눔손글씨 펜 (감성 손글씨)</option>
+          <option value="'Noto Sans KR', sans-serif" style="font-family:'Noto Sans KR';">본고딕 (정석 가독성)</option>
+        </select>
+      </div>
+
+      <!-- 2) 폰트 크기 (+ / - 및 직접 입력) -->
+      <div class="font-size-stepper">
+        <button type="button" class="btn-step" id="ctxFontSizeMinus" title="크기 축소">−</button>
+        <input type="number" id="ctxFontSizeInput" class="font-size-num" min="10" max="300" value="64" />
+        <button type="button" class="btn-step" id="ctxFontSizePlus" title="크기 확대">+</button>
+      </div>
+
+      <div class="ctx-v-sep"></div>
+
+      <!-- 3) 글자 색상 -->
+      <div class="tool-color-btn" title="글자 색상">
+        <span class="color-letter-icon">A</span>
+        <span class="color-underline-bar" id="ctxTextColorBar" style="background:#0f172a;"></span>
+        <input type="color" id="ctxTextColorPicker" value="#0f172a" />
+      </div>
+
+      <div class="ctx-v-sep"></div>
+
+      <!-- 4) B / I / U 서식 버튼 -->
+      <button type="button" class="btn-format-toggle active" id="ctxBoldBtn" title="굵게 (Ctrl+B)">
+        <strong>B</strong>
+      </button>
+      <button type="button" class="btn-format-toggle" id="ctxItalicBtn" title="기울임 (Ctrl+I)">
+        <em>I</em>
+      </button>
+      <button type="button" class="btn-format-toggle" id="ctxUnderlineBtn" title="밑줄 (Ctrl+U)">
+        <u>U</u>
+      </button>
+
+      <div class="ctx-v-sep"></div>
+
+      <!-- 5) 정렬 (좌/중/우) -->
+      <button type="button" class="btn-format-toggle" id="ctxAlignBtn" title="정렬 (클릭 시 좌/중/우 전환)">
+        <span id="alignIcon">≡</span>
+      </button>
+
+      <!-- 6) 자간 / 행간 -->
+      <div class="spacing-popover-wrap">
+        <button type="button" class="btn-tool-text" id="btnSpacingToggle" title="글자 간격 / 줄 간격">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 17h16M7 4v16M17 4v16"/></svg>
+          <span>간격</span>
+        </button>
+        <div class="spacing-popover" id="spacingPopover">
+          <div class="spacing-row">
+            <span>자간 (글자 사이)</span>
+            <input type="range" id="ctxLetterSpacingSlider" min="-5" max="25" value="0" />
+            <strong id="letterSpacingVal">0</strong>
+          </div>
+          <div class="spacing-row">
+            <span>행간 (줄 간격)</span>
+            <input type="range" id="ctxLineHeightSlider" min="0.8" max="2.5" step="0.1" value="1.2" />
+            <strong id="lineHeightVal">1.2</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="ctx-v-sep"></div>
+
+      <!-- 7) ✨ 효과 (Effects - 아웃라인, 그림자, 배경박스, 네온) -->
+      <div class="effects-dropdown-wrap">
+        <button type="button" class="btn-effects-trigger active" id="btnEffectsTrigger">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <span>글자 효과</span>
+        </button>
+        <div class="effects-popover" id="effectsPopover">
+          <div class="effects-popover-header">글자 스타일 효과</div>
+
+          <!-- 효과 1: 외곽선 (아웃라인) -->
+          <div class="effect-section">
+            <div class="effect-header-row">
+              <label class="effect-checkbox-label">
+                <input type="checkbox" id="chkOutline" checked />
+                <strong>외곽선 (아웃라인)</strong>
+              </label>
+              <div class="effect-color-wrap">
+                <span class="effect-color-dot" id="outlineColorPreview" style="background:#000000;"></span>
+                <input type="color" id="outlineColorPicker" value="#000000" />
+              </div>
+            </div>
+            <div class="effect-slider-row">
+              <span>두께</span>
+              <input type="range" id="outlineWidthSlider" min="0" max="30" value="6" />
+              <strong id="outlineWidthVal">6px</strong>
+            </div>
+          </div>
+
+          <!-- 효과 2: 입체 그림자 -->
+          <div class="effect-section">
+            <div class="effect-header-row">
+              <label class="effect-checkbox-label">
+                <input type="checkbox" id="chkShadow" checked />
+                <strong>입체 그림자</strong>
+              </label>
+              <div class="effect-color-wrap">
+                <span class="effect-color-dot" id="shadowColorPreview" style="background:#000000;"></span>
+                <input type="color" id="shadowColorPicker" value="#000000" />
+              </div>
+            </div>
+            <div class="effect-slider-row">
+              <span>번짐(흐림)</span>
+              <input type="range" id="shadowBlurSlider" min="0" max="30" value="8" />
+              <strong id="shadowBlurVal">8</strong>
+            </div>
+            <div class="effect-slider-row">
+              <span>거리</span>
+              <input type="range" id="shadowOffsetSlider" min="0" max="30" value="6" />
+              <strong id="shadowOffsetVal">6</strong>
+            </div>
+          </div>
+
+          <!-- 효과 3: 배경 박스 라벨 (형광펜 효과) -->
+          <div class="effect-section">
+            <div class="effect-header-row">
+              <label class="effect-checkbox-label">
+                <input type="checkbox" id="chkBgBox" />
+                <strong>배경 라벨 박스</strong>
+              </label>
+              <div class="effect-color-wrap">
+                <span class="effect-color-dot" id="bgBoxColorPreview" style="background:#fef08a;"></span>
+                <input type="color" id="bgBoxColorPicker" value="#fef08a" />
+              </div>
+            </div>
+            <div class="effect-slider-row">
+              <span>모서리 둥글기</span>
+              <input type="range" id="bgBoxRadiusSlider" min="0" max="40" value="8" />
+              <strong id="bgBoxRadiusVal">8px</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 도형 선택 시 전용 툴바 -->
+    <div class="ctx-group ctx-shape-tools" id="ctxShapeGroup" style="display: none;">
+      <span class="ctx-label-text">채우기:</span>
+      <div class="color-picker-pill" title="도형 색상">
+        <span class="color-circle-preview" id="ctxFillColorPreview" style="background:#7c3aed;"></span>
+        <input type="color" id="ctxFillColorPicker" value="#7c3aed" />
+      </div>
+
+      <div class="ctx-v-sep"></div>
+      <span class="ctx-label-text">모서리 둥글기:</span>
+      <input type="number" id="ctxRadiusInput" class="font-size-num" min="0" max="100" value="0" />
+    </div>
+
+    <!-- 공통 우측 컨트롤 (투명도, 위치/순서, 복제, 삭제) -->
+    <div class="ctx-group ctx-group-right">
+      <div class="opacity-pill-wrap" title="불투명도">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20z"/></svg>
+        <input type="range" id="ctxOpacitySlider" min="0" max="100" value="100" class="mini-slider" />
+        <span id="ctxOpacityVal">100%</span>
+      </div>
+
+      <div class="ctx-v-sep"></div>
+
+      <button type="button" class="btn-icon-action" id="ctxDuplicateBtn" title="복제 (Ctrl+D)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      </button>
+      <button type="button" class="btn-icon-action btn-danger-action" id="ctxDeleteBtn" title="삭제 (Delete)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       3. 메인 작업 레이아웃 (Dock | Drawer | Canvas | Layers)
+       ========================================== -->
+  <div class="canva-main-workspace">
+    <!-- 좌측 1차 탭 독 (Canva Style White Dock) -->
+    <nav class="canva-side-dock">
+      <button type="button" class="dock-nav-item active" data-tab="templates" title="템플릿">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
         <span>템플릿</span>
       </button>
 
-      <button type="button" class="dock-tab-btn" data-tab="elements" title="도형 및 그래픽 요소">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><polygon points="12 8 16 16 8 16"/></svg>
-        <span>요소/도형</span>
-      </button>
-
-      <button type="button" class="dock-tab-btn" data-tab="text" title="텍스트 및 타이포그래피">
+      <button type="button" class="dock-nav-item" data-tab="text" title="텍스트">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="4 7 4 4 20 4 20 7"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="9" y1="20" x2="15" y2="20"/></svg>
         <span>텍스트</span>
       </button>
 
-      <button type="button" class="dock-tab-btn" data-tab="uploads" title="내 이미지 업로드">
+      <button type="button" class="dock-nav-item" data-tab="elements" title="요소 / 도형">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><polygon points="12 8 16 16 8 16"/></svg>
+        <span>요소</span>
+      </button>
+
+      <button type="button" class="dock-nav-item" data-tab="uploads" title="내 이미지 업로드">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         <span>업로드</span>
       </button>
 
-      <button type="button" class="dock-tab-btn" data-tab="background" title="캔버스 배경 스타일">
+      <button type="button" class="dock-nav-item" data-tab="background" title="배경 디자인">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
         <span>배경</span>
       </button>
     </nav>
 
-    <!-- 좌측 2차 슬라이딩 드로어 (Drawer: 세부 컨텐츠) -->
-    <aside class="side-drawer-panel" id="sideDrawerPanel">
-      <!-- 패널 헤더 -->
-      <div class="drawer-header">
-        <h3 id="drawerTitle">템플릿</h3>
-        <button type="button" class="btn-close-drawer" id="btnCloseDrawer" title="패널 접기">‹</button>
+    <!-- 좌측 2차 슬라이딩 패널 (White Drawer Panel) -->
+    <aside class="canva-side-drawer" id="sideDrawerPanel">
+      <div class="drawer-top-bar">
+        <h3 id="drawerHeadingTitle">디자인 템플릿</h3>
+        <button type="button" class="btn-drawer-collapse" id="btnCloseDrawer" title="패널 접기">‹</button>
       </div>
 
-      <!-- 1) 템플릿 드로어 -->
-      <div class="drawer-content active" id="drawerTemplates">
-        <div class="drawer-section-title">즉시 적용 가능한 프로 템플릿</div>
-        <div class="template-card-grid">
-          <div class="tpl-card" data-tpl="gaming-thumb">
-            <div class="tpl-thumb tpl-bg-gaming">
-              <span class="tpl-badge">유튜브 썸네일</span>
-              <strong class="tpl-title-text">충격적인 진실 공개</strong>
+      <!-- 1) 템플릿 패널 -->
+      <div class="drawer-page-view active" id="drawerTemplates">
+        <div class="drawer-group-title">인기 유튜브 썸네일 & 카드뉴스</div>
+        <div class="template-list-grid">
+          <div class="canva-template-card" data-tpl="gaming-highlight">
+            <div class="card-preview-box tpl-bg-purple">
+              <span class="preview-tag">유튜브 썸네일</span>
+              <strong>어그로 레전드 공개</strong>
             </div>
-            <span class="tpl-label">게이밍 / 밈 하이라이트</span>
+            <span class="card-caption">유튜브 썸네일 (강렬한 어그로)</span>
           </div>
 
-          <div class="tpl-card" data-tpl="clean-business">
-            <div class="tpl-thumb tpl-bg-business">
-              <span class="tpl-badge">비즈니스</span>
-              <strong class="tpl-title-text">2026 크리에이티브 트렌드</strong>
+          <div class="canva-template-card" data-tpl="clean-magazine">
+            <div class="card-preview-box tpl-bg-white-clean">
+              <span class="preview-tag tag-blue">카드뉴스</span>
+              <strong style="color:#0f172a;">2026 트렌드 리포트</strong>
             </div>
-            <span class="tpl-label">세련된 매거진 카드뉴스</span>
+            <span class="card-caption">화사한 매거진 카드뉴스</span>
           </div>
 
-          <div class="tpl-card" data-tpl="neon-review">
-            <div class="tpl-thumb tpl-bg-neon">
-              <span class="tpl-badge">리뷰/테크</span>
-              <strong class="tpl-title-text">내돈내산 솔직 리뷰</strong>
+          <div class="canva-template-card" data-tpl="sale-event">
+            <div class="card-preview-box tpl-bg-warm-yellow">
+              <span class="preview-tag tag-red">특가 세일</span>
+              <strong style="color:#7c2d12;">선착순 80% 할인 이벤트!</strong>
             </div>
-            <span class="tpl-label">사이버 네온 테크 썸네일</span>
-          </div>
-
-          <div class="tpl-card" data-tpl="sale-banner">
-            <div class="tpl-thumb tpl-bg-sale">
-              <span class="tpl-badge">특가 할인</span>
-              <strong class="tpl-title-text">선착순 한정 세일!</strong>
-            </div>
-            <span class="tpl-label">이벤트 프로모션 배너</span>
+            <span class="card-caption">프로모션 이벤트 배너</span>
           </div>
         </div>
       </div>
 
-      <!-- 2) 도형/요소 드로어 -->
-      <div class="drawer-content" id="drawerElements">
-        <div class="drawer-section-title">기본 기하학 도형</div>
-        <div class="elements-chip-grid">
-          <button type="button" class="element-chip-btn" id="btnAddRect">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+      <!-- 2) 텍스트 패널 (캔바 스타일 텍스트 조합) -->
+      <div class="drawer-page-view" id="drawerText">
+        <div class="drawer-group-title">기본 텍스트 추가</div>
+        <button type="button" class="btn-canva-add-text btn-add-title" id="btnAddHeading">
+          <strong>제목 추가</strong>
+        </button>
+        <button type="button" class="btn-canva-add-text btn-add-subtitle" id="btnAddSubheading">
+          <span>소제목 추가</span>
+        </button>
+        <button type="button" class="btn-canva-add-text btn-add-body" id="btnAddBodyText">
+          <small>본문 텍스트 추가</small>
+        </button>
+
+        <div class="drawer-group-title" style="margin-top:20px;">디자인 텍스트 스타일 조합</div>
+        <div class="design-text-pack-list">
+          <button type="button" class="pack-card pack-yellow-bold" data-pack="yellow-bold">
+            <span style="font-family:'Black Han Sans';">유튜브 옐로우 아웃라인</span>
+          </button>
+          <button type="button" class="pack-card pack-clean-black" data-pack="clean-black">
+            <span style="font-family:'Pretendard';">깔끔한 모던 블랙헤드</span>
+          </button>
+          <button type="button" class="pack-card pack-highlight-box" data-pack="highlight-box">
+            <span>형광펜 강조 라벨 박스</span>
+          </button>
+          <button type="button" class="pack-card pack-handwrite" data-pack="handwrite">
+            <span style="font-family:'Nanum Pen Script'; font-size:1.4rem;">감성 손글씨 캘리그라피</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 3) 요소 / 도형 패널 -->
+      <div class="drawer-page-view" id="drawerElements">
+        <div class="drawer-group-title">기본 기하학 도형</div>
+        <div class="shapes-2col-grid">
+          <button type="button" class="shape-pick-btn" id="btnAddRect">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
             <span>사각형</span>
           </button>
-          <button type="button" class="element-chip-btn" id="btnAddCircle">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>
+          <button type="button" class="shape-pick-btn" id="btnAddCircle">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>
             <span>원형</span>
           </button>
-          <button type="button" class="element-chip-btn" id="btnAddPill">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="10" rx="5"/></svg>
+          <button type="button" class="shape-pick-btn" id="btnAddPill">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="10" rx="5"/></svg>
             <span>알약 라벨</span>
           </button>
-          <button type="button" class="element-chip-btn" id="btnAddStar">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <button type="button" class="shape-pick-btn" id="btnAddStar">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
             <span>별 배지</span>
           </button>
         </div>
 
-        <div class="drawer-section-title" style="margin-top: 16px;">강조 스티커 & 배지</div>
-        <div class="sticker-chip-grid">
+        <div class="drawer-group-title" style="margin-top:20px;">스티커 & 강조 이모지</div>
+        <div class="sticker-badges-grid">
           <button type="button" class="sticker-btn" data-sticker="🔥">🔥 HOT</button>
           <button type="button" class="sticker-btn" data-sticker="👑">👑 BEST</button>
           <button type="button" class="sticker-btn" data-sticker="⚡">⚡ NEW</button>
@@ -245,231 +452,126 @@
         </div>
       </div>
 
-      <!-- 3) 텍스트 드로어 -->
-      <div class="drawer-content" id="drawerText">
-        <button type="button" class="btn-add-text-preset btn-text-heading" id="btnAddHeading">
-          <strong>제목 텍스트 추가</strong>
-          <span>클릭하여 큰 제목 생성</span>
-        </button>
-        <button type="button" class="btn-add-text-preset btn-text-sub" id="btnAddSubheading">
-          <strong>소제목 텍스트 추가</strong>
-          <span>설명 및 보조 문구 생성</span>
-        </button>
-        <button type="button" class="btn-add-text-preset btn-text-body" id="btnAddBodyText">
-          <strong>본문 텍스트 추가</strong>
-          <span>일반 상세 설명 문구 생성</span>
-        </button>
-
-        <div class="drawer-section-title" style="margin-top: 18px;">인기 타이포그래피 스타일</div>
-        <div class="typo-preset-list">
-          <button type="button" class="typo-preset-card typo-bold-yellow" data-typo="bold-yellow">
-            <span>유튜브 어그로 옐로우</span>
-          </button>
-          <button type="button" class="typo-preset-card typo-neon-cyber" data-typo="neon-cyber">
-            <span>사이버 네온 글로우</span>
-          </button>
-          <button type="button" class="typo-preset-card typo-impact-red" data-typo="impact-red">
-            <span>경고 임팩트 레드</span>
-          </button>
-          <button type="button" class="typo-preset-card typo-clean-badge" data-typo="clean-badge">
-            <span>블랙박스 라벨 텍스트</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- 4) 업로드 드로어 -->
-      <div class="drawer-content" id="drawerUploads">
-        <div class="upload-dropzone-box" id="sidebarDropzone">
-          <label for="sideUploadInput" class="upload-dropzone-label">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <strong>내 파일 업로드</strong>
-            <span>PNG, JPG, WebP, GIF 사진<br>끌어다 놓거나 클릭</span>
+      <!-- 4) 업로드 패널 -->
+      <div class="drawer-page-view" id="drawerUploads">
+        <div class="upload-drop-zone" id="sidebarDropzone">
+          <label for="sideUploadInput" class="upload-zone-label">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <strong>파일 업로드</strong>
+            <span>내 컴퓨터의 사진을 드래그하거나<br>여기를 클릭하여 추가하세요</span>
           </label>
           <input type="file" id="sideUploadInput" accept="image/*" multiple style="display: none;" />
         </div>
 
-        <div class="drawer-section-title">업로드된 이미지 목록</div>
-        <div class="uploaded-gallery-grid" id="uploadedGalleryGrid">
-          <!-- 동적 썸네일 추가 -->
+        <div class="drawer-group-title">최근 업로드 사진</div>
+        <div class="uploads-thumb-grid" id="uploadedGalleryGrid">
+          <!-- 썸네일 목록 -->
         </div>
       </div>
 
-      <!-- 5) 배경 드로어 -->
-      <div class="drawer-content" id="drawerBackground">
-        <div class="drawer-section-title">단색 배경 선택</div>
-        <div class="color-palette-grid">
-          <button type="button" class="color-dot" style="background:#0f172a;" data-color="#0f172a"></button>
-          <button type="button" class="color-dot" style="background:#1e293b;" data-color="#1e293b"></button>
-          <button type="button" class="color-dot" style="background:#000000;" data-color="#000000"></button>
-          <button type="button" class="color-dot" style="background:#ffffff; border:1px solid #475569;" data-color="#ffffff"></button>
-          <button type="button" class="color-dot" style="background:#1e3a8a;" data-color="#1e3a8a"></button>
-          <button type="button" class="color-dot" style="background:#701a75;" data-color="#701a75"></button>
-          <button type="button" class="color-dot" style="background:#831843;" data-color="#831843"></button>
-          <button type="button" class="color-dot" style="background:#064e3b;" data-color="#064e3b"></button>
+      <!-- 5) 배경 패널 -->
+      <div class="drawer-page-view" id="drawerBackground">
+        <div class="drawer-group-title">화사한 단색 컬러</div>
+        <div class="bg-palette-grid">
+          <button type="button" class="bg-color-chip" style="background:#ffffff; border:1px solid #cbd5e1;" data-color="#ffffff" title="화이트"></button>
+          <button type="button" class="bg-color-chip" style="background:#f8fafc;" data-color="#f8fafc" title="연회색"></button>
+          <button type="button" class="bg-color-chip" style="background:#fef08a;" data-color="#fef08a" title="레몬 옐로우"></button>
+          <button type="button" class="bg-color-chip" style="background:#fed7aa;" data-color="#fed7aa" title="소프트 피치"></button>
+          <button type="button" class="bg-color-chip" style="background:#dbeafe;" data-color="#dbeafe" title="스카이 블루"></button>
+          <button type="button" class="bg-color-chip" style="background:#ede9fe;" data-color="#ede9fe" title="라벤더"></button>
+          <button type="button" class="bg-color-chip" style="background:#0f172a;" data-color="#0f172a" title="다크 네이비"></button>
+          <button type="button" class="bg-color-chip" style="background:#18181b;" data-color="#18181b" title="리치 블랙"></button>
         </div>
 
-        <div class="drawer-section-title" style="margin-top: 18px;">세련된 다크 그라데이션</div>
-        <div class="gradient-palette-grid">
-          <button type="button" class="gradient-card grad-midnight" data-grad="midnight">미드나이트 블루</button>
-          <button type="button" class="gradient-card grad-cyber" data-grad="cyber">사이버 바이올렛</button>
-          <button type="button" class="gradient-card grad-sunset" data-grad="sunset">다크 선셋</button>
-          <button type="button" class="gradient-card grad-emerald" data-grad="emerald">에메랄드 포레스트</button>
+        <div class="drawer-group-title" style="margin-top:20px;">파스텔 & 모던 그라데이션</div>
+        <div class="bg-grad-list">
+          <button type="button" class="bg-grad-card grad-sunset-peach" data-grad="sunset-peach">선셋 피치 그라데이션</button>
+          <button type="button" class="bg-grad-card grad-soft-lavender" data-grad="soft-lavender">소프트 라벤더</button>
+          <button type="button" class="bg-grad-card grad-ocean-breeze" data-grad="ocean-breeze">오션 브리즈</button>
+          <button type="button" class="bg-grad-card grad-dark-indigo" data-grad="dark-indigo">다크 인디고 (유튜브용)</button>
         </div>
       </div>
     </aside>
 
-    <!-- 중앙: 캔버스 에디터 뷰포트 (Figma / Canva 뷰포트) -->
-    <main class="canvas-main-viewport" id="canvasMainViewport">
-      <!-- 상단 컨텍스추얼 속성 바 (선택된 객체에 따라 동적 노출) -->
-      <div class="context-toolbar-bar" id="contextToolbar">
-        <!-- 텍스트 전용 컨트롤 -->
-        <div class="ctx-group" id="ctxTextGroup" style="display: none;">
-          <select id="ctxFontSelect" class="ctx-select" title="폰트 서체 선택">
-            <option value="'Black Han Sans', sans-serif">블랙 한 산스 (유튜브 강렬한 제목)</option>
-            <option value="'Pretendard', sans-serif" selected>프리텐다드 (깔끔한 고딕)</option>
-            <option value="'Do Hyeon', sans-serif">도현체 (개성있는 예능체)</option>
-            <option value="'Jua', sans-serif">주아체 (둥글둥글 캐주얼)</option>
-            <option value="'Noto Sans KR', sans-serif">본고딕 (정석 가독성)</option>
-          </select>
+    <!-- 중앙: 캔버스 작업 스테이지 뷰포트 (Figma / Canva Canvas) -->
+    <main class="canva-center-stage" id="canvasCenterStage">
+      <div class="canvas-paper-shadow-wrap" id="canvasPaperShadowWrap">
+        <!-- 메인 캔버스 -->
+        <canvas id="canvaCanvas" width="1280" height="720"></canvas>
 
-          <div class="ctx-number-wrap">
-            <button type="button" class="ctx-btn-step" id="ctxFontSizeMinus">−</button>
-            <input type="number" id="ctxFontSizeInput" class="ctx-input-num" min="12" max="300" value="72" />
-            <button type="button" class="ctx-btn-step" id="ctxFontSizePlus">+</button>
-          </div>
-
-          <div class="ctx-sep"></div>
-
-          <!-- 글자색 -->
-          <div class="ctx-color-picker-wrap" title="글자 색상">
-            <span class="color-preview-badge" id="ctxTextColorPreview"></span>
-            <input type="color" id="ctxTextColorPicker" value="#ffffff" />
-          </div>
-
-          <!-- 외곽선 스트로크 두께 & 색상 -->
-          <div class="ctx-stroke-wrap" title="외곽선 테두리">
-            <span class="ctx-label">외곽선:</span>
-            <input type="number" id="ctxStrokeWidthInput" class="ctx-input-num-sm" min="0" max="40" value="6" />
-            <input type="color" id="ctxStrokeColorPicker" value="#000000" />
-          </div>
-
-          <!-- 그림자 토글 -->
-          <button type="button" class="ctx-icon-btn active" id="ctxShadowBtn" title="입체 그림자 켜기/끄기">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            <span>그림자</span>
-          </button>
-        </div>
-
-        <!-- 도형 전용 컨트롤 -->
-        <div class="ctx-group" id="ctxShapeGroup" style="display: none;">
-          <span class="ctx-label">채우기:</span>
-          <div class="ctx-color-picker-wrap" title="도형 색상">
-            <span class="color-preview-badge" id="ctxFillColorPreview"></span>
-            <input type="color" id="ctxFillColorPicker" value="#3b82f6" />
-          </div>
-          <span class="ctx-label" style="margin-left:8px;">둥글기:</span>
-          <input type="number" id="ctxRadiusInput" class="ctx-input-num-sm" min="0" max="100" value="0" />
-        </div>
-
-        <!-- 공통 컨트롤: 투명도, 정렬, 삭제 -->
-        <div class="ctx-group ctx-group-common">
-          <div class="ctx-opacity-wrap" title="불투명도">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20z"/></svg>
-            <input type="range" id="ctxOpacitySlider" min="0" max="100" value="100" class="ctx-range" />
-            <span id="ctxOpacityVal">100%</span>
-          </div>
-
-          <div class="ctx-sep"></div>
-
-          <button type="button" class="ctx-icon-btn" id="ctxDuplicateBtn" title="선택 레이어 복제 (Ctrl+D)">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-            <span>복제</span>
-          </button>
-
-          <button type="button" class="ctx-icon-btn btn-danger-hover" id="ctxDeleteBtn" title="선택 레이어 삭제 (Delete)">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-            <span>삭제</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- 캔버스 스크롤/팬 무한 뷰포트 영역 -->
-      <div class="canvas-stage-wrapper" id="canvasStageWrapper">
-        <div class="canvas-paper-frame" id="canvasPaperFrame">
-          <!-- 실제 캔버스 -->
-          <canvas id="studioCanvas" width="1280" height="720"></canvas>
-          <!-- 인터랙티브 오버레이 (바운딩박스 / 인라인 텍스트 편집기) -->
-          <div class="interactive-overlay" id="interactiveOverlay"></div>
-        </div>
+        <!-- 캔버스 위 오버레이 (바운딩 박스 핸들 & 더블클릭 인라인 텍스트 에디터) -->
+        <div class="canvas-interactive-overlay" id="interactiveOverlay"></div>
       </div>
     </main>
 
-    <!-- 우측 도크: 포토샵 스타일 레이어 스택 & 정렬 인스펙터 -->
-    <aside class="side-inspector-dock" id="sideInspectorDock">
-      <div class="inspector-header">
-        <h4>레이어 & 배치</h4>
-        <div class="layer-count-tag" id="layerCountTag">0개 레이어</div>
+    <!-- 우측: 포토샵 스타일 레이어 스택 & 정렬 패널 -->
+    <aside class="canva-right-panel" id="rightLayerPanel">
+      <div class="panel-header-title">
+        <h4>정렬 및 레이어</h4>
+        <span class="badge-count" id="layerCountBadge">0개</span>
       </div>
 
-      <!-- 빠른 정렬 패널 -->
-      <div class="quick-align-panel">
-        <span class="align-title">캔버스 맞춤 정렬</span>
-        <div class="align-btn-grid">
-          <button type="button" class="btn-align" id="alignLeftBtn" title="왼쪽 맞춤">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="3"></line><rect x="8" y="6" width="12" height="4" rx="1"></rect><rect x="8" y="14" width="8" height="4" rx="1"></rect></svg>
+      <!-- 정렬 버튼 그리드 -->
+      <div class="panel-section-box">
+        <span class="section-sub-title">캔버스 맞춤 정렬</span>
+        <div class="align-icon-grid">
+          <button type="button" class="btn-align-tool" id="alignLeftBtn" title="왼쪽 맞춤">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="3"/><rect x="8" y="6" width="12" height="4" rx="1"/><rect x="8" y="14" width="8" height="4" rx="1"/></svg>
           </button>
-          <button type="button" class="btn-align" id="alignCenterHBtn" title="가로 중앙 맞춤">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="21" x2="12" y2="3"></line><rect x="5" y="6" width="14" height="4" rx="1"></rect><rect x="7" y="14" width="10" height="4" rx="1"></rect></svg>
+          <button type="button" class="btn-align-tool" id="alignCenterHBtn" title="가로 중앙 맞춤">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="21" x2="12" y2="3"/><rect x="5" y="6" width="14" height="4" rx="1"/><rect x="7" y="14" width="10" height="4" rx="1"/></svg>
           </button>
-          <button type="button" class="btn-align" id="alignRightBtn" title="오른쪽 맞춤">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="20" y1="21" x2="20" y2="3"></line><rect x="4" y="6" width="12" height="4" rx="1"></rect><rect x="8" y="14" width="8" height="4" rx="1"></rect></svg>
+          <button type="button" class="btn-align-tool" id="alignRightBtn" title="오른쪽 맞춤">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="20" y1="21" x2="20" y2="3"/><rect x="4" y="6" width="12" height="4" rx="1"/><rect x="8" y="14" width="8" height="4" rx="1"/></svg>
           </button>
-          <button type="button" class="btn-align" id="alignTopBtn" title="위쪽 맞춤">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="4" x2="21" y2="4"></line><rect x="6" y="8" width="4" height="12" rx="1"></rect><rect x="14" y="8" width="4" height="8" rx="1"></rect></svg>
+          <button type="button" class="btn-align-tool" id="alignTopBtn" title="위쪽 맞춤">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="4" x2="21" y2="4"/><rect x="6" y="8" width="4" height="12" rx="1"/><rect x="14" y="8" width="4" height="8" rx="1"/></svg>
           </button>
-          <button type="button" class="btn-align" id="alignCenterVBtn" title="세로 중앙 맞춤">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><rect x="6" y="5" width="4" height="14" rx="1"></rect><rect x="14" y="7" width="4" height="10" rx="1"></rect></svg>
+          <button type="button" class="btn-align-tool" id="alignCenterVBtn" title="세로 중앙 맞춤">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="7" width="4" height="10" rx="1"/></svg>
           </button>
-          <button type="button" class="btn-align" id="alignBottomBtn" title="아래쪽 맞춤">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="20" x2="21" y2="20"></line><rect x="6" y="4" width="4" height="12" rx="1"></rect><rect x="14" y="8" width="4" height="8" rx="1"></rect></svg>
+          <button type="button" class="btn-align-tool" id="alignBottomBtn" title="아래쪽 맞춤">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="20" x2="21" y2="20"/><rect x="6" y="4" width="4" height="12" rx="1"/><rect x="14" y="8" width="4" height="8" rx="1"/></svg>
           </button>
         </div>
       </div>
 
-      <!-- 레이어 순서 제어 툴바 -->
-      <div class="layer-order-toolbar">
-        <span>레이어 스택 순서</span>
-        <div class="order-btn-group">
-          <button type="button" class="btn-order-tool" id="btnLayerBringForward" title="앞으로 한 단계">▲</button>
-          <button type="button" class="btn-order-tool" id="btnLayerSendBackward" title="뒤로 한 단계">▼</button>
+      <!-- 레이어 순서 툴바 -->
+      <div class="panel-section-box">
+        <div class="layer-order-row">
+          <span class="section-sub-title" style="margin:0;">레이어 스택 순서</span>
+          <div class="order-btn-box">
+            <button type="button" class="btn-order-step" id="btnBringForward" title="앞으로 한 단계 (▲)">▲</button>
+            <button type="button" class="btn-order-step" id="btnSendBackward" title="뒤로 한 단계 (▼)">▼</button>
+          </div>
         </div>
       </div>
 
-      <!-- 레이어 아이템 목록 리스트 -->
-      <div class="layers-scroll-list" id="layersScrollList">
+      <!-- 레이어 카드 목록 -->
+      <div class="layer-cards-scroll-box" id="layersScrollList">
         <!-- 동적 렌더링 -->
       </div>
     </aside>
   </div>
 
-  <!-- 하단 상태 바 -->
-  <footer class="studio-bottombar">
-    <div class="bottom-left">
-      <span class="status-indicator-dot"></span>
-      <span id="statusBarResolution">1280 × 720 px</span>
-      <span class="status-sep">|</span>
-      <span id="statusBarZoomText">줌 배율: 100%</span>
-      <span class="status-sep">|</span>
-      <span class="status-hint-text">단축키: 선택(V) · 텍스트(T) · 복제(Ctrl+D) · 삭제(Del) · 실행취소(Ctrl+Z)</span>
+  <!-- ==========================================
+       4. 하단 상태 바
+       ========================================== -->
+  <footer class="canva-footer">
+    <div class="footer-left">
+      <span class="footer-dot-live"></span>
+      <span id="footerDimText">1280 × 720 px</span>
+      <span class="f-sep">|</span>
+      <span>글자 더블클릭 시 캔버스에서 바로 타이핑 편집 가능 · 스마트 자석 스냅 가이드 지원</span>
     </div>
-    <div class="bottom-right">
-      <span>궁디 스튜디오 (GOONGDI Studio) · 100% 무서버 클라이언트 가속 렌더링</span>
+    <div class="footer-right">
+      <span>궁디 스튜디오 (GOONGDI Studio) · 100% 브라우저 하드웨어 가속 렌더링</span>
     </div>
   </footer>
 
   <!-- 알림 토스트 -->
-  <div id="studioToast" class="studio-toast-box"></div>
+  <div id="studioToast" class="studio-toast-banner"></div>
 
-  <script src="image-studio.js?v=20261013_02"></script>
+  <script src="image-studio.js?v=20261013_03"></script>
 </body>
 </html>

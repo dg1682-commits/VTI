@@ -1,76 +1,116 @@
 /**
- * 궁디 이미지 스튜디오 PRO (GOONGDI Image Studio) Engine
- * High-Performance Vanilla JS Canvas Engine (Canva & Photoshop Hybrid)
+ * 궁디 이미지 스튜디오 (GOONGDI Image Studio)
+ * Canva & MangoBoard Style Direct On-Canvas Typing Engine
+ * Pure Vanilla JS - Zero Build Step
  */
 
 (function () {
   'use strict';
 
-  // DOM 캔버스 및 뷰포트
-  const canvas = document.getElementById('studioCanvas');
+  // 캔버스 및 뷰포트 엘리먼트
+  const canvas = document.getElementById('canvaCanvas');
   const ctx = canvas.getContext('2d');
-  const canvasStageWrapper = document.getElementById('canvasStageWrapper');
-  const canvasPaperFrame = document.getElementById('canvasPaperFrame');
+  const canvasCenterStage = document.getElementById('canvasCenterStage');
+  const canvasPaperShadowWrap = document.getElementById('canvasPaperShadowWrap');
   const interactiveOverlay = document.getElementById('interactiveOverlay');
 
-  // 상단 바
-  const projectTitleInput = document.getElementById('projectTitleInput');
-  const saveStatusIndicator = document.getElementById('saveStatusIndicator');
+  // 상단 글로벌 헤더
+  const docTitleInput = document.getElementById('docTitleInput');
+  const cloudSaveBadge = document.getElementById('cloudSaveBadge');
   const saveProjectBtn = document.getElementById('saveProjectBtn');
   const loadProjectInput = document.getElementById('loadProjectInput');
   const undoBtn = document.getElementById('undoBtn');
   const redoBtn = document.getElementById('redoBtn');
-  const btnSnapToggle = document.getElementById('btnSnapToggle');
+  const canvasPresetSelect = document.getElementById('canvasPresetSelect');
   const zoomInBtn = document.getElementById('zoomInBtn');
   const zoomOutBtn = document.getElementById('zoomOutBtn');
   const zoomFitBtn = document.getElementById('zoomFitBtn');
   const zoomValLabel = document.getElementById('zoomValLabel');
-  const canvasPresetSelect = document.getElementById('canvasPresetSelect');
   const exportMainBtn = document.getElementById('exportMainBtn');
   const exportMenuPopover = document.getElementById('exportMenuPopover');
 
-  // 좌측 독 및 드로어
-  const dockTabBtns = document.querySelectorAll('.dock-tab-btn');
-  const sideDrawerPanel = document.getElementById('sideDrawerPanel');
-  const drawerTitle = document.getElementById('drawerTitle');
-  const btnCloseDrawer = document.getElementById('btnCloseDrawer');
-  const drawerContents = document.querySelectorAll('.drawer-content');
-
-  // 좌측 드로어 기능 버튼들
-  const btnAddRect = document.getElementById('btnAddRect');
-  const btnAddCircle = document.getElementById('btnAddCircle');
-  const btnAddPill = document.getElementById('btnAddPill');
-  const btnAddStar = document.getElementById('btnAddStar');
-  const btnAddHeading = document.getElementById('btnAddHeading');
-  const btnAddSubheading = document.getElementById('btnAddSubheading');
-  const btnAddBodyText = document.getElementById('btnAddBodyText');
-  const sideUploadInput = document.getElementById('sideUploadInput');
-  const sidebarDropzone = document.getElementById('sidebarDropzone');
-  const uploadedGalleryGrid = document.getElementById('uploadedGalleryGrid');
-
-  // 상단 컨텍스추얼 툴바
+  // 상단 컨텍스추얼 서식 툴바
   const contextToolbar = document.getElementById('contextToolbar');
+  const ctxCanvasBgGroup = document.getElementById('ctxCanvasBgGroup');
+  const ctxCanvasBgPicker = document.getElementById('ctxCanvasBgPicker');
+  const ctxCanvasBgPreview = document.getElementById('ctxCanvasBgPreview');
+
   const ctxTextGroup = document.getElementById('ctxTextGroup');
-  const ctxShapeGroup = document.getElementById('ctxShapeGroup');
   const ctxFontSelect = document.getElementById('ctxFontSelect');
   const ctxFontSizeInput = document.getElementById('ctxFontSizeInput');
   const ctxFontSizeMinus = document.getElementById('ctxFontSizeMinus');
   const ctxFontSizePlus = document.getElementById('ctxFontSizePlus');
   const ctxTextColorPicker = document.getElementById('ctxTextColorPicker');
-  const ctxTextColorPreview = document.getElementById('ctxTextColorPreview');
-  const ctxStrokeWidthInput = document.getElementById('ctxStrokeWidthInput');
-  const ctxStrokeColorPicker = document.getElementById('ctxStrokeColorPicker');
-  const ctxShadowBtn = document.getElementById('ctxShadowBtn');
+  const ctxTextColorBar = document.getElementById('ctxTextColorBar');
+  const ctxBoldBtn = document.getElementById('ctxBoldBtn');
+  const ctxItalicBtn = document.getElementById('ctxItalicBtn');
+  const ctxUnderlineBtn = document.getElementById('ctxUnderlineBtn');
+  const ctxAlignBtn = document.getElementById('ctxAlignBtn');
+  const alignIcon = document.getElementById('alignIcon');
+
+  // 자간/행간
+  const btnSpacingToggle = document.getElementById('btnSpacingToggle');
+  const spacingPopover = document.getElementById('spacingPopover');
+  const ctxLetterSpacingSlider = document.getElementById('ctxLetterSpacingSlider');
+  const letterSpacingVal = document.getElementById('letterSpacingVal');
+  const ctxLineHeightSlider = document.getElementById('ctxLineHeightSlider');
+  const lineHeightVal = document.getElementById('lineHeightVal');
+
+  // 글자 효과 (아웃라인 / 그림자 / 배경박스)
+  const btnEffectsTrigger = document.getElementById('btnEffectsTrigger');
+  const effectsPopover = document.getElementById('effectsPopover');
+  const chkOutline = document.getElementById('chkOutline');
+  const outlineColorPicker = document.getElementById('outlineColorPicker');
+  const outlineColorPreview = document.getElementById('outlineColorPreview');
+  const outlineWidthSlider = document.getElementById('outlineWidthSlider');
+  const outlineWidthVal = document.getElementById('outlineWidthVal');
+
+  const chkShadow = document.getElementById('chkShadow');
+  const shadowColorPicker = document.getElementById('shadowColorPicker');
+  const shadowColorPreview = document.getElementById('shadowColorPreview');
+  const shadowBlurSlider = document.getElementById('shadowBlurSlider');
+  const shadowBlurVal = document.getElementById('shadowBlurVal');
+  const shadowOffsetSlider = document.getElementById('shadowOffsetSlider');
+  const shadowOffsetVal = document.getElementById('shadowOffsetVal');
+
+  const chkBgBox = document.getElementById('chkBgBox');
+  const bgBoxColorPicker = document.getElementById('bgBoxColorPicker');
+  const bgBoxColorPreview = document.getElementById('bgBoxColorPreview');
+  const bgBoxRadiusSlider = document.getElementById('bgBoxRadiusSlider');
+  const bgBoxRadiusVal = document.getElementById('bgBoxRadiusVal');
+
+  // 도형 전용 컨트롤
+  const ctxShapeGroup = document.getElementById('ctxShapeGroup');
   const ctxFillColorPicker = document.getElementById('ctxFillColorPicker');
   const ctxFillColorPreview = document.getElementById('ctxFillColorPreview');
   const ctxRadiusInput = document.getElementById('ctxRadiusInput');
+
+  // 공통 컨트롤
   const ctxOpacitySlider = document.getElementById('ctxOpacitySlider');
   const ctxOpacityVal = document.getElementById('ctxOpacityVal');
   const ctxDuplicateBtn = document.getElementById('ctxDuplicateBtn');
   const ctxDeleteBtn = document.getElementById('ctxDeleteBtn');
 
-  // 우측 도크 (레이어 & 정렬)
-  const layerCountTag = document.getElementById('layerCountTag');
+  // 좌측 독 & 드로어
+  const dockNavItems = document.querySelectorAll('.dock-nav-item');
+  const sideDrawerPanel = document.getElementById('sideDrawerPanel');
+  const drawerHeadingTitle = document.getElementById('drawerHeadingTitle');
+  const btnCloseDrawer = document.getElementById('btnCloseDrawer');
+  const drawerPageViews = document.querySelectorAll('.drawer-page-view');
+
+  const btnAddHeading = document.getElementById('btnAddHeading');
+  const btnAddSubheading = document.getElementById('btnAddSubheading');
+  const btnAddBodyText = document.getElementById('btnAddBodyText');
+  const btnAddRect = document.getElementById('btnAddRect');
+  const btnAddCircle = document.getElementById('btnAddCircle');
+  const btnAddPill = document.getElementById('btnAddPill');
+  const btnAddStar = document.getElementById('btnAddStar');
+  const sideUploadInput = document.getElementById('sideUploadInput');
+  const sidebarDropzone = document.getElementById('sidebarDropzone');
+  const uploadedGalleryGrid = document.getElementById('uploadedGalleryGrid');
+
+  // 우측 레이어 패널
+  const layerCountBadge = document.getElementById('layerCountBadge');
   const layersScrollList = document.getElementById('layersScrollList');
   const alignLeftBtn = document.getElementById('alignLeftBtn');
   const alignCenterHBtn = document.getElementById('alignCenterHBtn');
@@ -78,52 +118,40 @@
   const alignTopBtn = document.getElementById('alignTopBtn');
   const alignCenterVBtn = document.getElementById('alignCenterVBtn');
   const alignBottomBtn = document.getElementById('alignBottomBtn');
-  const btnLayerBringForward = document.getElementById('btnLayerBringForward');
-  const btnLayerSendBackward = document.getElementById('btnLayerSendBackward');
+  const btnBringForward = document.getElementById('btnBringForward');
+  const btnSendBackward = document.getElementById('btnSendBackward');
 
   // 하단 상태바 & 토스트
-  const statusBarResolution = document.getElementById('statusBarResolution');
-  const statusBarZoomText = document.getElementById('statusBarZoomText');
+  const footerDimText = document.getElementById('footerDimText');
   const studioToast = document.getElementById('studioToast');
 
   // ==========================================================================
-  // 스튜디오 메인 상태 (State Machine)
+  // 스튜디오 상태 모델 (State)
   // ==========================================================================
   const state = {
-    title: '무제 썸네일 디자인',
+    docTitle: '새 썸네일 디자인',
     canvasWidth: 1280,
     canvasHeight: 720,
-    bgType: 'gradient', // 'color' | 'gradient'
-    bgColor: '#0f172a',
-    bgGradient: { from: '#0f172a', to: '#1e3a8a', angle: 135 },
+    bgType: 'color', // 'color' | 'gradient'
+    bgColor: '#ffffff',
+    bgGradient: { from: '#fbcfe8', to: '#fed7aa', angle: 135 },
     zoom: 1.0,
-    panX: 0,
-    panY: 0,
-    isPanning: false,
-    panStartX: 0,
-    panStartY: 0,
-    spacePressed: false,
-    snapEnabled: true,
-
-    layers: [],
     selectedId: null,
-    copiedLayer: null,
+    editingTextId: null, // 캔버스 인라인 타이핑 중인 텍스트 레이어 ID
+    layers: [],
+    history: [],
+    historyIndex: -1,
 
-    // 변형(Transform) 드래그 상태
     dragState: {
       isDragging: false,
       mode: null, // 'move' | 'resize' | 'rotate'
-      handle: null, // 'tl'|'tr'|'br'|'bl'|'tc'|'bc'|'ml'|'mr'|'rot'
+      handle: null,
       startX: 0,
       startY: 0,
       initialLayer: null
     },
 
-    // 스마트 스냅 가이드라인 좌표
-    snapGuides: { x: null, y: null },
-
-    history: [],
-    historyIndex: -1
+    snapGuides: { x: null, y: null }
   };
 
   function showToast(msg) {
@@ -134,11 +162,11 @@
   }
 
   // ==========================================================================
-  // 히스토리 (Undo / Redo) 관리
+  // 실행 취소 / 다시 실행 (Undo / Redo)
   // ==========================================================================
   function pushHistory() {
     const snapshot = JSON.stringify({
-      title: state.title,
+      docTitle: state.docTitle,
       canvasWidth: state.canvasWidth,
       canvasHeight: state.canvasHeight,
       bgType: state.bgType,
@@ -159,10 +187,6 @@
     state.historyIndex = state.history.length - 1;
 
     updateUndoRedoUI();
-    if (saveStatusIndicator) {
-      saveStatusIndicator.textContent = '저장됨';
-      saveStatusIndicator.style.color = '#10b981';
-    }
   }
 
   function updateUndoRedoUI() {
@@ -174,7 +198,7 @@
     if (state.historyIndex > 0) {
       state.historyIndex--;
       restoreSnapshot(state.history[state.historyIndex]);
-      showToast('실행 취소 (Undo)');
+      showToast('실행 취소');
     }
   }
 
@@ -182,25 +206,25 @@
     if (state.historyIndex < state.history.length - 1) {
       state.historyIndex++;
       restoreSnapshot(state.history[state.historyIndex]);
-      showToast('다시 실행 (Redo)');
+      showToast('다시 실행');
     }
   }
 
   function restoreSnapshot(jsonStr) {
+    commitInlineTextEditor(); // 타이핑 중이던 것 정리
     const data = JSON.parse(jsonStr);
-    state.title = data.title || '무제 디자인';
-    if (projectTitleInput) projectTitleInput.value = state.title;
+    state.docTitle = data.docTitle || '새 썸네일 디자인';
+    if (docTitleInput) docTitleInput.value = state.docTitle;
     state.canvasWidth = data.canvasWidth;
     state.canvasHeight = data.canvasHeight;
     state.bgType = data.bgType || 'color';
-    state.bgColor = data.bgColor || '#0f172a';
-    state.bgGradient = data.bgGradient || { from: '#0f172a', to: '#1e3a8a', angle: 135 };
+    state.bgColor = data.bgColor || '#ffffff';
+    state.bgGradient = data.bgGradient || { from: '#fbcfe8', to: '#fed7aa', angle: 135 };
 
     canvas.width = state.canvasWidth;
     canvas.height = state.canvasHeight;
-    updateStatusBar();
+    updateDimUI();
 
-    // 이미지 객체 재생성
     state.layers = (data.layers || []).map(l => {
       if (l.type === 'image' && l.dataUrl) {
         const img = new Image();
@@ -216,29 +240,22 @@
     updateUndoRedoUI();
   }
 
-  // ==========================================================================
-  // 줌 및 화면 맞춤
-  // ==========================================================================
+  function updateDimUI() {
+    if (footerDimText) footerDimText.textContent = `${state.canvasWidth} × ${state.canvasHeight} px`;
+  }
+
   function setZoom(newZoom) {
     state.zoom = Math.max(0.15, Math.min(3.5, newZoom));
-    canvasPaperFrame.style.transform = `scale(${state.zoom})`;
-    const pct = `${Math.round(state.zoom * 100)}%`;
-    if (zoomValLabel) zoomValLabel.textContent = pct;
-    if (statusBarZoomText) statusBarZoomText.textContent = `줌 배율: ${pct}`;
+    canvasPaperShadowWrap.style.transform = `scale(${state.zoom})`;
+    if (zoomValLabel) zoomValLabel.textContent = `${Math.round(state.zoom * 100)}%`;
   }
 
   function fitToScreen() {
-    const padding = 120;
-    const availW = canvasStageWrapper.clientWidth - padding;
-    const availH = canvasStageWrapper.clientHeight - padding;
+    const pad = 100;
+    const availW = canvasCenterStage.clientWidth - pad;
+    const availH = canvasCenterStage.clientHeight - pad;
     const scale = Math.min(availW / state.canvasWidth, availH / state.canvasHeight);
     setZoom(Math.min(1.0, scale));
-  }
-
-  function updateStatusBar() {
-    if (statusBarResolution) {
-      statusBarResolution.textContent = `${state.canvasWidth} × ${state.canvasHeight} px`;
-    }
   }
 
   // ==========================================================================
@@ -247,7 +264,7 @@
   function renderCanvas() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // 1. 배경 그리기
+    // 1. 배경 채우기
     if (state.bgType === 'gradient' && state.bgGradient) {
       const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
       grad.addColorStop(0, state.bgGradient.from);
@@ -258,9 +275,11 @@
     }
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 2. 레이어 렌더링 (0번이 맨 뒤, 마지막이 맨 앞)
+    // 2. 레이어 렌더링
     state.layers.forEach(layer => {
       if (!layer.visible) return;
+      // 인라인 텍스트 편집 중인 레이어는 캔버스에서 숨김 (오버레이 textarea로 표시)
+      if (layer.id === state.editingTextId) return;
 
       ctx.save();
       ctx.globalAlpha = layer.opacity;
@@ -271,18 +290,17 @@
       ctx.rotate((layer.rotation * Math.PI) / 180);
       ctx.translate(-cx, -cy);
 
-      // 그림자 공통
+      // 입체 그림자
       if (layer.hasShadow) {
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-        ctx.shadowBlur = layer.shadowBlur || 12;
-        ctx.shadowOffsetX = layer.shadowOffsetX || 4;
-        ctx.shadowOffsetY = layer.shadowOffsetY || 6;
+        ctx.shadowColor = layer.shadowColor || 'rgba(0, 0, 0, 0.45)';
+        ctx.shadowBlur = layer.shadowBlur || 8;
+        ctx.shadowOffsetX = layer.shadowOffset || 6;
+        ctx.shadowOffsetY = layer.shadowOffset || 6;
       }
 
-      // 타입별 렌더링
       if (layer.type === 'rect') {
-        ctx.fillStyle = layer.fillColor || '#3b82f6';
-        if (layer.borderRadius && layer.borderRadius > 0) {
+        ctx.fillStyle = layer.fillColor || '#7c3aed';
+        if (layer.borderRadius > 0) {
           drawRoundedRect(ctx, layer.x, layer.y, layer.width, layer.height, layer.borderRadius);
           ctx.fill();
         } else {
@@ -294,32 +312,17 @@
         ctx.ellipse(cx, cy, layer.width / 2, layer.height / 2, 0, 0, Math.PI * 2);
         ctx.fill();
       } else if (layer.type === 'pill') {
-        ctx.fillStyle = layer.fillColor || '#8b5cf6';
-        const r = Math.min(layer.width, layer.height) / 2;
-        drawRoundedRect(ctx, layer.x, layer.y, layer.width, layer.height, r);
+        ctx.fillStyle = layer.fillColor || '#3b82f6';
+        drawRoundedRect(ctx, layer.x, layer.y, layer.width, layer.height, layer.height / 2);
         ctx.fill();
       } else if (layer.type === 'star') {
         ctx.fillStyle = layer.fillColor || '#f59e0b';
         drawStar(ctx, cx, cy, 5, layer.width / 2, layer.width / 4);
         ctx.fill();
-      } else if (layer.type === 'text') {
-        ctx.font = `${layer.fontWeight || '900'} ${layer.fontSize}px ${layer.fontFamily}`;
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'top';
-
-        // 외곽선 (스트로크)
-        if (layer.strokeWidth > 0) {
-          ctx.lineWidth = layer.strokeWidth;
-          ctx.strokeStyle = layer.strokeColor || '#000000';
-          ctx.lineJoin = 'round';
-          ctx.miterLimit = 2;
-          ctx.strokeText(layer.text, layer.x, layer.y);
-        }
-
-        ctx.fillStyle = layer.textColor || '#ffffff';
-        ctx.fillText(layer.text, layer.x, layer.y);
       } else if (layer.type === 'image' && layer._imgEl && layer._imgEl.complete) {
         ctx.drawImage(layer._imgEl, layer.x, layer.y, layer.width, layer.height);
+      } else if (layer.type === 'text') {
+        renderTextLayer(ctx, layer);
       } else if (layer.type === 'sticker') {
         ctx.font = `${layer.fontSize || 80}px sans-serif`;
         ctx.textAlign = 'center';
@@ -330,70 +333,123 @@
       ctx.restore();
     });
 
-    // 3. 스마트 가이드라인 그리기 (정렬 스냅 시)
-    if (state.snapEnabled) {
-      if (state.snapGuides.x !== null) {
-        ctx.save();
-        ctx.strokeStyle = '#ec4899';
-        ctx.lineWidth = 1.5;
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath();
-        ctx.moveTo(state.snapGuides.x, 0);
-        ctx.lineTo(state.snapGuides.x, canvas.height);
-        ctx.stroke();
-        ctx.restore();
-      }
-      if (state.snapGuides.y !== null) {
-        ctx.save();
-        ctx.strokeStyle = '#ec4899';
-        ctx.lineWidth = 1.5;
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath();
-        ctx.moveTo(0, state.snapGuides.y);
-        ctx.lineTo(canvas.width, state.snapGuides.y);
-        ctx.stroke();
-        ctx.restore();
-      }
+    // 3. 스마트 가이드라인 그리기
+    if (state.snapGuides.x !== null) {
+      ctx.save();
+      ctx.strokeStyle = '#ec4899';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(state.snapGuides.x, 0);
+      ctx.lineTo(state.snapGuides.x, canvas.height);
+      ctx.stroke();
+      ctx.restore();
+    }
+    if (state.snapGuides.y !== null) {
+      ctx.save();
+      ctx.strokeStyle = '#ec4899';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(0, state.snapGuides.y);
+      ctx.lineTo(canvas.width, state.snapGuides.y);
+      ctx.stroke();
+      ctx.restore();
     }
 
-    // 4. 선택된 레이어 바운딩 박스 & 핸들 그리기
+    // 4. 선택된 레이어 바운딩 박스
     const selected = getSelectedLayer();
-    if (selected) {
-      drawTransformBoundingBox(selected);
+    if (selected && selected.id !== state.editingTextId) {
+      drawCanvaBoundingBox(selected);
     }
   }
 
+  // 텍스트 레이어 전용 정밀 렌더러 (줄바꿈, 아웃라인, 배경박스 지원)
+  function renderTextLayer(c, layer) {
+    const fontStyle = layer.isItalic ? 'italic' : 'normal';
+    const fontWeight = layer.isBold ? '900' : '400';
+    c.font = `${fontStyle} ${fontWeight} ${layer.fontSize}px ${layer.fontFamily}`;
+    c.textAlign = layer.textAlign || 'left';
+    c.textBaseline = 'top';
+
+    const lines = String(layer.text).split('\n');
+    const lineHeightPx = layer.fontSize * (layer.lineHeight || 1.2);
+
+    // 배경 라벨 박스 그리기
+    if (layer.hasBgBox) {
+      c.save();
+      c.shadowColor = 'transparent'; // 박스엔 그림자 해제
+      c.fillStyle = layer.bgBoxColor || '#fef08a';
+      const padX = 14;
+      const padY = 8;
+      const boxW = layer.width + padX * 2;
+      const boxH = lines.length * lineHeightPx + padY * 2;
+      drawRoundedRect(c, layer.x - padX, layer.y - padY, boxW, boxH, layer.bgBoxRadius || 6);
+      c.fill();
+      c.restore();
+    }
+
+    let drawX = layer.x;
+    if (layer.textAlign === 'center') drawX = layer.x + layer.width / 2;
+    else if (layer.textAlign === 'right') drawX = layer.x + layer.width;
+
+    lines.forEach((line, idx) => {
+      const lineY = layer.y + idx * lineHeightPx;
+
+      // 외곽선 (아웃라인)
+      if (layer.hasOutline && layer.outlineWidth > 0) {
+        c.lineWidth = layer.outlineWidth * 2;
+        c.strokeStyle = layer.outlineColor || '#000000';
+        c.lineJoin = 'round';
+        c.miterLimit = 2;
+        c.strokeText(line, drawX, lineY);
+      }
+
+      // 본문 글자
+      c.fillStyle = layer.textColor || '#0f172a';
+      c.fillText(line, drawX, lineY);
+
+      // 밑줄 (Underline)
+      if (layer.isUnderline) {
+        const textW = c.measureText(line).width;
+        let startX = drawX;
+        if (layer.textAlign === 'center') startX = drawX - textW / 2;
+        else if (layer.textAlign === 'right') startX = drawX - textW;
+
+        c.beginPath();
+        c.strokeStyle = layer.textColor || '#0f172a';
+        c.lineWidth = Math.max(2, layer.fontSize / 16);
+        c.moveTo(startX, lineY + layer.fontSize + 4);
+        c.lineTo(startX + textW, lineY + layer.fontSize + 4);
+        c.stroke();
+      }
+    });
+  }
+
   function drawRoundedRect(c, x, y, w, h, r) {
+    const radius = Math.min(r, w / 2, h / 2);
     c.beginPath();
-    c.moveTo(x + r, y);
-    c.lineTo(x + w - r, y);
-    c.quadraticCurveTo(x + w, y, x + w, y + r);
-    c.lineTo(x + w, y + h - r);
-    c.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-    c.lineTo(x + r, y + h);
-    c.quadraticCurveTo(x, y + h, x, y + h - r);
-    c.lineTo(x, y + r);
-    c.quadraticCurveTo(x, y, x + r, y);
+    c.moveTo(x + radius, y);
+    c.lineTo(x + w - radius, y);
+    c.quadraticCurveTo(x + w, y, x + w, y + radius);
+    c.lineTo(x + w, y + h - radius);
+    c.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+    c.lineTo(x + radius, y + h);
+    c.quadraticCurveTo(x, y + h, x, y + h - radius);
+    c.lineTo(x, y + radius);
+    c.quadraticCurveTo(x, y, x + radius, y);
     c.closePath();
   }
 
   function drawStar(c, cx, cy, spikes, outerRadius, innerRadius) {
     let rot = Math.PI / 2 * 3;
-    let x = cx;
-    let y = cy;
     let step = Math.PI / spikes;
-
     c.beginPath();
     c.moveTo(cx, cy - outerRadius);
     for (let i = 0; i < spikes; i++) {
-      x = cx + Math.cos(rot) * outerRadius;
-      y = cy + Math.sin(rot) * outerRadius;
-      c.lineTo(x, y);
+      c.lineTo(cx + Math.cos(rot) * outerRadius, cy + Math.sin(rot) * outerRadius);
       rot += step;
-
-      x = cx + Math.cos(rot) * innerRadius;
-      y = cy + Math.sin(rot) * innerRadius;
-      c.lineTo(x, y);
+      c.lineTo(cx + Math.cos(rot) * innerRadius, cy + Math.sin(rot) * innerRadius);
       rot += step;
     }
     c.lineTo(cx, cy - outerRadius);
@@ -401,9 +457,9 @@
   }
 
   // ==========================================================================
-  // Figma / Canva 스타일 트랜스폼 바운딩 박스
+  // Canva 스타일 얇은 보라색 바운딩 박스 & 원형 핸들
   // ==========================================================================
-  function drawTransformBoundingBox(layer) {
+  function drawCanvaBoundingBox(layer) {
     ctx.save();
     const cx = layer.x + layer.width / 2;
     const cy = layer.y + layer.height / 2;
@@ -411,33 +467,37 @@
     ctx.rotate((layer.rotation * Math.PI) / 180);
     ctx.translate(-cx, -cy);
 
-    // 테두리
-    ctx.strokeStyle = '#6366f1';
+    // 보라색 테두리
+    ctx.strokeStyle = '#7c3aed';
     ctx.lineWidth = 1.8;
     ctx.strokeRect(layer.x, layer.y, layer.width, layer.height);
 
-    // 상단 회전 핸들 연결선 및 원
+    // 상단 회전 핸들
     const rotY = layer.y - 24;
-    ctx.strokeStyle = '#6366f1';
     ctx.beginPath();
     ctx.moveTo(cx, layer.y);
     ctx.lineTo(cx, rotY);
+    ctx.strokeStyle = '#7c3aed';
     ctx.stroke();
 
     ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#7c3aed';
+    ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(cx, rotY, 5.5, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
-    // 8개 리사이즈 핸들 (모서리 4개 + 변 중앙 4개)
+    // 4개 모서리 흰색 원형 핸들
     const handles = getHandles(layer);
     handles.forEach(h => {
       ctx.fillStyle = '#ffffff';
-      ctx.strokeStyle = '#6366f1';
-      ctx.lineWidth = 1.5;
-      ctx.fillRect(h.x - 4.5, h.y - 4.5, 9, 9);
-      ctx.strokeRect(h.x - 4.5, h.y - 4.5, 9, 9);
+      ctx.strokeStyle = '#7c3aed';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(h.x, h.y, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
     });
 
     ctx.restore();
@@ -452,16 +512,91 @@
       { id: 'tl', x: lx, y: ly },
       { id: 'tr', x: lx + lw, y: ly },
       { id: 'br', x: lx + lw, y: ly + lh },
-      { id: 'bl', x: lx, y: ly + lh },
-      { id: 'tc', x: lx + lw / 2, y: ly },
-      { id: 'bc', x: lx + lw / 2, y: ly + lh },
-      { id: 'ml', x: lx, y: ly + lh / 2 },
-      { id: 'mr', x: lx + lw, y: ly + lh / 2 }
+      { id: 'bl', x: lx, y: ly + lh }
     ];
   }
 
   // ==========================================================================
-  // 마우스 상호작용 (선택, 이동, 리사이즈, 회전, 스냅)
+  // ✨ 핵심 혁신: 캔버스 위에서 바로 치는 인라인 텍스트 에디터 (Canva/망고보드 방식!)
+  // ==========================================================================
+  function startInlineTextEditor(layer) {
+    commitInlineTextEditor(); // 기존 에디터가 있으면 저장
+    state.editingTextId = layer.id;
+
+    const textarea = document.createElement('textarea');
+    textarea.className = 'canvas-inline-text-editor';
+    textarea.value = layer.text;
+
+    // 위치 및 스타일을 레이어와 100% 동일하게 일치시킴
+    textarea.style.left = `${layer.x}px`;
+    textarea.style.top = `${layer.y}px`;
+    textarea.style.width = `${Math.max(120, layer.width + 10)}px`;
+    textarea.style.height = `${Math.max(40, layer.height + 10)}px`;
+    textarea.style.fontFamily = layer.fontFamily;
+    textarea.style.fontSize = `${layer.fontSize}px`;
+    textarea.style.fontWeight = layer.isBold ? '900' : '400';
+    textarea.style.fontStyle = layer.isItalic ? 'italic' : 'normal';
+    textarea.style.color = layer.textColor || '#0f172a';
+    textarea.style.textAlign = layer.textAlign || 'left';
+    textarea.style.transform = `rotate(${layer.rotation || 0}deg)`;
+
+    interactiveOverlay.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+
+    // 실시간 타이핑에 따라 너비/높이 자동 확장
+    function autoResize() {
+      layer.text = textarea.value;
+      const lines = textarea.value.split('\n');
+      ctx.font = `${layer.isBold ? '900' : '400'} ${layer.fontSize}px ${layer.fontFamily}`;
+      let maxW = 100;
+      lines.forEach(l => {
+        const w = ctx.measureText(l).width;
+        if (w > maxW) maxW = w;
+      });
+      layer.width = Math.round(maxW + 20);
+      layer.height = Math.round(lines.length * (layer.fontSize * (layer.lineHeight || 1.2)) + 10);
+      textarea.style.width = `${layer.width}px`;
+      textarea.style.height = `${layer.height}px`;
+    }
+
+    textarea.addEventListener('input', autoResize);
+
+    // 바깥 클릭 시 커밋
+    function onBlurHandler() {
+      commitInlineTextEditor();
+    }
+    textarea.addEventListener('blur', onBlurHandler);
+
+    textarea.addEventListener('keydown', (e) => {
+      e.stopPropagation(); // 글로벌 단축키 방지
+      if (e.key === 'Escape') {
+        commitInlineTextEditor();
+      }
+    });
+
+    renderCanvas();
+  }
+
+  function commitInlineTextEditor() {
+    if (!state.editingTextId) return;
+    const textarea = interactiveOverlay.querySelector('.canvas-inline-text-editor');
+    if (textarea) {
+      const layer = state.layers.find(l => l.id === state.editingTextId);
+      if (layer) {
+        layer.text = textarea.value;
+        layer.name = layer.text.slice(0, 14) || '텍스트 레이어';
+      }
+      textarea.remove();
+    }
+    state.editingTextId = null;
+    renderCanvas();
+    renderLayerList();
+    pushHistory();
+  }
+
+  // ==========================================================================
+  // 마우스 좌표 및 조작 (선택 / 드래그 / 리사이즈 / 회전)
   // ==========================================================================
   function getCanvasCoords(e) {
     const rect = canvas.getBoundingClientRect();
@@ -478,6 +613,9 @@
   }
 
   function selectLayer(id) {
+    if (state.editingTextId && state.editingTextId !== id) {
+      commitInlineTextEditor();
+    }
     state.selectedId = id;
     renderCanvas();
     renderLayerList();
@@ -485,19 +623,11 @@
   }
 
   canvas.addEventListener('mousedown', (e) => {
-    // 스페이스바 누른 상태면 캔버스 팬 모드
-    if (state.spacePressed || e.button === 1) {
-      state.isPanning = true;
-      state.panStartX = e.clientX;
-      state.panStartY = e.clientY;
-      canvasStageWrapper.style.cursor = 'grabbing';
-      return;
-    }
-
+    commitInlineTextEditor(); // 클릭 시 타이핑 커밋
     const coords = getCanvasCoords(e);
     const selected = getSelectedLayer();
 
-    // 1. 선택된 레이어의 회전 핸들 검사
+    // 1. 회전 핸들 검사
     if (selected) {
       const cx = selected.x + selected.width / 2;
       const rotY = selected.y - 24;
@@ -512,7 +642,7 @@
         return;
       }
 
-      // 2. 선택된 레이어의 리사이즈 핸들 검사
+      // 2. 4개 모서리 리사이즈 핸들 검사
       const handles = getHandles(selected);
       for (const h of handles) {
         if (Math.hypot(coords.x - h.x, coords.y - h.y) <= 12) {
@@ -529,7 +659,7 @@
       }
     }
 
-    // 3. 레이어 바디 클릭 검사 (맨 위 레이어부터 탐색)
+    // 3. 레이어 바디 클릭 (맨 위 레이어부터 탐색)
     let hitLayer = null;
     for (let i = state.layers.length - 1; i >= 0; i--) {
       const l = state.layers[i];
@@ -557,18 +687,16 @@
     }
   });
 
-  window.addEventListener('mousemove', (e) => {
-    // 캔버스 팬 이동
-    if (state.isPanning) {
-      const dx = e.clientX - state.panStartX;
-      const dy = e.clientY - state.panStartY;
-      state.panStartX = e.clientX;
-      state.panStartY = e.clientY;
-      canvasStageWrapper.scrollLeft -= dx;
-      canvasStageWrapper.scrollTop -= dy;
-      return;
+  // 더블클릭 -> 인라인 텍스트 타이핑 시작! (Canva 방식)
+  canvas.addEventListener('dblclick', (e) => {
+    const coords = getCanvasCoords(e);
+    const selected = getSelectedLayer();
+    if (selected && selected.type === 'text') {
+      startInlineTextEditor(selected);
     }
+  });
 
+  window.addEventListener('mousemove', (e) => {
     if (!state.dragState.isDragging) return;
     const coords = getCanvasCoords(e);
     const selected = getSelectedLayer();
@@ -578,37 +706,33 @@
     const dy = coords.y - state.dragState.startY;
     const init = state.dragState.initialLayer;
 
-    // A. 레이어 이동 (스마트 가이드 스냅 적용)
+    // A. 이동 (스마트 자석 스냅 가이드)
     if (state.dragState.mode === 'move') {
-      let targetX = init.x + dx;
-      let targetY = init.y + dy;
+      let tx = init.x + dx;
+      let ty = init.y + dy;
 
       state.snapGuides.x = null;
       state.snapGuides.y = null;
 
-      if (state.snapEnabled) {
-        const centerX = targetX + selected.width / 2;
-        const centerY = targetY + selected.height / 2;
-        const canvasCenterX = state.canvasWidth / 2;
-        const canvasCenterY = state.canvasHeight / 2;
+      const cx = tx + selected.width / 2;
+      const cy = ty + selected.height / 2;
+      const ccX = state.canvasWidth / 2;
+      const ccY = state.canvasHeight / 2;
 
-        // 가로 중앙 스냅
-        if (Math.abs(centerX - canvasCenterX) <= 8) {
-          targetX = canvasCenterX - selected.width / 2;
-          state.snapGuides.x = canvasCenterX;
-        }
-        // 세로 중앙 스냅
-        if (Math.abs(centerY - canvasCenterY) <= 8) {
-          targetY = canvasCenterY - selected.height / 2;
-          state.snapGuides.y = canvasCenterY;
-        }
+      if (Math.abs(cx - ccX) <= 8) {
+        tx = ccX - selected.width / 2;
+        state.snapGuides.x = ccX;
+      }
+      if (Math.abs(cy - ccY) <= 8) {
+        ty = ccY - selected.height / 2;
+        state.snapGuides.y = ccY;
       }
 
-      selected.x = Math.round(targetX);
-      selected.y = Math.round(targetY);
+      selected.x = Math.round(tx);
+      selected.y = Math.round(ty);
     }
 
-    // B. 리사이징 (8개 핸들)
+    // B. 리사이즈
     else if (state.dragState.mode === 'resize') {
       const h = state.dragState.handle;
       if (h === 'br') {
@@ -626,16 +750,6 @@
         selected.x = Math.round(init.x + dx);
         selected.y = Math.round(init.y + dy);
         selected.width = Math.max(20, Math.round(init.width - dx));
-        selected.height = Math.max(20, Math.round(init.height - dy));
-      } else if (h === 'mr') {
-        selected.width = Math.max(20, Math.round(init.width + dx));
-      } else if (h === 'ml') {
-        selected.x = Math.round(init.x + dx);
-        selected.width = Math.max(20, Math.round(init.width - dx));
-      } else if (h === 'bc') {
-        selected.height = Math.max(20, Math.round(init.height + dy));
-      } else if (h === 'tc') {
-        selected.y = Math.round(init.y + dy);
         selected.height = Math.max(20, Math.round(init.height - dy));
       }
     }
@@ -655,10 +769,6 @@
   });
 
   window.addEventListener('mouseup', () => {
-    if (state.isPanning) {
-      state.isPanning = false;
-      canvasStageWrapper.style.cursor = 'default';
-    }
     if (state.dragState.isDragging) {
       state.dragState.isDragging = false;
       state.dragState.mode = null;
@@ -669,39 +779,24 @@
     }
   });
 
-  // 인라인 텍스트 편집 (더블클릭 시 캔버스 위 즉시 편집)
-  canvas.addEventListener('dblclick', (e) => {
-    const selected = getSelectedLayer();
-    if (!selected || selected.type !== 'text') return;
-
-    const newText = prompt('텍스트 수정:', selected.text);
-    if (newText !== null && newText.trim() !== '') {
-      selected.text = newText;
-      // 대략적인 텍스트 너비 재측정
-      ctx.font = `${selected.fontWeight || '900'} ${selected.fontSize}px ${selected.fontFamily}`;
-      const metrics = ctx.measureText(selected.text);
-      selected.width = Math.max(selected.width, Math.round(metrics.width + 20));
-      renderCanvas();
-      renderLayerList();
-      pushHistory();
-      showToast('텍스트가 수정되었습니다.');
-    }
-  });
-
   // ==========================================================================
-  // 상단 컨텍스추얼 툴바 동기화
+  // 상단 컨텍스추얼 서식 바 바인딩 (폰트, 크기, 색상, B/I/U, 효과 등)
   // ==========================================================================
   function syncContextToolbar() {
     const selected = getSelectedLayer();
     if (!selected) {
+      ctxCanvasBgGroup.style.display = 'flex';
       ctxTextGroup.style.display = 'none';
       ctxShapeGroup.style.display = 'none';
+      ctxCanvasBgPicker.value = state.bgColor;
+      ctxCanvasBgPreview.style.backgroundColor = state.bgColor;
       ctxOpacitySlider.disabled = true;
       ctxDuplicateBtn.disabled = true;
       ctxDeleteBtn.disabled = true;
       return;
     }
 
+    ctxCanvasBgGroup.style.display = 'none';
     ctxOpacitySlider.disabled = false;
     ctxDuplicateBtn.disabled = false;
     ctxDeleteBtn.disabled = false;
@@ -711,18 +806,42 @@
     if (selected.type === 'text') {
       ctxTextGroup.style.display = 'flex';
       ctxShapeGroup.style.display = 'none';
+
       ctxFontSelect.value = selected.fontFamily;
       ctxFontSizeInput.value = selected.fontSize;
-      ctxTextColorPicker.value = selected.textColor;
-      ctxTextColorPreview.style.backgroundColor = selected.textColor;
-      ctxStrokeWidthInput.value = selected.strokeWidth;
-      ctxStrokeColorPicker.value = selected.strokeColor;
-      ctxShadowBtn.classList.toggle('active', selected.hasShadow);
+      ctxTextColorPicker.value = selected.textColor || '#0f172a';
+      ctxTextColorBar.style.backgroundColor = selected.textColor || '#0f172a';
+
+      ctxBoldBtn.classList.toggle('active', !!selected.isBold);
+      ctxItalicBtn.classList.toggle('active', !!selected.isItalic);
+      ctxUnderlineBtn.classList.toggle('active', !!selected.isUnderline);
+
+      // 효과 팝오버 값 동기화
+      chkOutline.checked = !!selected.hasOutline;
+      outlineColorPicker.value = selected.outlineColor || '#000000';
+      outlineColorPreview.style.backgroundColor = selected.outlineColor || '#000000';
+      outlineWidthSlider.value = selected.outlineWidth || 0;
+      outlineWidthVal.textContent = `${selected.outlineWidth || 0}px`;
+
+      chkShadow.checked = !!selected.hasShadow;
+      shadowColorPicker.value = selected.shadowColor || '#000000';
+      shadowColorPreview.style.backgroundColor = selected.shadowColor || '#000000';
+      shadowBlurSlider.value = selected.shadowBlur || 8;
+      shadowBlurVal.textContent = String(selected.shadowBlur || 8);
+      shadowOffsetSlider.value = selected.shadowOffset || 6;
+      shadowOffsetVal.textContent = String(selected.shadowOffset || 6);
+
+      chkBgBox.checked = !!selected.hasBgBox;
+      bgBoxColorPicker.value = selected.bgBoxColor || '#fef08a';
+      bgBoxColorPreview.style.backgroundColor = selected.bgBoxColor || '#fef08a';
+      bgBoxRadiusSlider.value = selected.bgBoxRadius || 8;
+      bgBoxRadiusVal.textContent = `${selected.bgBoxRadius || 8}px`;
+
     } else if (['rect', 'circle', 'pill', 'star'].includes(selected.type)) {
       ctxTextGroup.style.display = 'none';
       ctxShapeGroup.style.display = 'flex';
-      ctxFillColorPicker.value = selected.fillColor;
-      ctxFillColorPreview.style.backgroundColor = selected.fillColor;
+      ctxFillColorPicker.value = selected.fillColor || '#7c3aed';
+      ctxFillColorPreview.style.backgroundColor = selected.fillColor || '#7c3aed';
       ctxRadiusInput.value = selected.borderRadius || 0;
     } else {
       ctxTextGroup.style.display = 'none';
@@ -730,125 +849,269 @@
     }
   }
 
-  // 컨텍스추얼 바 이벤트 바인딩
+  // 폰트 변경
   ctxFontSelect.addEventListener('change', () => {
-    const selected = getSelectedLayer();
-    if (selected && selected.type === 'text') {
-      selected.fontFamily = ctxFontSelect.value;
+    const s = getSelectedLayer();
+    if (s && s.type === 'text') {
+      s.fontFamily = ctxFontSelect.value;
       renderCanvas();
       pushHistory();
     }
   });
 
+  // 크기 조절
   ctxFontSizeInput.addEventListener('input', () => {
-    const selected = getSelectedLayer();
-    if (selected && selected.type === 'text') {
-      selected.fontSize = parseInt(ctxFontSizeInput.value, 10) || 40;
+    const s = getSelectedLayer();
+    if (s && s.type === 'text') {
+      s.fontSize = parseInt(ctxFontSizeInput.value, 10) || 40;
       renderCanvas();
     }
   });
-
   ctxFontSizeMinus.addEventListener('click', () => {
-    const selected = getSelectedLayer();
-    if (selected && selected.type === 'text') {
-      selected.fontSize = Math.max(12, selected.fontSize - 4);
-      ctxFontSizeInput.value = selected.fontSize;
+    const s = getSelectedLayer();
+    if (s && s.type === 'text') {
+      s.fontSize = Math.max(10, s.fontSize - 4);
+      ctxFontSizeInput.value = s.fontSize;
       renderCanvas();
       pushHistory();
     }
   });
-
   ctxFontSizePlus.addEventListener('click', () => {
-    const selected = getSelectedLayer();
-    if (selected && selected.type === 'text') {
-      selected.fontSize = Math.min(300, selected.fontSize + 4);
-      ctxFontSizeInput.value = selected.fontSize;
+    const s = getSelectedLayer();
+    if (s && s.type === 'text') {
+      s.fontSize = Math.min(300, s.fontSize + 4);
+      ctxFontSizeInput.value = s.fontSize;
       renderCanvas();
       pushHistory();
     }
   });
 
+  // 글자색 변경
   ctxTextColorPicker.addEventListener('input', () => {
-    const selected = getSelectedLayer();
-    if (selected && selected.type === 'text') {
-      selected.textColor = ctxTextColorPicker.value;
-      ctxTextColorPreview.style.backgroundColor = selected.textColor;
+    const s = getSelectedLayer();
+    if (s && s.type === 'text') {
+      s.textColor = ctxTextColorPicker.value;
+      ctxTextColorBar.style.backgroundColor = s.textColor;
       renderCanvas();
     }
   });
+  ctxTextColorPicker.addEventListener('change', pushHistory);
 
-  ctxStrokeWidthInput.addEventListener('input', () => {
-    const selected = getSelectedLayer();
-    if (selected && selected.type === 'text') {
-      selected.strokeWidth = parseInt(ctxStrokeWidthInput.value, 10) || 0;
+  // B / I / U 토글
+  ctxBoldBtn.addEventListener('click', () => {
+    const s = getSelectedLayer();
+    if (s && s.type === 'text') {
+      s.isBold = !s.isBold;
+      ctxBoldBtn.classList.toggle('active', s.isBold);
       renderCanvas();
+      pushHistory();
     }
   });
-
-  ctxStrokeColorPicker.addEventListener('input', () => {
-    const selected = getSelectedLayer();
-    if (selected && selected.type === 'text') {
-      selected.strokeColor = ctxStrokeColorPicker.value;
+  ctxItalicBtn.addEventListener('click', () => {
+    const s = getSelectedLayer();
+    if (s && s.type === 'text') {
+      s.isItalic = !s.isItalic;
+      ctxItalicBtn.classList.toggle('active', s.isItalic);
       renderCanvas();
+      pushHistory();
     }
   });
-
-  ctxShadowBtn.addEventListener('click', () => {
-    const selected = getSelectedLayer();
-    if (selected) {
-      selected.hasShadow = !selected.hasShadow;
-      ctxShadowBtn.classList.toggle('active', selected.hasShadow);
+  ctxUnderlineBtn.addEventListener('click', () => {
+    const s = getSelectedLayer();
+    if (s && s.type === 'text') {
+      s.isUnderline = !s.isUnderline;
+      ctxUnderlineBtn.classList.toggle('active', s.isUnderline);
       renderCanvas();
       pushHistory();
     }
   });
 
+  // 정렬 순환
+  ctxAlignBtn.addEventListener('click', () => {
+    const s = getSelectedLayer();
+    if (s && s.type === 'text') {
+      const next = s.textAlign === 'left' ? 'center' : s.textAlign === 'center' ? 'right' : 'left';
+      s.textAlign = next;
+      alignIcon.textContent = next === 'left' ? '⇤' : next === 'center' ? '≡' : '⇥';
+      renderCanvas();
+      pushHistory();
+    }
+  });
+
+  // 자간 / 행간 팝오버 토글
+  btnSpacingToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    spacingPopover.classList.toggle('open');
+    effectsPopover.classList.remove('open');
+  });
+
+  ctxLetterSpacingSlider.addEventListener('input', () => {
+    letterSpacingVal.textContent = ctxLetterSpacingSlider.value;
+  });
+
+  ctxLineHeightSlider.addEventListener('input', () => {
+    const s = getSelectedLayer();
+    if (s && s.type === 'text') {
+      s.lineHeight = parseFloat(ctxLineHeightSlider.value);
+      lineHeightVal.textContent = s.lineHeight;
+      renderCanvas();
+    }
+  });
+
+  // 효과 팝오버 토글
+  btnEffectsTrigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    effectsPopover.classList.toggle('open');
+    spacingPopover.classList.remove('open');
+  });
+
+  window.addEventListener('click', () => {
+    spacingPopover.classList.remove('open');
+    effectsPopover.classList.remove('open');
+  });
+  effectsPopover.addEventListener('click', (e) => e.stopPropagation());
+  spacingPopover.addEventListener('click', (e) => e.stopPropagation());
+
+  // 외곽선 (아웃라인) 조절
+  chkOutline.addEventListener('change', () => {
+    const s = getSelectedLayer();
+    if (s && s.type === 'text') {
+      s.hasOutline = chkOutline.checked;
+      renderCanvas();
+      pushHistory();
+    }
+  });
+  outlineColorPicker.addEventListener('input', () => {
+    const s = getSelectedLayer();
+    if (s && s.type === 'text') {
+      s.outlineColor = outlineColorPicker.value;
+      outlineColorPreview.style.backgroundColor = s.outlineColor;
+      renderCanvas();
+    }
+  });
+  outlineWidthSlider.addEventListener('input', () => {
+    const s = getSelectedLayer();
+    if (s && s.type === 'text') {
+      s.outlineWidth = parseInt(outlineWidthSlider.value, 10);
+      outlineWidthVal.textContent = `${s.outlineWidth}px`;
+      renderCanvas();
+    }
+  });
+
+  // 그림자 조절
+  chkShadow.addEventListener('change', () => {
+    const s = getSelectedLayer();
+    if (s && s.type === 'text') {
+      s.hasShadow = chkShadow.checked;
+      renderCanvas();
+      pushHistory();
+    }
+  });
+  shadowColorPicker.addEventListener('input', () => {
+    const s = getSelectedLayer();
+    if (s && s.type === 'text') {
+      s.shadowColor = shadowColorPicker.value;
+      shadowColorPreview.style.backgroundColor = s.shadowColor;
+      renderCanvas();
+    }
+  });
+  shadowBlurSlider.addEventListener('input', () => {
+    const s = getSelectedLayer();
+    if (s && s.type === 'text') {
+      s.shadowBlur = parseInt(shadowBlurSlider.value, 10);
+      shadowBlurVal.textContent = String(s.shadowBlur);
+      renderCanvas();
+    }
+  });
+  shadowOffsetSlider.addEventListener('input', () => {
+    const s = getSelectedLayer();
+    if (s && s.type === 'text') {
+      s.shadowOffset = parseInt(shadowOffsetSlider.value, 10);
+      shadowOffsetVal.textContent = String(s.shadowOffset);
+      renderCanvas();
+    }
+  });
+
+  // 배경 라벨 박스 조절
+  chkBgBox.addEventListener('change', () => {
+    const s = getSelectedLayer();
+    if (s && s.type === 'text') {
+      s.hasBgBox = chkBgBox.checked;
+      renderCanvas();
+      pushHistory();
+    }
+  });
+  bgBoxColorPicker.addEventListener('input', () => {
+    const s = getSelectedLayer();
+    if (s && s.type === 'text') {
+      s.bgBoxColor = bgBoxColorPicker.value;
+      bgBoxColorPreview.style.backgroundColor = s.bgBoxColor;
+      renderCanvas();
+    }
+  });
+  bgBoxRadiusSlider.addEventListener('input', () => {
+    const s = getSelectedLayer();
+    if (s && s.type === 'text') {
+      s.bgBoxRadius = parseInt(bgBoxRadiusSlider.value, 10);
+      bgBoxRadiusVal.textContent = `${s.bgBoxRadius}px`;
+      renderCanvas();
+    }
+  });
+
+  // 도형 채우기 & 둥글기
   ctxFillColorPicker.addEventListener('input', () => {
-    const selected = getSelectedLayer();
-    if (selected) {
-      selected.fillColor = ctxFillColorPicker.value;
-      ctxFillColorPreview.style.backgroundColor = selected.fillColor;
+    const s = getSelectedLayer();
+    if (s) {
+      s.fillColor = ctxFillColorPicker.value;
+      ctxFillColorPreview.style.backgroundColor = s.fillColor;
       renderCanvas();
     }
   });
-
   ctxRadiusInput.addEventListener('input', () => {
-    const selected = getSelectedLayer();
-    if (selected) {
-      selected.borderRadius = parseInt(ctxRadiusInput.value, 10) || 0;
+    const s = getSelectedLayer();
+    if (s) {
+      s.borderRadius = parseInt(ctxRadiusInput.value, 10) || 0;
       renderCanvas();
     }
   });
 
+  // 캔버스 배경색 선택
+  ctxCanvasBgPicker.addEventListener('input', () => {
+    state.bgType = 'color';
+    state.bgColor = ctxCanvasBgPicker.value;
+    ctxCanvasBgPreview.style.backgroundColor = state.bgColor;
+    renderCanvas();
+  });
+  ctxCanvasBgPicker.addEventListener('change', pushHistory);
+
+  // 투명도
   ctxOpacitySlider.addEventListener('input', () => {
-    const selected = getSelectedLayer();
-    if (selected) {
-      selected.opacity = parseInt(ctxOpacitySlider.value, 10) / 100;
+    const s = getSelectedLayer();
+    if (s) {
+      s.opacity = parseInt(ctxOpacitySlider.value, 10) / 100;
       ctxOpacityVal.textContent = `${ctxOpacitySlider.value}%`;
       renderCanvas();
     }
   });
 
-  ctxDuplicateBtn.addEventListener('click', () => duplicateSelectedLayer());
-  ctxDeleteBtn.addEventListener('click', () => deleteSelectedLayer());
+  ctxDuplicateBtn.addEventListener('click', duplicateSelectedLayer);
+  ctxDeleteBtn.addEventListener('click', deleteSelectedLayer);
 
   function duplicateSelectedLayer() {
-    const selected = getSelectedLayer();
-    if (!selected) return;
-    const newLayer = {
-      ...selected,
+    const s = getSelectedLayer();
+    if (!s) return;
+    const newL = {
+      ...s,
       id: 'layer_' + Date.now(),
-      name: `${selected.name} 복제`,
-      x: selected.x + 24,
-      y: selected.y + 24
+      name: `${s.name} 복사`,
+      x: s.x + 24,
+      y: s.y + 24
     };
-    if (selected.type === 'image' && selected._imgEl) {
-      newLayer._imgEl = selected._imgEl;
-    }
-    state.layers.push(newLayer);
-    selectLayer(newLayer.id);
+    if (s.type === 'image' && s._imgEl) newL._imgEl = s._imgEl;
+    state.layers.push(newL);
+    selectLayer(newL.id);
     pushHistory();
-    showToast('레이어가 복제되었습니다 (Ctrl+D)');
+    showToast('복제되었습니다 (Ctrl+D)');
   }
 
   function deleteSelectedLayer() {
@@ -856,39 +1119,20 @@
     state.layers = state.layers.filter(l => l.id !== state.selectedId);
     selectLayer(null);
     pushHistory();
-    showToast('레이어가 삭제되었습니다 (Del)');
+    showToast('삭제되었습니다');
   }
 
   // ==========================================================================
-  // 정렬 도구 (캔버스 기준)
+  // 정렬 & 레이어 순서 (우측 패널)
   // ==========================================================================
-  alignLeftBtn.addEventListener('click', () => {
-    const s = getSelectedLayer();
-    if (s) { s.x = 0; renderCanvas(); pushHistory(); }
-  });
-  alignCenterHBtn.addEventListener('click', () => {
-    const s = getSelectedLayer();
-    if (s) { s.x = Math.round((state.canvasWidth - s.width) / 2); renderCanvas(); pushHistory(); }
-  });
-  alignRightBtn.addEventListener('click', () => {
-    const s = getSelectedLayer();
-    if (s) { s.x = state.canvasWidth - s.width; renderCanvas(); pushHistory(); }
-  });
-  alignTopBtn.addEventListener('click', () => {
-    const s = getSelectedLayer();
-    if (s) { s.y = 0; renderCanvas(); pushHistory(); }
-  });
-  alignCenterVBtn.addEventListener('click', () => {
-    const s = getSelectedLayer();
-    if (s) { s.y = Math.round((state.canvasHeight - s.height) / 2); renderCanvas(); pushHistory(); }
-  });
-  alignBottomBtn.addEventListener('click', () => {
-    const s = getSelectedLayer();
-    if (s) { s.y = state.canvasHeight - s.height; renderCanvas(); pushHistory(); }
-  });
+  alignLeftBtn.addEventListener('click', () => { const s = getSelectedLayer(); if (s) { s.x = 0; renderCanvas(); pushHistory(); } });
+  alignCenterHBtn.addEventListener('click', () => { const s = getSelectedLayer(); if (s) { s.x = Math.round((state.canvasWidth - s.width) / 2); renderCanvas(); pushHistory(); } });
+  alignRightBtn.addEventListener('click', () => { const s = getSelectedLayer(); if (s) { s.x = state.canvasWidth - s.width; renderCanvas(); pushHistory(); } });
+  alignTopBtn.addEventListener('click', () => { const s = getSelectedLayer(); if (s) { s.y = 0; renderCanvas(); pushHistory(); } });
+  alignCenterVBtn.addEventListener('click', () => { const s = getSelectedLayer(); if (s) { s.y = Math.round((state.canvasHeight - s.height) / 2); renderCanvas(); pushHistory(); } });
+  alignBottomBtn.addEventListener('click', () => { const s = getSelectedLayer(); if (s) { s.y = state.canvasHeight - s.height; renderCanvas(); pushHistory(); } });
 
-  // 레이어 순서 (앞으로 / 뒤로)
-  btnLayerBringForward.addEventListener('click', () => {
+  btnBringForward.addEventListener('click', () => {
     const idx = state.layers.findIndex(l => l.id === state.selectedId);
     if (idx !== -1 && idx < state.layers.length - 1) {
       const temp = state.layers[idx];
@@ -899,8 +1143,7 @@
       pushHistory();
     }
   });
-
-  btnLayerSendBackward.addEventListener('click', () => {
+  btnSendBackward.addEventListener('click', () => {
     const idx = state.layers.findIndex(l => l.id === state.selectedId);
     if (idx > 0) {
       const temp = state.layers[idx];
@@ -912,45 +1155,37 @@
     }
   });
 
-  // ==========================================================================
-  // 우측 도크: 레이어 리스트 렌더링
-  // ==========================================================================
   function renderLayerList() {
     layersScrollList.innerHTML = '';
-    layerCountTag.textContent = `${state.layers.length}개 레이어`;
+    layerCountBadge.textContent = `${state.layers.length}개`;
 
-    // 위에서부터 (맨 위 레이어가 스택 상단)
     for (let i = state.layers.length - 1; i >= 0; i--) {
       const layer = state.layers[i];
-      const row = document.createElement('div');
-      row.className = `layer-row-card ${layer.id === state.selectedId ? 'active' : ''}`;
+      const card = document.createElement('div');
+      card.className = `layer-card-item ${layer.id === state.selectedId ? 'active' : ''}`;
 
       const iconMap = { text: '🔤', image: '🖼️', rect: '⬛', circle: '⚪', pill: '💊', star: '⭐', sticker: '✨' };
-      row.innerHTML = `
-        <span class="layer-type-icon">${iconMap[layer.type] || '📄'}</span>
-        <span class="layer-name-text" title="${layer.name}">${layer.name}</span>
-        <div class="layer-actions-sub">
-          <button type="button" class="btn-layer-icon btn-vis" title="보이기/숨기기">
-            ${layer.visible ? '👁️' : '🙈'}
-          </button>
-          <button type="button" class="btn-layer-icon btn-del" title="삭제">✕</button>
+      card.innerHTML = `
+        <span class="layer-item-icon">${iconMap[layer.type] || '📄'}</span>
+        <span class="layer-item-name">${layer.name}</span>
+        <div class="layer-item-actions">
+          <button type="button" class="btn-mini-layer btn-vis" title="보이기/숨기기">${layer.visible ? '👁️' : '🙈'}</button>
+          <button type="button" class="btn-mini-layer btn-del" title="삭제">✕</button>
         </div>
       `;
 
-      row.addEventListener('click', (e) => {
-        if (e.target.closest('.btn-layer-icon')) return;
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.btn-mini-layer')) return;
         selectLayer(layer.id);
       });
-
-      row.querySelector('.btn-vis').addEventListener('click', (e) => {
+      card.querySelector('.btn-vis').addEventListener('click', (e) => {
         e.stopPropagation();
         layer.visible = !layer.visible;
         renderCanvas();
         renderLayerList();
         pushHistory();
       });
-
-      row.querySelector('.btn-del').addEventListener('click', (e) => {
+      card.querySelector('.btn-del').addEventListener('click', (e) => {
         e.stopPropagation();
         state.layers = state.layers.filter(l => l.id !== layer.id);
         if (state.selectedId === layer.id) selectLayer(null);
@@ -959,33 +1194,33 @@
         pushHistory();
       });
 
-      layersScrollList.appendChild(row);
+      layersScrollList.appendChild(card);
     }
   }
 
   // ==========================================================================
-  // 좌측 독(Dock) 및 드로어(Drawer) 탭 전환
+  // 좌측 드로어: 텍스트 / 요소 / 템플릿 추가
   // ==========================================================================
-  dockTabBtns.forEach(btn => {
+  dockNavItems.forEach(btn => {
     btn.addEventListener('click', () => {
       const tab = btn.getAttribute('data-tab');
-      dockTabBtns.forEach(b => b.classList.remove('active'));
+      dockNavItems.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
 
       sideDrawerPanel.classList.remove('collapsed');
-      drawerContents.forEach(c => c.classList.remove('active'));
+      drawerPageViews.forEach(v => v.classList.remove('active'));
 
-      const targetContent = document.getElementById(`drawer${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
-      if (targetContent) targetContent.classList.add('active');
+      const targetView = document.getElementById(`drawer${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
+      if (targetView) targetView.classList.add('active');
 
       const titleMap = {
-        templates: '템플릿',
-        elements: '요소 및 도형',
-        text: '텍스트',
-        uploads: '내 업로드',
+        templates: '디자인 템플릿',
+        text: '텍스트 스타일',
+        elements: '도형 및 요소',
+        uploads: '내 업로드 사진',
         background: '배경 설정'
       };
-      drawerTitle.textContent = titleMap[tab] || '드로어';
+      drawerHeadingTitle.textContent = titleMap[tab] || '드로어';
     });
   });
 
@@ -993,36 +1228,43 @@
     sideDrawerPanel.classList.toggle('collapsed');
   });
 
-  // ==========================================================================
-  // 요소 추가: 도형 & 텍스트 & 스티커
-  // ==========================================================================
   btnAddHeading.addEventListener('click', () => {
-    addTextLayer('제목 텍스트 입력', 78, "'Black Han Sans', sans-serif", '#ffffff', 6, '#000000');
+    addNewTextLayer('제목을 입력하세요', 72, "'Pretendard', sans-serif", '#0f172a', true);
   });
-
   btnAddSubheading.addEventListener('click', () => {
-    addTextLayer('소제목 설명을 입력하세요', 44, "'Pretendard', sans-serif", '#f8fafc', 3, '#0f172a');
+    addNewTextLayer('소제목 텍스트를 입력하세요', 44, "'Pretendard', sans-serif", '#334155', false);
   });
-
   btnAddBodyText.addEventListener('click', () => {
-    addTextLayer('여기에 본문 상세 내용을 작성합니다.', 28, "'Noto Sans KR', sans-serif", '#cbd5e1', 0, '#000000');
+    addNewTextLayer('여기에 본문 설명을 입력합니다.', 28, "'Noto Sans KR', sans-serif", '#64748b', false);
   });
 
-  function addTextLayer(text, fontSize, font, color, strokeW, strokeC) {
+  function addNewTextLayer(text, fontSize, font, color, bold) {
     const newL = {
       id: 'layer_' + Date.now(),
       type: 'text',
-      name: text.slice(0, 12),
+      name: text.slice(0, 14),
       text: text,
       fontFamily: font,
       fontSize: fontSize,
       textColor: color,
-      strokeWidth: strokeW,
-      strokeColor: strokeC,
-      hasShadow: true,
-      x: 100,
+      isBold: bold,
+      isItalic: false,
+      isUnderline: false,
+      textAlign: 'left',
+      hasOutline: false,
+      outlineColor: '#000000',
+      outlineWidth: 6,
+      hasShadow: false,
+      shadowColor: '#000000',
+      shadowBlur: 8,
+      shadowOffset: 6,
+      hasBgBox: false,
+      bgBoxColor: '#fef08a',
+      bgBoxRadius: 8,
+      lineHeight: 1.2,
+      x: 120,
       y: 200,
-      width: Math.min(800, text.length * fontSize * 0.7 + 40),
+      width: Math.min(800, text.length * fontSize * 0.75 + 40),
       height: fontSize + 30,
       rotation: 0,
       opacity: 1,
@@ -1032,49 +1274,44 @@
     state.layers.push(newL);
     selectLayer(newL.id);
     pushHistory();
-    showToast('텍스트 레이어가 추가되었습니다.');
+    showToast('텍스트가 추가되었습니다. (더블클릭하여 바로 타이핑)');
   }
 
-  // 타이포그래피 프리셋
-  document.querySelectorAll('.typo-preset-card').forEach(card => {
+  // 디자인 텍스트 팩
+  document.querySelectorAll('.pack-card').forEach(card => {
     card.addEventListener('click', () => {
-      const type = card.getAttribute('data-typo');
-      if (type === 'bold-yellow') {
-        addTextLayer('유튜브 레전드 사건 대공개', 74, "'Black Han Sans', sans-serif", '#facc15', 8, '#000000');
-      } else if (type === 'neon-cyber') {
-        addTextLayer('CYBERPUNK 2026', 64, "'Pretendard', sans-serif", '#38bdf8', 4, '#0284c7');
-      } else if (type === 'impact-red') {
-        addTextLayer('충격 주의! 절대 클릭 금지', 70, "'Do Hyeon', sans-serif", '#ef4444', 6, '#ffffff');
-      } else if (type === 'clean-badge') {
-        addTextLayer('SPECIAL INTERVIEW', 36, "'Pretendard', sans-serif", '#ffffff', 0, '#000000');
+      const pack = card.getAttribute('data-pack');
+      if (pack === 'yellow-bold') {
+        addNewTextLayer('유튜브 레전드 사건', 78, "'Black Han Sans', sans-serif", '#facc15', true);
+        const l = getSelectedLayer();
+        l.hasOutline = true; l.outlineColor = '#000000'; l.outlineWidth = 8;
+        l.hasShadow = true; l.shadowColor = '#000000';
+      } else if (pack === 'clean-black') {
+        addNewTextLayer('SPECIAL REPORT', 52, "'Pretendard', sans-serif", '#0f172a', true);
+      } else if (pack === 'highlight-box') {
+        addNewTextLayer('핵심 요약 포인트', 42, "'Pretendard', sans-serif", '#0f172a', true);
+        const l = getSelectedLayer();
+        l.hasBgBox = true; l.bgBoxColor = '#fef08a';
+      } else if (pack === 'handwrite') {
+        addNewTextLayer('행복했던 그날의 기억들', 58, "'Nanum Pen Script', cursive", '#4338ca', false);
       }
+      renderCanvas();
+      syncContextToolbar();
     });
   });
 
-  btnAddRect.addEventListener('click', () => {
-    addShapeLayer('rect', 360, 240, '#3b82f6', '사각형');
-  });
+  btnAddRect.addEventListener('click', () => addShape('rect', 360, 240, '#7c3aed', '사각형'));
+  btnAddCircle.addEventListener('click', () => addShape('circle', 240, 240, '#ef4444', '원형'));
+  btnAddPill.addEventListener('click', () => addShape('pill', 300, 70, '#3b82f6', '알약 라벨'));
+  btnAddStar.addEventListener('click', () => addShape('star', 220, 220, '#f59e0b', '별 배지'));
 
-  btnAddCircle.addEventListener('click', () => {
-    addShapeLayer('circle', 240, 240, '#ef4444', '원형');
-  });
-
-  btnAddPill.addEventListener('click', () => {
-    addShapeLayer('pill', 320, 80, '#8b5cf6', '알약 라벨');
-  });
-
-  btnAddStar.addEventListener('click', () => {
-    addShapeLayer('star', 220, 220, '#f59e0b', '별 배지');
-  });
-
-  function addShapeLayer(type, w, h, color, name) {
+  function addShape(type, w, h, color, name) {
     const newL = {
       id: 'layer_' + Date.now(),
       type: type,
       name: name,
       fillColor: color,
       borderRadius: type === 'pill' ? h / 2 : 0,
-      hasShadow: false,
       x: Math.round((state.canvasWidth - w) / 2),
       y: Math.round((state.canvasHeight - h) / 2),
       width: w,
@@ -1090,7 +1327,7 @@
     showToast(`${name}이(가) 추가되었습니다.`);
   }
 
-  // 스티커 추가
+  // 스티커
   document.querySelectorAll('.sticker-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const emoji = btn.getAttribute('data-sticker');
@@ -1116,43 +1353,36 @@
     });
   });
 
-  // ==========================================================================
-  // 업로드 기능 (파일 드래그 & 사이드바 갤러리)
-  // ==========================================================================
-  function handleImageUpload(file) {
+  // 사진 업로드
+  function handleUpload(file) {
     if (!file || !file.type.startsWith('image/')) return;
     const reader = new FileReader();
     reader.onload = (e) => {
       const dataUrl = e.target.result;
       const img = new Image();
       img.onload = () => {
-        // 갤러리 썸네일 추가
         const thumb = document.createElement('div');
-        thumb.className = 'gallery-thumb-item';
-        thumb.innerHTML = `<img src="${dataUrl}" alt="업로드 이미지" />`;
-        thumb.addEventListener('click', () => insertImageToCanvas(dataUrl, img, file.name));
+        thumb.className = 'upload-thumb-card';
+        thumb.innerHTML = `<img src="${dataUrl}" alt="업로드" />`;
+        thumb.addEventListener('click', () => insertImage(dataUrl, img, file.name));
         uploadedGalleryGrid.prepend(thumb);
-
-        // 캔버스에 즉시 삽입
-        insertImageToCanvas(dataUrl, img, file.name);
+        insertImage(dataUrl, img, file.name);
       };
       img.src = dataUrl;
     };
     reader.readAsDataURL(file);
   }
 
-  function insertImageToCanvas(dataUrl, img, name) {
+  function insertImage(dataUrl, img, name) {
     const aspect = img.width / img.height;
     const maxW = Math.min(640, img.width);
     const maxH = Math.round(maxW / aspect);
-
     const newL = {
       id: 'layer_' + Date.now(),
       type: 'image',
-      name: name ? name.slice(0, 14) : '이미지 레이어',
+      name: name ? name.slice(0, 14) : '사진 레이어',
       dataUrl: dataUrl,
       _imgEl: img,
-      hasShadow: false,
       x: Math.round((state.canvasWidth - maxW) / 2),
       y: Math.round((state.canvasHeight - maxH) / 2),
       width: maxW,
@@ -1165,177 +1395,150 @@
     state.layers.push(newL);
     selectLayer(newL.id);
     pushHistory();
-    showToast('이미지가 캔버스에 추가되었습니다.');
+    showToast('사진이 캔버스에 추가되었습니다.');
   }
 
   sideUploadInput.addEventListener('change', (e) => {
-    Array.from(e.target.files).forEach(handleImageUpload);
+    Array.from(e.target.files).forEach(handleUpload);
     sideUploadInput.value = '';
   });
-
-  sidebarDropzone.addEventListener('dragover', (e) => { e.preventDefault(); });
+  sidebarDropzone.addEventListener('dragover', (e) => e.preventDefault());
   sidebarDropzone.addEventListener('drop', (e) => {
     e.preventDefault();
-    Array.from(e.dataTransfer.files).forEach(handleImageUpload);
+    Array.from(e.dataTransfer.files).forEach(handleUpload);
   });
-
-  // 캔버스 자체로의 드래그 앤 드롭 지원
-  canvasStageWrapper.addEventListener('dragover', (e) => { e.preventDefault(); });
-  canvasStageWrapper.addEventListener('drop', (e) => {
+  canvasCenterStage.addEventListener('dragover', (e) => e.preventDefault());
+  canvasCenterStage.addEventListener('drop', (e) => {
     e.preventDefault();
-    Array.from(e.dataTransfer.files).forEach(handleImageUpload);
+    Array.from(e.dataTransfer.files).forEach(handleUpload);
   });
 
-  // ==========================================================================
-  // 배경 설정 (단색 & 그라데이션)
-  // ==========================================================================
-  document.querySelectorAll('.color-dot').forEach(btn => {
+  // 배경 컬러 & 그라데이션
+  document.querySelectorAll('.bg-color-chip').forEach(btn => {
     btn.addEventListener('click', () => {
       state.bgType = 'color';
       state.bgColor = btn.getAttribute('data-color');
+      ctxCanvasBgPicker.value = state.bgColor;
+      ctxCanvasBgPreview.style.backgroundColor = state.bgColor;
       renderCanvas();
       pushHistory();
     });
   });
 
-  document.querySelectorAll('.gradient-card').forEach(btn => {
+  document.querySelectorAll('.bg-grad-card').forEach(btn => {
     btn.addEventListener('click', () => {
       state.bgType = 'gradient';
       const grad = btn.getAttribute('data-grad');
       const map = {
-        midnight: { from: '#0f172a', to: '#1e3a8a' },
-        cyber: { from: '#18181b', to: '#701a75' },
-        sunset: { from: '#18181b', to: '#831843' },
-        emerald: { from: '#064e3b', to: '#0f766e' }
+        'sunset-peach': { from: '#fbcfe8', to: '#fed7aa' },
+        'soft-lavender': { from: '#e0e7ff', to: '#ede9fe' },
+        'ocean-breeze': { from: '#cffafe', to: '#bae6fd' },
+        'dark-indigo': { from: '#0f172a', to: '#312e81' }
       };
-      state.bgGradient = { ...(map[grad] || map.midnight), angle: 135 };
+      state.bgGradient = { ...(map[grad] || map['sunset-peach']), angle: 135 };
       renderCanvas();
       pushHistory();
-      showToast('배경 그라데이션이 적용되었습니다.');
+      showToast('그라데이션 배경 적용');
     });
   });
 
-  // ==========================================================================
-  // 템플릿 원클릭 로드 (프로 수준 템플릿)
-  // ==========================================================================
-  document.querySelectorAll('.tpl-card').forEach(card => {
+  // 템플릿 로드
+  document.querySelectorAll('.canva-template-card').forEach(card => {
     card.addEventListener('click', () => {
       const tpl = card.getAttribute('data-tpl');
-      loadTemplatePreset(tpl);
+      loadTemplate(tpl);
     });
   });
 
-  function loadTemplatePreset(type) {
-    if (state.layers.length > 0 && !confirm('현재 작업 중인 레이어가 템플릿으로 교체됩니다. 계속하시겠습니까?')) {
+  function loadTemplate(tpl) {
+    if (state.layers.length > 0 && !confirm('현재 캔버스의 모든 요소가 템플릿으로 교체됩니다. 계속하시겠습니까?')) {
       return;
     }
+    commitInlineTextEditor();
 
-    if (type === 'gaming-thumb') {
-      state.canvasWidth = 1280;
-      state.canvasHeight = 720;
+    if (tpl === 'gaming-highlight') {
+      state.canvasWidth = 1280; state.canvasHeight = 720;
       state.bgType = 'gradient';
-      state.bgGradient = { from: '#0b0f19', to: '#1e1b4b', angle: 135 };
+      state.bgGradient = { from: '#1e1b4b', to: '#312e81', angle: 135 };
       state.layers = [
         {
-          id: 'l_bg_card',
-          type: 'rect',
-          name: '메인 배경 카드',
-          fillColor: '#1e1b4b',
-          borderRadius: 24,
-          x: 40, y: 40, width: 1200, height: 640,
-          rotation: 0, opacity: 0.9, visible: true, locked: false
+          id: 'l_pill_1', type: 'pill', name: '랭킹 뱃지', fillColor: '#ef4444',
+          x: 100, y: 110, width: 220, height: 48, rotation: 0, opacity: 1, visible: true, locked: false
         },
         {
-          id: 'l_pill',
-          type: 'pill',
-          name: 'TOP 배지',
-          fillColor: '#ef4444',
-          borderRadius: 25,
-          x: 100, y: 110, width: 220, height: 50,
-          rotation: 0, opacity: 1, visible: true, locked: false
+          id: 'l_pill_t', type: 'text', name: '뱃지 글자', text: '🔥 실시간 랭킹 1위',
+          fontFamily: "'Pretendard', sans-serif", fontSize: 24, textColor: '#ffffff', isBold: true,
+          x: 125, y: 122, width: 180, height: 30, rotation: 0, opacity: 1, visible: true, locked: false
         },
         {
-          id: 'l_pill_text',
-          type: 'text',
-          name: '배지 텍스트',
-          text: '🔥 실시간 랭킹 1위',
-          fontFamily: "'Pretendard', sans-serif",
-          fontSize: 24, textColor: '#ffffff', strokeWidth: 0,
-          x: 125, y: 122, width: 180, height: 35,
-          rotation: 0, opacity: 1, visible: true, locked: false
+          id: 'l_main_t', type: 'text', name: '메인 제목', text: '충격적인 진실 공개!',
+          fontFamily: "'Black Han Sans', sans-serif", fontSize: 94, textColor: '#facc15', isBold: true,
+          hasOutline: true, outlineColor: '#000000', outlineWidth: 8,
+          hasShadow: true, shadowColor: '#000000', shadowBlur: 10, shadowOffset: 8,
+          x: 100, y: 190, width: 900, height: 120, rotation: -2, opacity: 1, visible: true, locked: false
         },
         {
-          id: 'l_title',
-          type: 'text',
-          name: '어그로 타이틀',
-          text: '충격적인 진실 공개!',
-          fontFamily: "'Black Han Sans', sans-serif",
-          fontSize: 92, textColor: '#facc15', strokeWidth: 10, strokeColor: '#000000',
-          hasShadow: true, x: 100, y: 200, width: 900, height: 120,
-          rotation: -2, opacity: 1, visible: true, locked: false
+          id: 'l_sub_t', type: 'text', name: '서브 설명', text: '프로들이 절대 알려주지 않는 웹 디자인의 모든 것',
+          fontFamily: "'Pretendard', sans-serif", fontSize: 40, textColor: '#ffffff', isBold: true,
+          hasShadow: true, shadowColor: '#000000', shadowBlur: 6, shadowOffset: 4,
+          x: 105, y: 340, width: 850, height: 60, rotation: 0, opacity: 1, visible: true, locked: false
         },
         {
-          id: 'l_sub',
-          type: 'text',
-          name: '서브 설명',
-          text: '프로들이 절대 알려주지 않는 웹 디자인 비밀',
-          fontFamily: "'Pretendard', sans-serif",
-          fontSize: 42, textColor: '#ffffff', strokeWidth: 4, strokeColor: '#0f172a',
-          hasShadow: true, x: 105, y: 350, width: 850, height: 60,
-          rotation: 0, opacity: 1, visible: true, locked: false
-        },
-        {
-          id: 'l_star',
-          type: 'star',
-          name: '골드 스타 배지',
-          fillColor: '#fbbf24',
-          x: 980, y: 360, width: 180, height: 180,
-          rotation: 15, opacity: 1, visible: true, locked: false
+          id: 'l_star_1', type: 'star', name: '골드 스타', fillColor: '#fbbf24',
+          x: 980, y: 350, width: 180, height: 180, rotation: 12, opacity: 1, visible: true, locked: false
         }
       ];
-    } else if (type === 'clean-business') {
-      state.canvasWidth = 1080;
-      state.canvasHeight = 1080;
-      state.bgType = 'color';
-      state.bgColor = '#0f172a';
+    } else if (tpl === 'clean-magazine') {
+      state.canvasWidth = 1080; state.canvasHeight = 1080;
+      state.bgType = 'color'; state.bgColor = '#f8fafc';
       state.layers = [
         {
-          id: 'l_accent_bar',
-          type: 'rect',
-          name: '인디고 포인트 바',
-          fillColor: '#6366f1',
-          x: 80, y: 80, width: 920, height: 8,
-          rotation: 0, opacity: 1, visible: true, locked: false
+          id: 'l_card_box', type: 'rect', name: '화이트 카드 박스', fillColor: '#ffffff', borderRadius: 20,
+          x: 60, y: 60, width: 960, height: 960, rotation: 0, opacity: 1, visible: true, locked: false,
+          hasShadow: true, shadowColor: 'rgba(0,0,0,0.06)', shadowBlur: 20, shadowOffset: 8
         },
         {
-          id: 'l_b_tag',
-          type: 'text',
-          name: '카테고리 태그',
-          text: 'REPORT · 2026 TREND',
-          fontFamily: "'Pretendard', sans-serif",
-          fontSize: 26, textColor: '#818cf8', strokeWidth: 0,
-          x: 80, y: 140, width: 400, height: 40,
-          rotation: 0, opacity: 1, visible: true, locked: false
+          id: 'l_tag_t', type: 'text', name: '리포트 태그', text: 'SPECIAL REPORT · 2026',
+          fontFamily: "'Pretendard', sans-serif", fontSize: 26, textColor: '#2563eb', isBold: true,
+          x: 120, y: 140, width: 400, height: 35, rotation: 0, opacity: 1, visible: true, locked: false
         },
         {
-          id: 'l_b_title',
-          type: 'text',
-          name: '헤드라인',
-          text: '새로운 세대의 아웃풋,\n궁디 크리에이티브 스튜디오',
-          fontFamily: "'Pretendard', sans-serif",
-          fontSize: 58, textColor: '#ffffff', strokeWidth: 0,
-          x: 80, y: 220, width: 880, height: 160,
-          rotation: 0, opacity: 1, visible: true, locked: false
+          id: 'l_head_t', type: 'text', name: '대제목', text: '새로운 세대의 아웃풋,\n궁디 크리에이티브 스튜디오',
+          fontFamily: "'Pretendard', sans-serif", fontSize: 62, textColor: '#0f172a', isBold: true,
+          lineHeight: 1.25,
+          x: 120, y: 220, width: 840, height: 170, rotation: 0, opacity: 1, visible: true, locked: false
         },
         {
-          id: 'l_b_sub',
-          type: 'text',
-          name: '상세 설명',
-          text: '설치 없이 웹 브라우저에서 누리는\n전문가용 캔버스 그래픽 제작 솔루션',
-          fontFamily: "'Noto Sans KR', sans-serif",
-          fontSize: 32, textColor: '#94a3b8', strokeWidth: 0,
-          x: 80, y: 440, width: 800, height: 90,
-          rotation: 0, opacity: 1, visible: true, locked: false
+          id: 'l_body_t', type: 'text', name: '본문 설명', text: '누구나 전문가처럼 캔바와 망고보드 스타일로\n고해상도 썸네일과 배너를 웹에서 즉시 제작합니다.',
+          fontFamily: "'Noto Sans KR', sans-serif", fontSize: 32, textColor: '#64748b', isBold: false,
+          lineHeight: 1.4,
+          x: 120, y: 440, width: 800, height: 100, rotation: 0, opacity: 1, visible: true, locked: false
+        }
+      ];
+    } else if (tpl === 'sale-event') {
+      state.canvasWidth = 1200; state.canvasHeight = 630;
+      state.bgType = 'gradient';
+      state.bgGradient = { from: '#fef08a', to: '#fed7aa', angle: 135 };
+      state.layers = [
+        {
+          id: 'l_sale_tag', type: 'pill', name: '한정 세일 태그', fillColor: '#dc2626',
+          x: 80, y: 80, width: 200, height: 46, rotation: 0, opacity: 1, visible: true, locked: false
+        },
+        {
+          id: 'l_sale_tt', type: 'text', name: '태그 글자', text: '선착순 특가 혜택',
+          fontFamily: "'Pretendard', sans-serif", fontSize: 22, textColor: '#ffffff', isBold: true,
+          x: 105, y: 92, width: 160, height: 30, rotation: 0, opacity: 1, visible: true, locked: false
+        },
+        {
+          id: 'l_sale_title', type: 'text', name: '세일 타이틀', text: '최대 80% 파격 세일!',
+          fontFamily: "'Black Han Sans', sans-serif", fontSize: 88, textColor: '#7c2d12', isBold: true,
+          hasOutline: true, outlineColor: '#ffffff', outlineWidth: 8,
+          x: 80, y: 160, width: 900, height: 110, rotation: 0, opacity: 1, visible: true, locked: false
+        },
+        {
+          id: 'l_sale_sub', type: 'text', name: '기간 설명', text: '단 3일간만 진행되는 궁디 스튜디오 오픈 프로모션',
+          fontFamily: "'Pretendard', sans-serif", fontSize: 34, textColor: '#9a3412', isBold: true,
+          x: 85, y: 300, width: 800, height: 50, rotation: 0, opacity: 1, visible: true, locked: false
         }
       ];
     }
@@ -1343,7 +1546,7 @@
     canvas.width = state.canvasWidth;
     canvas.height = state.canvasHeight;
     canvasPresetSelect.value = `${state.canvasWidth}x${state.canvasHeight}`;
-    updateStatusBar();
+    updateDimUI();
     fitToScreen();
     selectLayer(state.layers[state.layers.length - 1]?.id || null);
     pushHistory();
@@ -1351,39 +1554,20 @@
   }
 
   // ==========================================================================
-  // 단축키 시스템 (Figma / Canva 표준)
+  // 단축키 시스템
   // ==========================================================================
   window.addEventListener('keydown', (e) => {
-    // 인풋 포커스 시 단축키 비활성화
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
-    // 스페이스바 (팬 모드 활성화)
-    if (e.code === 'Space') {
-      state.spacePressed = true;
-      canvasStageWrapper.style.cursor = 'grab';
-    }
-
-    // Ctrl + Z (실행 취소)
     if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'ㅋ') && !e.shiftKey) {
-      e.preventDefault();
-      undo();
-    }
-    // Ctrl + Y 또는 Ctrl + Shift + Z (다시 실행)
-    else if ((e.ctrlKey || e.metaKey) && ((e.key === 'y' || e.key === 'ㅛ') || (e.shiftKey && (e.key === 'z' || e.key === 'ㅋ')))) {
-      e.preventDefault();
-      redo();
-    }
-    // Ctrl + D (레이어 복제)
-    else if ((e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'ㅇ')) {
-      e.preventDefault();
-      duplicateSelectedLayer();
-    }
-    // Delete 또는 Backspace (레이어 삭제)
-    else if (e.key === 'Delete' || e.key === 'Backspace') {
+      e.preventDefault(); undo();
+    } else if ((e.ctrlKey || e.metaKey) && ((e.key === 'y' || e.key === 'ㅛ') || (e.shiftKey && (e.key === 'z' || e.key === 'ㅋ')))) {
+      e.preventDefault(); redo();
+    } else if ((e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'ㅇ')) {
+      e.preventDefault(); duplicateSelectedLayer();
+    } else if (e.key === 'Delete' || e.key === 'Backspace') {
       deleteSelectedLayer();
-    }
-    // 방향키 이동 (1px 미세이동 / Shift 10px 고속이동)
-    else if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+    } else if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
       const s = getSelectedLayer();
       if (!s) return;
       e.preventDefault();
@@ -1396,67 +1580,48 @@
     }
   });
 
-  window.addEventListener('keyup', (e) => {
-    if (e.code === 'Space') {
-      state.spacePressed = false;
-      if (!state.isPanning) canvasStageWrapper.style.cursor = 'default';
-    }
-  });
-
-  // Ctrl + 마우스 휠 줌
-  canvasStageWrapper.addEventListener('wheel', (e) => {
+  // Ctrl + 휠 줌
+  canvasCenterStage.addEventListener('wheel', (e) => {
     if (e.ctrlKey || e.metaKey) {
       e.preventDefault();
-      const zoomDelta = e.deltaY > 0 ? -0.1 : 0.1;
-      setZoom(state.zoom + zoomDelta);
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      setZoom(state.zoom + delta);
     }
   }, { passive: false });
 
-  // ==========================================================================
-  // 프리셋 선택 및 프로젝트 파일 관리 (.gdp-img)
-  // ==========================================================================
+  // 캔버스 크기 프리셋
   canvasPresetSelect.addEventListener('change', () => {
     const val = canvasPresetSelect.value;
     if (val === 'custom') {
-      const input = prompt('캔버스 가로 x 세로 크기를 입력하세요 (예: 1920x1080):', `${state.canvasWidth}x${state.canvasHeight}`);
+      const input = prompt('가로x세로 (예: 1920x1080):', `${state.canvasWidth}x${state.canvasHeight}`);
       if (input && input.includes('x')) {
         const [w, h] = input.split('x').map(Number);
-        if (w > 100 && h > 100) {
-          state.canvasWidth = w;
-          state.canvasHeight = h;
-        }
+        if (w > 100 && h > 100) { state.canvasWidth = w; state.canvasHeight = h; }
       }
     } else {
       const [w, h] = val.split('x').map(Number);
-      state.canvasWidth = w;
-      state.canvasHeight = h;
+      state.canvasWidth = w; state.canvasHeight = h;
     }
     canvas.width = state.canvasWidth;
     canvas.height = state.canvasHeight;
-    updateStatusBar();
+    updateDimUI();
     fitToScreen();
     renderCanvas();
     pushHistory();
-    showToast(`캔버스 크기: ${state.canvasWidth} × ${state.canvasHeight}`);
-  });
-
-  btnSnapToggle.addEventListener('click', () => {
-    state.snapEnabled = !state.snapEnabled;
-    btnSnapToggle.classList.toggle('active', state.snapEnabled);
-    showToast(state.snapEnabled ? '스마트 스냅 가이드 켜짐' : '스냅 가이드 꺼짐');
   });
 
   zoomInBtn.addEventListener('click', () => setZoom(state.zoom + 0.15));
   zoomOutBtn.addEventListener('click', () => setZoom(state.zoom - 0.15));
   zoomFitBtn.addEventListener('click', fitToScreen);
 
-  // 💾 프로젝트 저장
+  // 💾 프로젝트 저장 (.gdp-img)
   saveProjectBtn.addEventListener('click', () => {
+    commitInlineTextEditor();
     const projectData = {
-      version: '2.0',
-      type: 'goongdi-image-project-pro',
+      version: '3.0',
+      type: 'goongdi-canva-project',
       savedAt: new Date().toISOString(),
-      title: state.title,
+      docTitle: state.docTitle,
       canvasWidth: state.canvasWidth,
       canvasHeight: state.canvasHeight,
       bgType: state.bgType,
@@ -1473,27 +1638,26 @@
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${state.title.replace(/[^a-zA-Z0-9가-힣_-]/g, '_')}_${Date.now()}.gdp-img`;
+    a.download = `${state.docTitle.replace(/[^a-zA-Z0-9가-힣_-]/g, '_')}_${Date.now()}.gdp-img`;
     document.body.appendChild(a);
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 4000);
-    showToast('프로젝트가 .gdp-img 파일로 다운로드되었습니다!');
+    showToast('프로젝트 파일(.gdp-img)이 다운로드되었습니다!');
   });
 
-  // 📁 프로젝트 불러오기
+  // 📁 프로젝트 열기
   loadProjectInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = (evt) => {
       try {
-        const data = JSON.parse(event.target.result);
+        const data = JSON.parse(evt.target.result);
         if (!data.layers) throw new Error('올바른 궁디 프로젝트 파일이 아닙니다.');
         restoreSnapshot(JSON.stringify(data));
         fitToScreen();
-        showToast('프로젝트를 성공적으로 불러왔습니다!');
+        showToast('프로젝트를 불러왔습니다!');
       } catch (err) {
         alert('프로젝트 파일 로드 실패: ' + err.message);
       }
@@ -1502,12 +1666,12 @@
     loadProjectInput.value = '';
   });
 
-  projectTitleInput.addEventListener('input', () => {
-    state.title = projectTitleInput.value.trim() || '무제 디자인';
+  docTitleInput.addEventListener('input', () => {
+    state.docTitle = docTitleInput.value.trim() || '새 썸네일 디자인';
   });
 
   // ==========================================================================
-  // 고해상도 내보내기 (1X, 2X 레티나, PNG/JPG/WebP)
+  // 고해상도 내보내기 (1X, 2X, PNG/JPG/WebP)
   // ==========================================================================
   exportMainBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -1515,30 +1679,28 @@
   });
 
   window.addEventListener('click', () => {
-    if (exportMenuPopover) exportMenuPopover.classList.remove('open');
+    exportMenuPopover.classList.remove('open');
   });
 
-  document.querySelectorAll('.export-option-item').forEach(btn => {
+  document.querySelectorAll('.export-popover-item').forEach(btn => {
     btn.addEventListener('click', () => {
+      commitInlineTextEditor();
+      selectLayer(null);
+
       const format = btn.getAttribute('data-format');
       const scale = parseInt(btn.getAttribute('data-scale'), 10) || 1;
-
-      // 선택 테두리 끄기
-      selectLayer(null);
 
       showToast(`${scale}X 고해상도 이미지 렌더링 중...`);
 
       setTimeout(() => {
         let exportCanvas = canvas;
         if (scale > 1) {
-          // 2X 레티나 렌더링 캔버스 생성
           exportCanvas = document.createElement('canvas');
           exportCanvas.width = canvas.width * scale;
           exportCanvas.height = canvas.height * scale;
           const eCtx = exportCanvas.getContext('2d');
           eCtx.scale(scale, scale);
 
-          // 배경 그리기
           if (state.bgType === 'gradient' && state.bgGradient) {
             const grad = eCtx.createLinearGradient(0, 0, canvas.width, canvas.height);
             grad.addColorStop(0, state.bgGradient.from);
@@ -1549,7 +1711,6 @@
           }
           eCtx.fillRect(0, 0, canvas.width, canvas.height);
 
-          // 모든 레이어 동일하게 2배 스케일 렌더
           state.layers.forEach(layer => {
             if (!layer.visible) return;
             eCtx.save();
@@ -1561,43 +1722,34 @@
             eCtx.translate(-cx, -cy);
 
             if (layer.hasShadow) {
-              eCtx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-              eCtx.shadowBlur = layer.shadowBlur || 12;
-              eCtx.shadowOffsetX = layer.shadowOffsetX || 4;
-              eCtx.shadowOffsetY = layer.shadowOffsetY || 6;
+              eCtx.shadowColor = layer.shadowColor || 'rgba(0,0,0,0.45)';
+              eCtx.shadowBlur = layer.shadowBlur || 8;
+              eCtx.shadowOffsetX = layer.shadowOffset || 6;
+              eCtx.shadowOffsetY = layer.shadowOffset || 6;
             }
 
             if (layer.type === 'rect') {
-              eCtx.fillStyle = layer.fillColor || '#3b82f6';
-              eCtx.fillRect(layer.x, layer.y, layer.width, layer.height);
+              eCtx.fillStyle = layer.fillColor || '#7c3aed';
+              if (layer.borderRadius > 0) drawRoundedRect(eCtx, layer.x, layer.y, layer.width, layer.height, layer.borderRadius);
+              else eCtx.fillRect(layer.x, layer.y, layer.width, layer.height);
+              eCtx.fill();
             } else if (layer.type === 'circle') {
               eCtx.fillStyle = layer.fillColor || '#ef4444';
               eCtx.beginPath();
               eCtx.ellipse(cx, cy, layer.width / 2, layer.height / 2, 0, 0, Math.PI * 2);
               eCtx.fill();
-            } else if (layer.type === 'text') {
-              eCtx.font = `${layer.fontWeight || '900'} ${layer.fontSize}px ${layer.fontFamily}`;
-              eCtx.textAlign = 'left';
-              eCtx.textBaseline = 'top';
-              if (layer.strokeWidth > 0) {
-                eCtx.lineWidth = layer.strokeWidth;
-                eCtx.strokeStyle = layer.strokeColor || '#000000';
-                eCtx.lineJoin = 'round';
-                eCtx.strokeText(layer.text, layer.x, layer.y);
-              }
-              eCtx.fillStyle = layer.textColor || '#ffffff';
-              eCtx.fillText(layer.text, layer.x, layer.y);
-            } else if (layer.type === 'image' && layer._imgEl) {
-              eCtx.drawImage(layer._imgEl, layer.x, layer.y, layer.width, layer.height);
+            } else if (layer.type === 'pill') {
+              eCtx.fillStyle = layer.fillColor || '#3b82f6';
+              drawRoundedRect(eCtx, layer.x, layer.y, layer.width, layer.height, layer.height / 2);
+              eCtx.fill();
             } else if (layer.type === 'star') {
               eCtx.fillStyle = layer.fillColor || '#f59e0b';
               drawStar(eCtx, cx, cy, 5, layer.width / 2, layer.width / 4);
               eCtx.fill();
-            } else if (layer.type === 'pill') {
-              eCtx.fillStyle = layer.fillColor || '#8b5cf6';
-              const r = Math.min(layer.width, layer.height) / 2;
-              drawRoundedRect(eCtx, layer.x, layer.y, layer.width, layer.height, r);
-              eCtx.fill();
+            } else if (layer.type === 'text') {
+              renderTextLayer(eCtx, layer);
+            } else if (layer.type === 'image' && layer._imgEl) {
+              eCtx.drawImage(layer._imgEl, layer.x, layer.y, layer.width, layer.height);
             }
             eCtx.restore();
           });
@@ -1605,24 +1757,24 @@
 
         const mime = format === 'jpeg' ? 'image/jpeg' : format === 'webp' ? 'image/webp' : 'image/png';
         const ext = format === 'jpeg' ? 'jpg' : format;
-        const dataUrl = exportCanvas.toDataURL(mime, 0.94);
+        const dataUrl = exportCanvas.toDataURL(mime, 0.95);
 
         const a = document.createElement('a');
         a.href = dataUrl;
-        a.download = `${state.title.replace(/[^a-zA-Z0-9가-힣_-]/g, '_')}_${scale}x.${ext}`;
+        a.download = `${state.docTitle.replace(/[^a-zA-Z0-9가-힣_-]/g, '_')}_${scale}x.${ext}`;
         document.body.appendChild(a);
         a.click();
         a.remove();
-        showToast(`${scale}X ${ext.toUpperCase()} 저장 완료!`);
-      }, 60);
+        showToast(`${scale}X ${ext.toUpperCase()} 다운로드 완료!`);
+      }, 50);
     });
   });
 
   // ==========================================================================
-  // 초기화 (데모 템플릿 로드)
+  // 초기화: 화사한 매거진 카드뉴스 데모 로드
   // ==========================================================================
   function init() {
-    loadTemplatePreset('gaming-thumb');
+    loadTemplate('clean-magazine');
     undoBtn.addEventListener('click', undo);
     redoBtn.addEventListener('click', redo);
   }
