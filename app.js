@@ -77,6 +77,38 @@
     });
   }
 
+  function setupDropzone(dropzoneEl, inputEl, onFilesSelected) {
+    if (!dropzoneEl || !inputEl) return;
+    dropzoneEl.addEventListener('click', (e) => {
+      if (e.target === inputEl) return;
+      inputEl.click();
+    });
+    dropzoneEl.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzoneEl.classList.add('dragover');
+    });
+    dropzoneEl.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzoneEl.classList.remove('dragover');
+    });
+    dropzoneEl.addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzoneEl.classList.remove('dragover');
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        onFilesSelected(e.dataTransfer.files);
+      }
+    });
+    inputEl.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        onFilesSelected(e.target.files);
+      }
+      inputEl.value = '';
+    });
+  }
+
   /* ==========================================================================
      1. 다크모드 토글 (기본: 화이트 라이트 테마) & 상단 탭 네비게이션
      ========================================================================== */
@@ -124,34 +156,11 @@
   const navVideoCurrentLabel = document.getElementById('navVideoCurrentLabel');
 
   let activeTabId = 'img-compress';
-  let activeEditSubtool = 'crop';
   let lastImageTarget = 'img-compress';
   let lastVideoTarget = 'video-compress';
 
-  function syncEditSubtoolUI(subtool) {
-    activeEditSubtool = subtool;
-    const btns = document.querySelectorAll('#editSubtoolSwitcher .subtool-btn');
-    const cropView = document.getElementById('subtool-crop');
-    const bgView = document.getElementById('subtool-bgremove');
-    btns.forEach((b) => b.classList.toggle('active', b.getAttribute('data-subtool') === subtool));
-    if (cropView) cropView.classList.toggle('active', subtool === 'crop');
-    if (bgView) bgView.classList.toggle('active', subtool === 'bgremove');
-  }
-
   function switchTab(navTarget) {
-    let panelId = navTarget;
-    if (navTarget === 'img-crop') {
-      panelId = 'img-edit';
-      syncEditSubtoolUI('crop');
-    } else if (navTarget === 'img-bgremove') {
-      panelId = 'img-edit';
-      syncEditSubtoolUI('bgremove');
-    } else if (navTarget === 'img-edit') {
-      panelId = 'img-edit';
-      navTarget = activeEditSubtool === 'bgremove' ? 'img-bgremove' : 'img-crop';
-    }
-
-    activeTabId = panelId;
+    activeTabId = navTarget;
 
     const isImageGroup = navTarget.startsWith('img-');
     const isVideoGroup = navTarget.startsWith('video-');
@@ -189,7 +198,7 @@
     });
 
     tabPanels.forEach((panel) => {
-      panel.classList.toggle('active', panel.id === `tab-${panelId}`);
+      panel.classList.toggle('active', panel.id === `tab-${navTarget}`);
     });
   }
 
@@ -2559,11 +2568,10 @@
   window.addEventListener(
     'keydown',
     (e) => {
-      const editTabEl = document.getElementById('tab-img-edit');
-      const bgSubtoolEl = document.getElementById('subtool-bgremove');
+      const bgTabEl = document.getElementById('tab-img-bgremove');
       const isBgActive =
-        (activeTabId === 'img-edit' && activeEditSubtool === 'bgremove') ||
-        Boolean(editTabEl && editTabEl.classList.contains('active') && bgSubtoolEl && bgSubtoolEl.classList.contains('active'));
+        activeTabId === 'img-bgremove' ||
+        Boolean(bgTabEl && bgTabEl.classList.contains('active'));
       if (!isBgActive || !bgState.workData) return;
 
       // 텍스트/숫자 타이핑 입력칸에 포커스가 있을 때만 제외 (슬라이더 range, color, select 등은 단축키 허용)
@@ -2600,14 +2608,13 @@
     true
   );
 
-  // 이미지 편집 탭에서도 Ctrl+V 클립보드 붙여넣기 지원
+  // 이미지 자르기/리사이즈 및 배경 제거(누끼) 탭에서도 Ctrl+V 클립보드 붙여넣기 지원
   window.addEventListener('paste', (e) => {
-    if (activeTabId !== 'img-edit') return;
     if (!e.clipboardData || !e.clipboardData.files || e.clipboardData.files.length === 0) return;
     const file = e.clipboardData.files[0];
-    if (activeEditSubtool === 'crop') {
+    if (activeTabId === 'img-crop') {
       loadCropImage(file);
-    } else {
+    } else if (activeTabId === 'img-bgremove') {
       loadBgRemoveImage(file);
     }
   });
