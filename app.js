@@ -1392,7 +1392,7 @@
     fineAngle: 0,     // -45 ~ +45
     flipH: 1,         // 1 or -1
     flipV: 1,         // 1 or -1
-    ratioMode: 'free', // 'free', '1:1', '4:3', '16:9', '3:4', '9:16', 'custom'
+    ratioMode: 'full', // 'full', 'free', '1:1', '4:3', '16:9', '3:4', 'custom'
     customRatio: null,
     masterCanvas: document.createElement('canvas'),
     displayScale: 1,
@@ -1410,8 +1410,10 @@
   const cropBoxInfo = document.getElementById('cropBoxInfo');
   const cropFinalInfo = document.getElementById('cropFinalInfo');
   const cropRatioBtns = document.querySelectorAll('#cropRatioGrid .chip-btn');
+  const cropKeepAspectInput = document.getElementById('cropKeepAspectInput');
   const cropTargetW = document.getElementById('cropTargetW');
   const cropTargetH = document.getElementById('cropTargetH');
+  const applyFullResizeBtn = document.getElementById('applyFullResizeBtn');
   const applyCropPixelBtn = document.getElementById('applyCropPixelBtn');
   const cropForceExactSize = document.getElementById('cropForceExactSize');
   const rotateLeftBtn = document.getElementById('rotateLeftBtn');
@@ -1426,7 +1428,7 @@
   const changeCropImgBtn = document.getElementById('changeCropImgBtn');
 
   function getActiveAspectRatio() {
-    if (cropState.ratioMode === 'free') return null;
+    if (cropState.ratioMode === 'free' || cropState.ratioMode === 'full') return null;
     if (cropState.ratioMode === 'custom' && cropState.customRatio) return cropState.customRatio;
     const parts = cropState.ratioMode.split(':');
     if (parts.length === 2) {
@@ -1480,6 +1482,11 @@
     const mh = cropState.masterCanvas.height;
     if (!mw || !mh) return;
 
+    if (cropState.ratioMode === 'full') {
+      cropState.rect = { x: 0, y: 0, w: mw, h: mh };
+      return;
+    }
+
     const ratio = getActiveAspectRatio();
     if (!ratio) {
       cropState.rect.w = Math.min(mw, Math.max(16, cropState.rect.w));
@@ -1489,22 +1496,19 @@
       return;
     }
 
-    const cx = cropState.rect.x + cropState.rect.w / 2;
-    const cy = cropState.rect.y + cropState.rect.h / 2;
-    let w = centerKeep ? cropState.rect.w : mw * 0.85;
+    // 사진 안에서 해당 비율로 잡을 수 있는 가장 큰 영역(꽉 찬 비율 틀) 계산
+    const cx = centerKeep ? cropState.rect.x + cropState.rect.w / 2 : mw / 2;
+    const cy = centerKeep ? cropState.rect.y + cropState.rect.h / 2 : mh / 2;
+    let w = centerKeep ? cropState.rect.w : mw;
     let h = w / ratio;
 
-    if (h > mh * 0.85) {
-      h = mh * 0.85;
+    if (h > mh) {
+      h = mh;
       w = h * ratio;
     }
     if (w > mw) {
       w = mw;
       h = w / ratio;
-    }
-    if (h > mh) {
-      h = mh;
-      w = h * ratio;
     }
 
     w = Math.max(16, Math.round(w));
@@ -1535,8 +1539,8 @@
     const finalH = useExact ? th : selH;
 
     cropSizeFloating.textContent = `${finalW} × ${finalH} px`;
-    cropOrigInfo.textContent = `현재 캔버스: ${cropState.masterCanvas.width} × ${cropState.masterCanvas.height} px`;
-    cropBoxInfo.textContent = `자르기 영역: ${selW} × ${selH} px`;
+    cropOrigInfo.textContent = `원본: ${cropState.masterCanvas.width} × ${cropState.masterCanvas.height} px`;
+    cropBoxInfo.textContent = `선택 영역: ${selW} × ${selH} px`;
     cropFinalInfo.textContent = `최종 저장 크기: ${finalW} × ${finalH} px`;
   }
 
@@ -1553,22 +1557,20 @@
       cropState.fineAngle = 0;
       cropState.flipH = 1;
       cropState.flipV = 1;
+      cropState.ratioMode = 'full';
+      cropRatioBtns.forEach((b) => {
+        b.classList.toggle('active', b.getAttribute('data-ratio') === 'full');
+      });
       cropFineAngle.value = '0';
       cropFineAngleVal.textContent = '0°';
 
       rebuildCropMasterCanvas();
       const mw = cropState.masterCanvas.width;
       const mh = cropState.masterCanvas.height;
-      // 초기 크롭 영역: 중앙 85%
-      const initW = Math.round(mw * 0.85);
-      const initH = Math.round(mh * 0.85);
-      cropState.rect = {
-        x: Math.round((mw - initW) / 2),
-        y: Math.round((mh - initH) / 2),
-        w: initW,
-        h: initH
-      };
-      constrainCropRectToRatio(false);
+      // 초기 영역: 이미지 전체 선택 (잘림 없음) + 입력칸에 원본 해상도 자동 표시
+      cropState.rect = { x: 0, y: 0, w: mw, h: mh };
+      cropTargetW.value = String(mw);
+      cropTargetH.value = String(mh);
       updateCropBoxUI();
 
       cropDropzone.classList.add('hidden');
@@ -1576,7 +1578,7 @@
       downloadCroppedBtn.disabled = false;
       resetCropBtn.disabled = false;
       changeCropImgBtn.disabled = false;
-      showToast('이미지를 불러왔습니다. 파란색 틀을 조절해 보세요!');
+      showToast(`이미지를 불러왔습니다 (${mw}×${mh} px). 원하는 픽셀 숫자를 입력해 리사이즈하거나 틀을 조절하세요!`);
     } catch (err) {
       showToast('이미지를 불러오지 못했습니다.');
     }
@@ -1616,12 +1618,63 @@
       cropState.customRatio = null;
       if (cropState.img) {
         constrainCropRectToRatio(false);
+        cropTargetW.value = String(Math.round(cropState.rect.w));
+        cropTargetH.value = String(Math.round(cropState.rect.h));
         updateCropBoxUI();
       }
     });
   });
 
-  // 원하는 픽셀(px) 사이즈 지정 적용
+  // 가로(W) 또는 세로(H) 입력 시 비율 자동 맞춤 계산
+  if (cropTargetW) {
+    cropTargetW.addEventListener('input', () => {
+      const tw = parseInt(cropTargetW.value, 10);
+      if (cropKeepAspectInput && cropKeepAspectInput.checked && tw > 0 && cropState.rect.w > 0) {
+        const ratio = cropState.rect.h / cropState.rect.w;
+        cropTargetH.value = String(Math.max(1, Math.round(tw * ratio)));
+      }
+      updateCropBoxUI();
+    });
+  }
+
+  if (cropTargetH) {
+    cropTargetH.addEventListener('input', () => {
+      const th = parseInt(cropTargetH.value, 10);
+      if (cropKeepAspectInput && cropKeepAspectInput.checked && th > 0 && cropState.rect.h > 0) {
+        const ratio = cropState.rect.w / cropState.rect.h;
+        cropTargetW.value = String(Math.max(1, Math.round(th * ratio)));
+      }
+      updateCropBoxUI();
+    });
+  }
+
+  // [전체 리사이즈 적용] 버튼: 자르지 않고 이미지 전체를 선택한 뒤 입력한 W x H 해상도로 리사이즈
+  if (applyFullResizeBtn) {
+    applyFullResizeBtn.addEventListener('click', () => {
+      const tw = parseInt(cropTargetW.value, 10);
+      const th = parseInt(cropTargetH.value, 10);
+      if (!tw || !th || tw <= 0 || th <= 0) {
+        showToast('리사이즈할 가로(W)와 세로(H) 픽셀 숫자를 입력해 주세요.');
+        return;
+      }
+      cropRatioBtns.forEach((b) => {
+        b.classList.toggle('active', b.getAttribute('data-ratio') === 'full');
+      });
+      cropState.ratioMode = 'full';
+      cropState.customRatio = null;
+      cropForceExactSize.checked = true;
+
+      if (cropState.img) {
+        const mw = cropState.masterCanvas.width;
+        const mh = cropState.masterCanvas.height;
+        cropState.rect = { x: 0, y: 0, w: mw, h: mh };
+        updateCropBoxUI();
+        showToast(`전체 사진(${mw}×${mh})을 자르지 않고 ${tw} × ${th} px 크기로 리사이즈합니다!`);
+      }
+    });
+  }
+
+  // [자르기 틀 비율 적용] 버튼: 사진에 꽉 차는 가로:세로 비율 틀을 잡고 저장 시 W x H로 리사이즈
   function applyCustomPixelFrame() {
     const tw = parseInt(cropTargetW.value, 10);
     const th = parseInt(cropTargetH.value, 10);
@@ -1632,22 +1685,12 @@
     cropRatioBtns.forEach((b) => b.classList.remove('active'));
     cropState.ratioMode = 'custom';
     cropState.customRatio = tw / th;
+    cropForceExactSize.checked = true;
 
     if (cropState.img) {
-      const mw = cropState.masterCanvas.width;
-      const mh = cropState.masterCanvas.height;
-      if (tw <= mw && th <= mh) {
-        cropState.rect = {
-          x: Math.round((mw - tw) / 2),
-          y: Math.round((mh - th) / 2),
-          w: tw,
-          h: th
-        };
-      } else {
-        constrainCropRectToRatio(false);
-      }
+      constrainCropRectToRatio(false);
       updateCropBoxUI();
-      showToast(`자르기 틀이 ${tw} × ${th} px 규격 비율로 맞춰졌습니다!`);
+      showToast(`자르기 틀이 ${tw} : ${th} 비율로 맞춰졌으며, 저장 시 ${tw} × ${th} px로 저장됩니다!`);
     }
   }
 
@@ -1713,15 +1756,20 @@
       cropState.fineAngle = 0;
       cropState.flipH = 1;
       cropState.flipV = 1;
+      cropState.ratioMode = 'full';
+      cropRatioBtns.forEach((b) => {
+        b.classList.toggle('active', b.getAttribute('data-ratio') === 'full');
+      });
       cropFineAngle.value = '0';
       cropFineAngleVal.textContent = '0°';
       rebuildCropMasterCanvas();
       const mw = cropState.masterCanvas.width;
       const mh = cropState.masterCanvas.height;
       cropState.rect = { x: 0, y: 0, w: mw, h: mh };
-      constrainCropRectToRatio(false);
+      cropTargetW.value = String(mw);
+      cropTargetH.value = String(mh);
       updateCropBoxUI();
-      showToast('영역과 회전이 초기화되었습니다.');
+      showToast('영역, 크기, 회전이 모두 원본으로 초기화되었습니다.');
     });
   }
 
@@ -1802,6 +1850,10 @@
         w: Math.max(minSize, Math.round(w)),
         h: Math.max(minSize, Math.round(h))
       };
+      if (cropState.ratioMode !== 'custom') {
+        cropTargetW.value = String(cropState.rect.w);
+        cropTargetH.value = String(cropState.rect.h);
+      }
       updateCropBoxUI();
     });
 

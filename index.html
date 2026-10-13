@@ -326,10 +326,10 @@
         <h1>이미지 편집 스튜디오</h1>
         <p>원하는 픽셀(px) 규격 틀에 맞춰 자르기·회전하거나, 이미지 배경(누끼)을 깔끔하게 제거하세요.</p>
 
-        <!-- 서브툴 전환 탭 (자르기/회전 vs 배경제거) -->
+        <!-- 서브툴 전환 탭 (자르기/리사이즈/회전 vs 배경제거) -->
         <div class="subtool-switcher" id="editSubtoolSwitcher">
           <button type="button" class="subtool-btn active" data-subtool="crop">
-            ✂️ 이미지 자르기 · 회전 · 규격 맞춤
+            ✂️ 이미지 자르기 · 리사이즈 · 회전
           </button>
           <button type="button" class="subtool-btn" data-subtool="bgremove">
             🪄 이미지 배경 제거 (누끼 따기)
@@ -337,47 +337,64 @@
         </div>
       </div>
 
-      <!-- [서브툴 1] 이미지 자르기 / 회전 / 규격 맞춤 -->
+      <!-- [서브툴 1] 이미지 자르기 / 리사이즈 / 회전 -->
       <div id="subtool-crop" class="subtool-view active">
         <div class="workspace-grid">
           <aside class="settings-card">
             <h2 class="card-title">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2v14a2 2 0 0 0 2 2h14"></path><path d="M18 22V8a2 2 0 0 0-2-2H2"></path></svg>
-              자르기 · 회전 설정
+              자르기 · 리사이즈 · 회전
             </h2>
 
-            <!-- 1. 비율 프리셋 -->
+            <!-- 1. 픽셀(px) 리사이즈 및 규격 지정 -->
+            <div class="form-group">
+              <div class="label-row">
+                <label>원하는 픽셀(px) 크기 지정 (리사이즈)</label>
+              </div>
+              <label class="checkbox-label" style="margin-bottom:8px; font-size:0.8rem; color:var(--text-secondary);">
+                <input type="checkbox" id="cropKeepAspectInput" checked />
+                <span>가로·세로 비율 자동 맞춤</span>
+              </label>
+              <div class="pixel-input-row">
+                <div class="pixel-col">
+                  <span class="pixel-col-label">가로 (W, px)</span>
+                  <div class="pixel-field">
+                    <input type="number" id="cropTargetW" min="1" max="10000" placeholder="예: 600" />
+                  </div>
+                </div>
+                <span class="pixel-x">×</span>
+                <div class="pixel-col">
+                  <span class="pixel-col-label">세로 (H, px)</span>
+                  <div class="pixel-field">
+                    <input type="number" id="cropTargetH" min="1" max="10000" placeholder="예: 600" />
+                  </div>
+                </div>
+              </div>
+              <div class="transform-btn-grid" style="margin-top:8px;">
+                <button type="button" id="applyFullResizeBtn" class="btn btn-primary btn-sm" title="자르지 않고 사진 전체를 입력한 크기로 리사이즈합니다">
+                  📐 전체 리사이즈 적용
+                </button>
+                <button type="button" id="applyCropPixelBtn" class="btn btn-outline btn-sm" title="입력한 가로:세로 비율로 자르기 틀을 맞춥니다">
+                  ✂️ 자르기 틀 비율 적용
+                </button>
+              </div>
+              <label class="checkbox-label" style="margin-top:8px; font-size:0.8rem;">
+                <input type="checkbox" id="cropForceExactSize" checked />
+                <span>저장 시 위 입력한 픽셀(px) 크기로 정확히 맞춰 저장</span>
+              </label>
+            </div>
+
+            <!-- 2. 비율 프리셋 -->
             <div class="form-group">
               <label>자르기 틀 비율 선택</label>
               <div class="ratio-grid" id="cropRatioGrid">
-                <button type="button" class="chip-btn active" data-ratio="free">자유 비율</button>
+                <button type="button" class="chip-btn active" data-ratio="full">전체 (안 자름)</button>
+                <button type="button" class="chip-btn" data-ratio="free">자유 비율</button>
                 <button type="button" class="chip-btn" data-ratio="1:1">1:1 (정사각)</button>
                 <button type="button" class="chip-btn" data-ratio="4:3">4:3 (표준)</button>
                 <button type="button" class="chip-btn" data-ratio="16:9">16:9 (와이드)</button>
                 <button type="button" class="chip-btn" data-ratio="3:4">3:4 (세로/증명)</button>
-                <button type="button" class="chip-btn" data-ratio="9:16">9:16 (쇼츠)</button>
               </div>
-            </div>
-
-            <!-- 2. 원하는 픽셀 사이즈 고정 틀 -->
-            <div class="form-group">
-              <label>원하는 픽셀(px) 사이즈 지정</label>
-              <div class="pixel-input-row">
-                <div class="pixel-field">
-                  <span>가로(W)</span>
-                  <input type="number" id="cropTargetW" min="1" max="10000" placeholder="예: 800" />
-                </div>
-                <span class="pixel-x">×</span>
-                <div class="pixel-field">
-                  <span>세로(H)</span>
-                  <input type="number" id="cropTargetH" min="1" max="10000" placeholder="예: 600" />
-                </div>
-                <button type="button" id="applyCropPixelBtn" class="btn btn-outline btn-sm">적용</button>
-              </div>
-              <label class="checkbox-label" style="margin-top:8px; font-size:0.82rem;">
-                <input type="checkbox" id="cropForceExactSize" checked />
-                <span>저장 시 위 입력한 픽셀(px) 크기로 정확히 맞춰 저장</span>
-              </label>
             </div>
 
             <!-- 3. 회전 및 반전 -->
@@ -408,10 +425,10 @@
 
             <div class="action-stack">
               <button type="button" id="downloadCroppedBtn" class="btn btn-success btn-full" disabled>
-                ✂️ 잘라낸 이미지 다운로드
+                💾 리사이즈 / 잘라낸 이미지 다운로드
               </button>
               <button type="button" id="resetCropBtn" class="btn btn-outline btn-full" disabled>
-                영역 · 회전 초기화
+                영역 · 크기 · 회전 초기화
               </button>
               <button type="button" id="changeCropImgBtn" class="btn btn-outline btn-full" disabled>
                 다른 이미지 불러오기
