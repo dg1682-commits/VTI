@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>궁디 오디오 스튜디오 (PRO) | GOONGDI Audio Studio & Web DAW</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2310b981'/%3E%3Cpath d='M22 42 A6 6 0 1 1 16 36 L16 18 L38 14 L38 34 A6 6 0 1 1 32 28 L32 22 L22 24 Z' fill='%23ffffff'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="audio-studio.css?v=20261013_01" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body class="studio-body">
+  <!-- 상단 스튜디오 헤더 -->
+  <header class="studio-header">
+    <div class="header-left">
+      <a href="index.html" class="studio-brand" title="메인 허브로 이동">
+        <span class="brand-logo-badge">🎹</span>
+        <div class="brand-info">
+          <span class="brand-name">궁디 오디오 스튜디오</span>
+          <span class="brand-sub">GOONGDI Studio <span class="badge-pro-mini">PRO</span></span>
+        </div>
+      </a>
+
+      <!-- 프로젝트 관리 (저장 / 불러오기) -->
+      <div class="header-divider"></div>
+      <div class="project-actions">
+        <label for="loadAudioProjectInput" class="btn-studio btn-secondary" title="저장된 오디오 프로젝트(.gdp-audio)를 불러옵니다">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+          <span>불러오기</span>
+        </label>
+        <input type="file" id="loadAudioProjectInput" accept=".gdp-audio,.json" style="display: none;" />
+
+        <button type="button" class="btn-studio btn-primary" id="saveAudioProjectBtn" title="현재 작곡한 노트와 설정을 .gdp-audio 파일로 저장합니다">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+          <span>프로젝트 저장</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 중앙: DAW 트랜스포트 컨트롤러 (재생/정지, BPM, 메트로놈) -->
+    <div class="header-center">
+      <div class="transport-controls">
+        <button type="button" class="btn-transport" id="btnAudioStop" title="정지 (처음으로)">⏹</button>
+        <button type="button" class="btn-transport btn-play-main" id="btnAudioPlay" title="재생 / 일시정지 (Space)">▶</button>
+        <button type="button" class="btn-transport" id="btnAudioRecord" title="실시간 마이크 녹음">⏺</button>
+      </div>
+
+      <div class="tempo-control-box">
+        <label for="bpmInput" class="bpm-label">BPM</label>
+        <input type="number" id="bpmInput" min="40" max="240" value="120" class="bpm-input" />
+        <button type="button" class="btn-metronome" id="metronomeToggle" title="메트로놈 박자 켜기/끄기">
+          ⏱ 메트로놈
+        </button>
+      </div>
+
+      <div class="master-vol-box">
+        <span>🔊</span>
+        <input type="range" id="masterAudioVol" min="0" max="100" value="85" class="studio-slider" />
+      </div>
+    </div>
+
+    <!-- 우측: WAV 마스터링 내보내기 -->
+    <div class="header-right">
+      <button type="button" class="btn-studio btn-emerald" id="exportWavBtn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        <span>WAV 무손실 추출</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- 메인 모드 선택 탭 (피아노 롤 DAW vs 파형 편집기) -->
+  <div class="audio-mode-tabs">
+    <button type="button" class="audio-mode-tab active" id="tabModeDaw">
+      <span>🎹 피아노 롤 & 신디사이저 DAW</span>
+      <span class="mode-badge">작곡 모드</span>
+    </button>
+    <button type="button" class="audio-mode-tab" id="tabModeWaveform">
+      <span>🌊 오디오 파형 편집 & 변환</span>
+      <span class="mode-badge">편집 모드</span>
+    </button>
+  </div>
+
+  <!-- 메인 작업 공간 -->
+  <main class="audio-workspace">
+    <!-- ==========================================
+         뷰 1: 피아노 롤 & 웹 DAW (Piano Roll Studio)
+         ========================================== -->
+    <div class="daw-view-container active" id="viewDawContainer">
+      <!-- DAW 상단 도구 바 -->
+      <div class="daw-toolbar">
+        <div class="daw-tools-left">
+          <label class="toolbar-label">악기:</label>
+          <select id="synthPresetSelect" class="studio-select">
+            <option value="piano" selected>🎹 일렉트릭 피아노 (Poly Synth)</option>
+            <option value="lead">⚡ 신스 리드 (Sawtooth EDM Lead)</option>
+            <option value="bass">🎸 808 서브 베이스 (Sine Sub)</option>
+            <option value="pluck">🪕 플럭 (Pluck Bell)</option>
+          </select>
+
+          <div class="tool-sep"></div>
+          <button type="button" class="btn-daw-tool active" id="toolDawPencil" title="노트 찍기 (연필)">✏️ 노트 찍기</button>
+          <button type="button" class="btn-daw-tool" id="toolDawEraser" title="노트 지우기">🧹 지우개</button>
+          <button type="button" class="btn-daw-tool" id="toolDawClearAll" title="전체 비우기">🗑️ 전체 초기화</button>
+        </div>
+
+        <div class="daw-tools-right">
+          <span class="grid-hint">💡 팁: 건반을 누르면 소리가 나고, 우측 그리드를 클릭하면 음표가 찍힙니다!</span>
+        </div>
+      </div>
+
+      <!-- 피아노 롤 워크스페이스 (좌: 건반 / 우: 그리드) -->
+      <div class="pianoroll-scroll-area" id="pianorollScrollArea">
+        <!-- 좌측 피아노 건반 컬럼 -->
+        <div class="piano-keys-column" id="pianoKeysColumn">
+          <!-- C5 ~ C2 동적 건반 생성 -->
+        </div>
+
+        <!-- 우측 노트 그리드 타임라인 -->
+        <div class="piano-grid-area" id="pianoGridArea">
+          <!-- 시간 눈금 바 -->
+          <div class="grid-time-ruler" id="gridTimeRuler"></div>
+          <!-- 수직 재생 헤드 -->
+          <div class="grid-playhead" id="gridPlayhead"></div>
+          <!-- 캔버스 그리드 및 노트 렌더러 -->
+          <canvas id="pianorollCanvas" width="1920" height="720"></canvas>
+        </div>
+      </div>
+
+      <!-- 하단: 808 드럼 머신 스텝 시퀀서 -->
+      <div class="drum-machine-section">
+        <div class="drum-section-header">
+          <strong>🥁 808 드럼 스텝 시퀀서 (16 Steps)</strong>
+          <span class="drum-desc">버튼을 눌러 비트를 찍으면 피아노 롤과 함께 실시간 연주됩니다.</span>
+        </div>
+        <div class="drum-tracks-container" id="drumTracksContainer">
+          <!-- Kick, Snare, Hi-Hat, Clap 동적 16스텝 버튼 렌더링 -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         뷰 2: 오디오 파형 편집기 (Waveform Editor)
+         ========================================== -->
+    <div class="waveform-view-container" id="viewWaveformContainer">
+      <div class="waveform-dropzone" id="audioDropzone">
+        <label for="waveformFileInput" class="waveform-upload-label">
+          <span class="upload-icon">🎵</span>
+          <strong>오디오 파일을 이곳에 끌어다 놓으세요</strong>
+          <span>MP3, WAV, OGG, FLAC, M4A 지원 · 파형 보며 자르기 & 볼륨 편집</span>
+        </label>
+        <input type="file" id="waveformFileInput" accept="audio/*" style="display: none;" />
+      </div>
+
+      <div class="waveform-editor-card" id="waveformEditorCard" style="display: none;">
+        <div class="waveform-canvas-wrap">
+          <canvas id="waveformCanvas" width="1200" height="200"></canvas>
+        </div>
+        <div class="waveform-actions-row">
+          <button type="button" class="btn-studio btn-secondary" id="btnWavePlay">▶ 파형 재생</button>
+          <button type="button" class="btn-studio btn-secondary" id="btnWaveTrim">✂️ 선택 구간 자르기</button>
+          <button type="button" class="btn-studio btn-secondary" id="btnWaveFade">📉 페이드 아웃</button>
+          <button type="button" class="btn-studio btn-emerald" id="btnWaveDownload">💾 편집된 오디오 다운로드</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 하단 상태 바 -->
+  <footer class="studio-statusbar">
+    <div class="status-left">
+      <span class="status-dot"></span>
+      <span>Web Audio API 초정밀 오디오 신디사이저 엔진 (Latency &lt; 5ms)</span>
+      <span class="status-separator">|</span>
+      <span id="activeNotesLabel">활성 노트: 0개</span>
+    </div>
+    <div class="status-right">
+      <span>궁디 스튜디오 (GOONGDI Studio) · Great Output Of New Generation Directory</span>
+    </div>
+  </footer>
+
+  <div id="studioToast" class="studio-toast"></div>
+
+  <script src="audio-studio.js?v=20261013_01"></script>
+</body>
+</html>

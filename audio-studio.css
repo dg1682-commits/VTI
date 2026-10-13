@@ -1,0 +1,671 @@
+/* ==========================================================================
+   궁디 오디오 스튜디오 (GOONGDI Audio Studio) - Stylesheet
+   Full Screen Dark DAW Workspace (100vw x 100vh)
+   ========================================================================== */
+
+:root {
+  --bg-app: #080d12;
+  --bg-header: #0d151e;
+  --bg-panel: #121c27;
+  --bg-panel-subtle: #172433;
+  --bg-card: #1d2c3e;
+  --bg-input: #0a1118;
+  --bg-hover: #22344a;
+
+  --border-subtle: #1c2b3d;
+  --border-strong: #2a3e57;
+
+  --text-main: #f0fdf4;
+  --text-muted: #86efac;
+  --text-dim: #64748b;
+
+  --accent-emerald: #10b981;
+  --accent-emerald-hover: #059669;
+  --accent-cyan: #06b6d4;
+  --accent-gold: #f59e0b;
+  --accent-danger: #ef4444;
+
+  --key-h: 24px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+body.studio-body {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-app);
+  color: #ffffff;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  user-select: none;
+}
+
+/* ==========================================================================
+   헤더
+   ========================================================================== */
+.studio-header {
+  height: 52px;
+  background-color: var(--bg-header);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  flex-shrink: 0;
+}
+
+.header-left, .header-center, .header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.studio-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.brand-logo-badge {
+  font-size: 1.4rem;
+}
+
+.brand-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-name {
+  font-size: 0.94rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.brand-sub {
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
+.badge-pro-mini {
+  background: linear-gradient(135deg, #10b981, #06b6d4);
+  color: #042f2e;
+  font-size: 0.58rem;
+  font-weight: 900;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.header-divider {
+  width: 1px;
+  height: 22px;
+  background-color: var(--border-subtle);
+}
+
+.project-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-studio {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.btn-studio.btn-secondary {
+  background-color: var(--bg-panel);
+  color: #ffffff;
+  border-color: var(--border-strong);
+}
+
+.btn-studio.btn-secondary:hover {
+  background-color: var(--bg-hover);
+}
+
+.btn-studio.btn-primary {
+  background-color: #2563eb;
+  color: #ffffff;
+}
+
+.btn-studio.btn-emerald {
+  background: linear-gradient(135deg, #10b981, #06b6d4);
+  color: #03201a;
+  border: none;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+  font-weight: 800;
+}
+
+.btn-studio.btn-emerald:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+/* 트랜스포트 바 */
+.transport-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-transport {
+  width: 34px;
+  height: 34px;
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-transport:hover {
+  background-color: var(--bg-hover);
+}
+
+.btn-transport.btn-play-main {
+  width: 38px;
+  height: 38px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0 3px 10px rgba(16, 185, 129, 0.4);
+}
+
+.tempo-control-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--bg-input);
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+}
+
+.bpm-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.bpm-input {
+  width: 48px;
+  background: transparent;
+  border: none;
+  color: #10b981;
+  font-weight: 800;
+  font-size: 0.88rem;
+  text-align: center;
+  outline: none;
+}
+
+.btn-metronome {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 0.72rem;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.btn-metronome.active {
+  background-color: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  border-color: #10b981;
+}
+
+.master-vol-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+}
+
+.studio-slider {
+  accent-color: var(--accent-emerald);
+  cursor: pointer;
+}
+
+/* 모드 탭 */
+.audio-mode-tabs {
+  height: 38px;
+  background-color: var(--bg-header);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  padding: 0 16px;
+  gap: 12px;
+}
+
+.audio-mode-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #94a3b8;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.audio-mode-tab:hover {
+  color: #ffffff;
+}
+
+.audio-mode-tab.active {
+  color: #10b981;
+  border-bottom-color: #10b981;
+}
+
+.mode-badge {
+  font-size: 0.65rem;
+  background-color: var(--bg-card);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #94a3b8;
+}
+
+/* ==========================================================================
+   메인 워크스페이스
+   ========================================================================== */
+.audio-workspace {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.daw-view-container, .waveform-view-container {
+  flex: 1;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.daw-view-container.active, .waveform-view-container.active {
+  display: flex;
+}
+
+/* DAW 도구 바 */
+.daw-toolbar {
+  height: 40px;
+  background-color: var(--bg-panel);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  flex-shrink: 0;
+}
+
+.daw-tools-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toolbar-label {
+  font-size: 0.76rem;
+  color: #94a3b8;
+  font-weight: 700;
+}
+
+.studio-select {
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  color: #ffffff;
+  padding: 4px 8px;
+  border-radius: 5px;
+  font-size: 0.80rem;
+  outline: none;
+}
+
+.tool-sep {
+  width: 1px;
+  height: 20px;
+  background-color: var(--border-subtle);
+  margin: 0 4px;
+}
+
+.btn-daw-tool {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  padding: 4px 8px;
+  font-size: 0.76rem;
+  color: #94a3b8;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.btn-daw-tool:hover {
+  background-color: var(--bg-hover);
+  color: #ffffff;
+}
+
+.btn-daw-tool.active {
+  background-color: rgba(16, 185, 129, 0.15);
+  border-color: #10b981;
+  color: #10b981;
+  font-weight: 700;
+}
+
+.grid-hint {
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+/* 피아노 롤 스크롤 뷰포트 */
+.pianoroll-scroll-area {
+  flex: 1;
+  display: flex;
+  overflow: auto;
+  position: relative;
+  background-color: #060a0e;
+}
+
+/* 좌측 건반 컬럼 */
+.piano-keys-column {
+  width: 80px;
+  background-color: var(--bg-header);
+  border-right: 1px solid var(--border-strong);
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  left: 0;
+  z-index: 20;
+}
+
+.piano-key {
+  height: var(--key-h);
+  border-bottom: 1px solid #1a2636;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.08s;
+}
+
+.piano-key.white {
+  background-color: #e2e8f0;
+  color: #0f172a;
+}
+
+.piano-key.white:hover, .piano-key.white.active {
+  background-color: #93c5fd;
+}
+
+.piano-key.black {
+  background-color: #111827;
+  color: #94a3b8;
+}
+
+.piano-key.black:hover, .piano-key.black.active {
+  background-color: #374151;
+}
+
+/* 우측 그리드 */
+.piano-grid-area {
+  flex: 1;
+  position: relative;
+  min-width: 1400px;
+}
+
+.grid-time-ruler {
+  height: 24px;
+  background-color: var(--bg-panel);
+  border-bottom: 1px solid var(--border-subtle);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.grid-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.8);
+  z-index: 15;
+  pointer-events: none;
+  transform: translateX(0);
+}
+
+#pianorollCanvas {
+  display: block;
+  cursor: crosshair;
+}
+
+/* 하단 808 드럼 시퀀서 */
+.drum-machine-section {
+  height: 180px;
+  background-color: var(--bg-panel);
+  border-top: 1px solid var(--border-strong);
+  display: flex;
+  flex-direction: column;
+  padding: 10px 14px;
+  flex-shrink: 0;
+}
+
+.drum-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.drum-section-header strong {
+  font-size: 0.84rem;
+  color: #10b981;
+}
+
+.drum-desc {
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.drum-tracks-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.drum-track-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.drum-name-label {
+  width: 70px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.drum-steps-group {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+}
+
+.step-btn {
+  flex: 1;
+  height: 26px;
+  background-color: var(--bg-panel-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.step-btn:hover {
+  background-color: var(--bg-hover);
+}
+
+.step-btn.active {
+  background: linear-gradient(135deg, #10b981, #06b6d4);
+  border-color: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.step-btn.current-step {
+  border-color: #ffffff;
+}
+
+/* 파형 편집 뷰 */
+.waveform-view-container {
+  padding: 40px;
+  align-items: center;
+  justify-content: center;
+}
+
+.waveform-dropzone {
+  border: 2px dashed var(--border-strong);
+  border-radius: 12px;
+  padding: 50px 30px;
+  text-align: center;
+  background-color: var(--bg-panel);
+  cursor: pointer;
+  transition: all 0.18s;
+  max-width: 600px;
+  width: 100%;
+}
+
+.waveform-dropzone:hover {
+  border-color: #10b981;
+  background-color: var(--bg-hover);
+}
+
+.waveform-upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.upload-icon {
+  font-size: 2.4rem;
+}
+
+.waveform-editor-card {
+  width: 100%;
+  max-width: 1000px;
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.waveform-canvas-wrap {
+  background-color: #05080c;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+#waveformCanvas {
+  width: 100%;
+  height: 180px;
+  display: block;
+}
+
+.waveform-actions-row {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* 하단 상태바 */
+.studio-statusbar {
+  height: 26px;
+  background-color: var(--bg-header);
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  font-size: 0.72rem;
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.status-left, .status-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  background-color: #10b981;
+  border-radius: 50%;
+}
+
+.status-separator {
+  color: var(--border-strong);
+}
+
+/* 토스트 */
+.studio-toast {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background-color: rgba(13, 21, 30, 0.95);
+  border: 1px solid #10b981;
+  color: #ffffff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.22s ease;
+  z-index: 9999;
+}
+
+.studio-toast.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}

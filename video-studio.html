@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>궁디 영상 스튜디오 (PRO) | GOONGDI Video Studio</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%238b5cf6'/%3E%3Cpath d='M18 20 L46 32 L18 44 Z' fill='%23ffffff'/%3E%3Ccircle cx='46' cy='22' r='4' fill='%23ffffff'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="video-studio.css?v=20261013_01" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Jua&family=Noto+Sans+KR:wght@400;500;700;900&family=Pretendard:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body class="studio-body">
+  <!-- 상단 스튜디오 헤더 -->
+  <header class="studio-header">
+    <div class="header-left">
+      <a href="index.html" class="studio-brand" title="메인 허브로 이동">
+        <span class="brand-logo-badge">🎬</span>
+        <div class="brand-info">
+          <span class="brand-name">궁디 영상 스튜디오</span>
+          <span class="brand-sub">GOONGDI Studio <span class="badge-pro-mini">PRO</span></span>
+        </div>
+      </a>
+
+      <!-- 프로젝트 관리 (저장 / 불러오기) -->
+      <div class="header-divider"></div>
+      <div class="project-actions">
+        <label for="loadVideoProjectInput" class="btn-studio btn-secondary" title="저장된 영상 프로젝트 파일(.gdp-video)을 불러옵니다">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+          <span>불러오기</span>
+        </label>
+        <input type="file" id="loadVideoProjectInput" accept=".gdp-video,.json" style="display: none;" />
+
+        <button type="button" class="btn-studio btn-primary" id="saveVideoProjectBtn" title="현재 타임라인과 자막을 .gdp-video 파일로 저장합니다">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+          <span>프로젝트 저장</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 중앙: 화면 비율 및 타임코드 -->
+    <div class="header-center">
+      <div class="aspect-selector">
+        <label class="aspect-label">화면 비율</label>
+        <select id="aspectRatioSelect" class="studio-select">
+          <option value="16:9" selected>16:9 가로 영상 (유튜브/TV)</option>
+          <option value="9:16">9:16 세로 영상 (쇼츠/릴스/틱톡)</option>
+          <option value="1:1">1:1 정방형 (인스타그램 피드)</option>
+          <option value="4:3">4:3 레트로</option>
+        </select>
+      </div>
+
+      <div class="timecode-display">
+        <span id="currentTimeLabel">00:00.0</span>
+        <span class="time-sep">/</span>
+        <span id="totalTimeLabel">00:15.0</span>
+      </div>
+    </div>
+
+    <!-- 우측: MP4 내보내기 -->
+    <div class="header-right">
+      <button type="button" class="btn-studio btn-purple" id="exportVideoBtn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+        <span>MP4 고화질 내보내기</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- 메인 워크스페이스 상단 (3열: 미디어 라이브러리 | 프리뷰어 | 인스펙터) -->
+  <div class="video-top-workspace">
+    <!-- 좌측: 미디어 및 자막 템플릿 라이브러리 -->
+    <aside class="media-library-panel">
+      <div class="lib-tab-header">
+        <button type="button" class="lib-tab-btn active" id="tabLibMedia">내 미디어</button>
+        <button type="button" class="lib-tab-btn" id="tabLibSubs">자막 템플릿</button>
+        <button type="button" class="lib-tab-btn" id="tabLibAudio">배경음악</button>
+      </div>
+
+      <!-- 탭 1: 내 미디어 파일 -->
+      <div class="lib-tab-content active" id="contentLibMedia">
+        <div class="upload-dropzone" id="mediaDropzone">
+          <label for="mediaFileInput" class="upload-label">
+            <span class="upload-icon">📁</span>
+            <strong>동영상 / 오디오 추가</strong>
+            <span>MP4, MOV, WebM, MP3 끌어놓기</span>
+          </label>
+          <input type="file" id="mediaFileInput" accept="video/*,audio/*,image/*" style="display: none;" />
+        </div>
+        <div class="media-list" id="mediaListContainer">
+          <div class="media-item-demo active" id="demoVideoItem">
+            <span class="media-item-icon">🎬</span>
+            <div class="media-item-meta">
+              <strong>샘플 인트로 영상.mp4</strong>
+              <span>15.0초 · 1080p FHD</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 탭 2: 자막 프리셋 템플릿 -->
+      <div class="lib-tab-content" id="contentLibSubs">
+        <div class="subtitle-template-grid">
+          <button type="button" class="sub-preset-card" data-style="bold-yellow">
+            <span class="preset-preview text-yellow-stroke">강조 노랑 예능자막</span>
+            <span class="preset-name">유튜브 강렬한 제목</span>
+          </button>
+          <button type="button" class="sub-preset-card" data-style="clean-box">
+            <span class="preset-preview text-clean-box">깔끔한 자막 바</span>
+            <span class="preset-name">정보 전달 / 인터뷰</span>
+          </button>
+          <button type="button" class="sub-preset-card" data-style="neon-cyan">
+            <span class="preset-preview text-neon-cyan">사이버 네온</span>
+            <span class="preset-name">게임 / 감각적 쇼츠</span>
+          </button>
+          <button type="button" class="sub-preset-card" data-style="red-impact">
+            <span class="preset-preview text-red-impact">충격 경고 자막</span>
+            <span class="preset-name">리액션 / 밈</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 탭 3: 배경음악 및 효과음 -->
+      <div class="lib-tab-content" id="contentLibAudio">
+        <div class="audio-sfx-list">
+          <button type="button" class="sfx-chip-btn" data-sfx="ding">🔔 딩동 효과음</button>
+          <button type="button" class="sfx-chip-btn" data-sfx="whoosh">💨 슉 지나가는 소리</button>
+          <button type="button" class="sfx-chip-btn" data-sfx="pop">✨ 뽁 팝업 소리</button>
+          <button type="button" class="sfx-chip-btn" data-sfx="applause">👏 환호와 박수</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 중앙: 비디오 프리뷰 캔버스 & 재생 컨트롤러 -->
+    <section class="video-preview-stage">
+      <div class="preview-monitor-wrap" id="monitorWrap">
+        <div class="preview-canvas-container aspect-16-9" id="canvasContainer">
+          <video id="hiddenSourceVideo" playsinline style="display: none;"></video>
+          <canvas id="previewCanvas" width="1280" height="720"></canvas>
+        </div>
+      </div>
+
+      <!-- 재생 컨트롤러 바 -->
+      <div class="preview-playback-bar">
+        <button type="button" class="btn-icon" id="btnPrevFrame" title="1초 뒤로 (←)">⏮</button>
+        <button type="button" class="btn-play-toggle" id="btnPlayPause" title="재생 / 일시정지 (Space)">
+          <span class="play-icon">▶</span>
+        </button>
+        <button type="button" class="btn-icon" id="btnNextFrame" title="1초 앞으로 (→)">⏭</button>
+        <button type="button" class="btn-icon" id="btnStop" title="처음으로 리셋">⏹</button>
+        <div class="volume-slider-wrap">
+          <span>🔊</span>
+          <input type="range" id="masterVolume" min="0" max="100" value="100" class="studio-slider" />
+        </div>
+      </div>
+    </section>
+
+    <!-- 우측: 자막 및 클립 인스펙터 속성 패널 -->
+    <aside class="clip-inspector-panel">
+      <h3 class="panel-header-title">속성 인스펙터</h3>
+      <div id="inspectorEmpty" class="inspector-empty">
+        <span class="empty-icon">✂️</span>
+        <p>타임라인에서 자막이나<br>비디오 클립을 선택하세요.</p>
+      </div>
+
+      <div id="inspectorSubContent" class="inspector-sub-content" style="display: none;">
+        <h4 class="prop-title">자막 스타일 편집</h4>
+        <div class="form-row">
+          <label>자막 내용</label>
+          <textarea id="subTextInput" class="studio-textarea" rows="2"></textarea>
+        </div>
+        <div class="form-row">
+          <label>폰트</label>
+          <select id="subFontSelect" class="studio-select">
+            <option value="'Black Han Sans', sans-serif">블랙 한 산스 (예능 볼드체)</option>
+            <option value="'Pretendard', sans-serif" selected>프리텐다드 (깔끔한 본문)</option>
+            <option value="'Do Hyeon', sans-serif">도현체 (개성있는 자막)</option>
+            <option value="'Jua', sans-serif">주아체 (둥글둥글 귀여운체)</option>
+          </select>
+        </div>
+        <div class="form-row-grid">
+          <div>
+            <label>글자 크기</label>
+            <input type="number" id="subFontSize" class="studio-input" min="16" max="140" value="54" />
+          </div>
+          <div>
+            <label>글자 색상</label>
+            <input type="color" id="subTextColor" class="studio-color-picker" value="#facc15" />
+          </div>
+        </div>
+        <div class="form-row-grid">
+          <div>
+            <label>외곽선 두께</label>
+            <input type="number" id="subStrokeWidth" class="studio-input" min="0" max="24" value="6" />
+          </div>
+          <div>
+            <label>외곽선 색상</label>
+            <input type="color" id="subStrokeColor" class="studio-color-picker" value="#000000" />
+          </div>
+        </div>
+        <div class="form-row">
+          <label class="checkbox-label">
+            <input type="checkbox" id="subBgBoxToggle" />
+            <span>반투명 배경 박스 넣기</span>
+          </label>
+        </div>
+        <div class="form-row">
+          <label>위치 (Y축 세로 위치)</label>
+          <input type="range" id="subPosY" min="10" max="95" value="82" class="studio-slider" />
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- 하단 멀티트랙 NLE 타임라인 (Timeline Studio) -->
+  <section class="video-timeline-section">
+    <!-- 타임라인 툴바 -->
+    <div class="timeline-toolbar">
+      <div class="timeline-tools-left">
+        <button type="button" class="btn-timeline-tool" id="toolSplitClip" title="현재 재생 위치에서 컷 분할 (S)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg>
+          <span>컷 분할 (S)</span>
+        </button>
+        <button type="button" class="btn-timeline-tool" id="toolDeleteClip" title="선택한 클립 삭제 (Del)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          <span>삭제 (Del)</span>
+        </button>
+        <button type="button" class="btn-timeline-tool btn-highlight" id="toolAddSubtitle" title="현재 재생 위치에 자막 추가 (T)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          <span>자막 추가</span>
+        </button>
+      </div>
+
+      <div class="timeline-tools-right">
+        <span class="timeline-zoom-label">시간 배율:</span>
+        <button type="button" class="btn-icon btn-sm" id="btnZoomTimelineOut">−</button>
+        <button type="button" class="btn-icon btn-sm" id="btnZoomTimelineIn">+</button>
+      </div>
+    </div>
+
+    <!-- 타임라인 스크롤 영역 -->
+    <div class="timeline-scroll-wrap" id="timelineScrollWrap">
+      <!-- 좌측 트랙 헤더 라벨 -->
+      <div class="track-headers-column">
+        <div class="track-header-spacer"></div>
+        <div class="track-header-item"><span>💬 자막 트랙</span></div>
+        <div class="track-header-item"><span>🎬 비디오 트랙</span></div>
+        <div class="track-header-item"><span>🎵 오디오 트랙</span></div>
+      </div>
+
+      <!-- 우측 트랙 트랙 바디 (눈금자 + 트랙 레인 + 재생 바 플레이헤드) -->
+      <div class="track-body-area" id="trackBodyArea">
+        <!-- 시간 눈금자 (Ruler) -->
+        <div class="timeline-ruler" id="timelineRuler"></div>
+
+        <!-- 수직 재생 헤드 (Playhead) -->
+        <div class="timeline-playhead" id="timelinePlayhead">
+          <div class="playhead-handle"></div>
+          <div class="playhead-line"></div>
+        </div>
+
+        <!-- 트랙 1: 자막 트랙 -->
+        <div class="track-lane track-subtitles" id="trackSubtitles"></div>
+
+        <!-- 트랙 2: 비디오 트랙 -->
+        <div class="track-lane track-video" id="trackVideo"></div>
+
+        <!-- 트랙 3: 오디오 트랙 -->
+        <div class="track-lane track-audio" id="trackAudio"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 하단 상태 바 -->
+  <footer class="studio-statusbar">
+    <div class="status-left">
+      <span class="status-dot"></span>
+      <span id="statusVideoDim">1920 × 1080 (16:9 FHD)</span>
+      <span class="status-separator">|</span>
+      <span>100% 브라우저 하드웨어 가속 NLE 엔진</span>
+    </div>
+    <div class="status-right">
+      <span>궁디 스튜디오 (GOONGDI Studio) · Great Output Of New Generation Directory</span>
+    </div>
+  </footer>
+
+  <div id="studioToast" class="studio-toast"></div>
+
+  <script src="video-studio.js?v=20261013_01"></script>
+</body>
+</html>

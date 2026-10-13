@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>궁디 이미지 스튜디오 (PRO) | GOONGDI Image Studio</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23f59e0b'/%3E%3Cpath d='M16 48 L28 24 L36 38 L42 30 L48 48 Z' fill='%23ffffff'/%3E%3Ccircle cx='24' cy='20' r='5' fill='%23ffffff'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="image-studio.css?v=20261013_01" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Jua&family=Noto+Sans+KR:wght@400;500;700;900&family=Pretendard:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body class="studio-body">
+  <!-- 상단 스튜디오 툴바 -->
+  <header class="studio-header">
+    <div class="header-left">
+      <a href="index.html" class="studio-brand" title="메인 허브로 이동">
+        <span class="brand-logo-badge">🎨</span>
+        <div class="brand-info">
+          <span class="brand-name">궁디 이미지 스튜디오</span>
+          <span class="brand-sub">GOONGDI Studio <span class="badge-pro-mini">PRO</span></span>
+        </div>
+      </a>
+
+      <!-- 프로젝트 관리 (저장 / 불러오기) -->
+      <div class="header-divider"></div>
+      <div class="project-actions">
+        <label for="loadProjectInput" class="btn-studio btn-secondary" title="저장된 궁디 이미지 프로젝트 파일(.gdp-image)을 불러옵니다">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+          <span>불러오기</span>
+        </label>
+        <input type="file" id="loadProjectInput" accept=".gdp-image,.json" style="display: none;" />
+
+        <button type="button" class="btn-studio btn-primary" id="saveProjectBtn" title="현재 작업 중인 모든 레이어를 .gdp-image 파일로 다운로드합니다">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+          <span>프로젝트 저장</span>
+        </button>
+      </div>
+
+      <!-- 되돌리기 / 다시 실행 -->
+      <div class="header-divider"></div>
+      <div class="history-actions">
+        <button type="button" class="btn-icon" id="undoBtn" title="실행 취소 (Ctrl+Z)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path></svg>
+        </button>
+        <button type="button" class="btn-icon" id="redoBtn" title="다시 실행 (Ctrl+Y)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"></path><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"></path></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- 중앙: 캔버스 규격 프리셋 & 줌 컨트롤 -->
+    <div class="header-center">
+      <div class="preset-selector">
+        <label for="canvasPresetSelect" class="preset-label">규격</label>
+        <select id="canvasPresetSelect" class="studio-select">
+          <option value="1280x720" selected>유튜브 썸네일 (1280 × 720)</option>
+          <option value="1080x1080">인스타그램 피드 (1080 × 1080)</option>
+          <option value="1080x1920">인스타 스토리 / 쇼츠 (1080 × 1920)</option>
+          <option value="1200x630">페이스북 / 블로그 배너 (1200 × 630)</option>
+          <option value="1920x1080">FHD 와이드 (1920 × 1080)</option>
+          <option value="800x800">정방형 아이콘 (800 × 800)</option>
+          <option value="custom">사용자 직접 지정</option>
+        </select>
+      </div>
+
+      <div class="zoom-controls">
+        <button type="button" class="btn-icon btn-sm" id="zoomOutBtn" title="축소 (Ctrl + -)">−</button>
+        <span class="zoom-val" id="zoomVal">100%</span>
+        <button type="button" class="btn-icon btn-sm" id="zoomInBtn" title="확대 (Ctrl + +)">+</button>
+        <button type="button" class="btn-icon btn-sm" id="zoomFitBtn" title="화면에 맞추기">맞춤</button>
+      </div>
+    </div>
+
+    <!-- 우측: 내보내기 & Pro 상태 -->
+    <div class="header-right">
+      <div class="export-dropdown-wrap">
+        <button type="button" class="btn-studio btn-gold" id="exportBtn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <span>이미지 내보내기</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+        <div class="export-menu" id="exportMenu">
+          <button type="button" class="export-menu-item" data-format="png">
+            <strong>PNG 고화질 투명 이미지</strong>
+            <span>로고, 썸네일, 투명 배경 유지 (.png)</span>
+          </button>
+          <button type="button" class="export-menu-item" data-format="jpeg">
+            <strong>JPG 표준 이미지 (압축)</strong>
+            <span>가벼운 용량, 흰색 배경 자동 처리 (.jpg)</span>
+          </button>
+          <button type="button" class="export-menu-item" data-format="webp">
+            <strong>WebP 최신 웹 최적화</strong>
+            <span>초경량 고화질 웹 전용 (.webp)</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 메인 워크스페이스 (좌: 도구툴바 / 중: 캔버스 / 우: 속성&레이어) -->
+  <main class="studio-workspace">
+    <!-- 좌측 사이드바: 도구 상자 -->
+    <aside class="studio-sidebar-tools">
+      <button type="button" class="tool-btn active" id="toolSelect" data-tool="select" title="선택 및 이동 (V)">
+        <span class="tool-icon">👆</span>
+        <span class="tool-label">선택</span>
+      </button>
+
+      <button type="button" class="tool-btn" id="toolAddText" title="텍스트 추가 (T)">
+        <span class="tool-icon">🔤</span>
+        <span class="tool-label">텍스트</span>
+      </button>
+
+      <label class="tool-btn" id="toolAddImageLabel" title="이미지 추가 (I)">
+        <span class="tool-icon">🖼️</span>
+        <span class="tool-label">이미지</span>
+        <input type="file" id="addImageInput" accept="image/*" style="display: none;" />
+      </label>
+
+      <button type="button" class="tool-btn" id="toolAddRect" title="사각형 추가 (R)">
+        <span class="tool-icon">⬛</span>
+        <span class="tool-label">사각형</span>
+      </button>
+
+      <button type="button" class="tool-btn" id="toolAddCircle" title="원형 추가 (C)">
+        <span class="tool-icon">⚪</span>
+        <span class="tool-label">원형</span>
+      </button>
+
+      <button type="button" class="tool-btn" id="toolAddSticker" title="예능 스티커 / 배지">
+        <span class="tool-icon">⭐</span>
+        <span class="tool-label">스티커</span>
+      </button>
+
+      <div class="tool-divider"></div>
+
+      <button type="button" class="tool-btn" id="toolBgColor" title="캔버스 배경색">
+        <span class="tool-icon">🎨</span>
+        <span class="tool-label">배경색</span>
+      </button>
+    </aside>
+
+    <!-- 중앙: 캔버스 뷰포트 -->
+    <section class="studio-canvas-viewport" id="canvasViewport">
+      <div class="canvas-paper-wrapper" id="paperWrapper">
+        <canvas id="mainCanvas" width="1280" height="720"></canvas>
+      </div>
+    </section>
+
+    <!-- 우측 사이드바: 레이어 목록 & 속성 조절기 -->
+    <aside class="studio-sidebar-inspector">
+      <!-- 탭 헤더: 속성 vs 레이어 -->
+      <div class="panel-tab-header">
+        <button type="button" class="panel-tab-btn active" id="tabPropsBtn">속성 편집</button>
+        <button type="button" class="panel-tab-btn" id="tabLayersBtn">
+          <span>레이어</span>
+          <span class="layer-count-badge" id="layerCountBadge">0</span>
+        </button>
+      </div>
+
+      <!-- 패널 1: 선택 레이어 속성 (Inspector) -->
+      <div class="panel-content active" id="panelProperties">
+        <div id="noSelectionNotice" class="no-selection-box">
+          <span class="empty-icon">👆</span>
+          <p>캔버스에서 레이어를 클릭하거나<br>좌측 도구에서 요소를 추가하세요.</p>
+        </div>
+
+        <div id="inspectorControls" class="inspector-controls" style="display: none;">
+          <!-- 텍스트 전용 속성 -->
+          <div class="prop-group" id="textPropsGroup">
+            <h4 class="prop-title">텍스트 설정</h4>
+            <div class="form-row">
+              <label>문구 내용</label>
+              <textarea id="propTextContent" class="studio-textarea" rows="2"></textarea>
+            </div>
+            <div class="form-row">
+              <label>폰트</label>
+              <select id="propFontFamily" class="studio-select">
+                <option value="'Black Han Sans', sans-serif">블랙 한 산스 (유튜브 강렬한 제목)</option>
+                <option value="'Pretendard', sans-serif" selected>프리텐다드 (깔끔한 본문/제목)</option>
+                <option value="'Do Hyeon', sans-serif">도현체 (두껍고 개성있는 예능체)</option>
+                <option value="'Jua', sans-serif">주아체 (귀여운 캐주얼체)</option>
+                <option value="'Noto Sans KR', sans-serif">본고딕 (정석 가독성)</option>
+                <option value="Impact, sans-serif">Impact (클래식 밈/영어)</option>
+              </select>
+            </div>
+            <div class="form-row-grid">
+              <div>
+                <label>크기</label>
+                <input type="number" id="propFontSize" class="studio-input" min="10" max="300" value="64" />
+              </div>
+              <div>
+                <label>글자색</label>
+                <input type="color" id="propTextColor" class="studio-color-picker" value="#ffffff" />
+              </div>
+            </div>
+            <div class="form-row-grid">
+              <div>
+                <label>외곽선(테두리) 두께</label>
+                <input type="number" id="propStrokeWidth" class="studio-input" min="0" max="40" value="6" />
+              </div>
+              <div>
+                <label>외곽선 색상</label>
+                <input type="color" id="propStrokeColor" class="studio-color-picker" value="#000000" />
+              </div>
+            </div>
+            <div class="form-row">
+              <label class="checkbox-label">
+                <input type="checkbox" id="propShadowToggle" checked />
+                <span>입체 그림자 효과</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- 공통 속성: 위치, 크기, 회전, 투명도 -->
+          <div class="prop-group">
+            <h4 class="prop-title">변형 및 배치</h4>
+            <div class="form-row-grid">
+              <div>
+                <label>가로(W)</label>
+                <input type="number" id="propWidth" class="studio-input" />
+              </div>
+              <div>
+                <label>세로(H)</label>
+                <input type="number" id="propHeight" class="studio-input" />
+              </div>
+            </div>
+            <div class="form-row">
+              <label>불투명도</label>
+              <div class="slider-row">
+                <input type="range" id="propOpacity" min="0" max="100" value="100" class="studio-slider" />
+                <span id="propOpacityVal">100%</span>
+              </div>
+            </div>
+            <div class="form-row">
+              <label>회전 각도</label>
+              <div class="slider-row">
+                <input type="range" id="propRotation" min="-180" max="180" value="0" class="studio-slider" />
+                <span id="propRotationVal">0°</span>
+              </div>
+            </div>
+            <div class="quick-align-row">
+              <button type="button" class="btn-studio btn-sm" id="alignCenterHBtn" title="가로 중앙 맞춤">가로 중앙</button>
+              <button type="button" class="btn-studio btn-sm" id="alignCenterVBtn" title="세로 중앙 맞춤">세로 중앙</button>
+            </div>
+          </div>
+
+          <!-- 레이어 제어 버튼 -->
+          <div class="prop-group layer-action-btns">
+            <button type="button" class="btn-studio btn-secondary btn-full" id="duplicateLayerBtn">
+              📋 레이어 복제
+            </button>
+            <button type="button" class="btn-studio btn-danger btn-full" id="deleteLayerBtn">
+              🗑️ 레이어 삭제 (Del)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 패널 2: 레이어 목록 (Layer Manager) -->
+      <div class="panel-content" id="panelLayers">
+        <div class="layer-list-toolbar">
+          <span>레이어 스택 (맨 위가 앞면)</span>
+          <div class="layer-reorder-btns">
+            <button type="button" class="btn-icon btn-sm" id="moveLayerUpBtn" title="앞으로 한 단계 이동">▲</button>
+            <button type="button" class="btn-icon btn-sm" id="moveLayerDownBtn" title="뒤로 한 단계 이동">▼</button>
+          </div>
+        </div>
+        <div class="layer-items-container" id="layerItemsContainer">
+          <!-- 동적 레이어 아이템 렌더링 -->
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- 하단 상태 바 -->
+  <footer class="studio-statusbar">
+    <div class="status-left">
+      <span class="status-dot"></span>
+      <span id="canvasDimLabel">1280 × 720 px</span>
+      <span class="status-separator">|</span>
+      <span id="statusInfo">준비 완료 · 모든 파일은 브라우저에서 안전하게 처리됩니다.</span>
+    </div>
+    <div class="status-right">
+      <span>궁디 스튜디오 (GOONGDI Studio) · Great Output Of New Generation Directory</span>
+    </div>
+  </footer>
+
+  <!-- 알림 토스트 -->
+  <div id="studioToast" class="studio-toast"></div>
+
+  <script src="image-studio.js?v=20261013_01"></script>
+</body>
+</html>

@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>V-인코더 | 이미지·동영상 올인원 편집/변환 & 유튜브 다운로드</title>
+  <title>궁디 스튜디오 (GOONGDI Studio) | Great Output Of New Generation Directory</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23e11d48'/%3E%3Cpath d='M15 17 L28 49 L35 49 L45 27 L36 27 L31.5 38 L23.5 17 Z' fill='%23ffffff'/%3E%3Ccircle cx='45' cy='18' r='5' fill='%23ffffff'/%3E%3C/svg%3E" />
   <link rel="alternate icon" href="favicon.svg" />
-  <link rel="stylesheet" href="style.css?v=20261013_10" />
+  <link rel="stylesheet" href="style.css?v=20261013_11" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -23,13 +23,58 @@
           </svg>
         </div>
         <div class="brand-text">
-          <span class="brand-title">V-인코더</span>
-          <span class="brand-badge">All-in-One Encoder</span>
+          <span class="brand-title">궁디 스튜디오</span>
+          <span class="brand-badge">GOONGDI Studio</span>
         </div>
       </div>
 
-      <!-- 상단 3대 메인 메뉴 (마우스 올리면 하위 메뉴 자동 펼침) -->
+      <!-- 상단 메인 메뉴 (마우스 올리면 하위 메뉴 자동 펼침) -->
       <nav class="main-nav" role="navigation" aria-label="메인 기능 메뉴">
+        <!-- 0. 스튜디오 드롭다운 그룹 (새 탭 PRO 스튜디오) -->
+        <div class="nav-dropdown-group nav-group-studio" data-group="studio">
+          <button type="button" class="nav-tab nav-studio-trigger" id="navTriggerStudio" title="전문가용 크리에이티브 스튜디오 (새 탭)">
+            <span class="studio-sparkle">✨</span>
+            <span class="studio-tab-text">스튜디오</span>
+            <span class="badge-pro">PRO</span>
+            <svg class="nav-caret" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="nav-dropdown-menu nav-studio-menu">
+            <a href="image-studio.html" target="_blank" rel="noopener noreferrer" class="nav-dropdown-item studio-link-item">
+              <span class="item-icon">🎨</span>
+              <div class="item-text">
+                <div class="item-title-row">
+                  <strong>궁디 이미지 스튜디오</strong>
+                  <span class="badge-pro badge-pro-sm">PRO</span>
+                </div>
+                <span>웹 포토샵 · 레이어 캔버스 디자인 & 썸네일</span>
+              </div>
+              <span class="external-icon">↗</span>
+            </a>
+            <a href="video-studio.html" target="_blank" rel="noopener noreferrer" class="nav-dropdown-item studio-link-item">
+              <span class="item-icon">🎬</span>
+              <div class="item-text">
+                <div class="item-title-row">
+                  <strong>궁디 영상 스튜디오</strong>
+                  <span class="badge-pro badge-pro-sm">PRO</span>
+                </div>
+                <span>웹 캡컷 · 멀티트랙 타임라인 & 예능 자막</span>
+              </div>
+              <span class="external-icon">↗</span>
+            </a>
+            <a href="audio-studio.html" target="_blank" rel="noopener noreferrer" class="nav-dropdown-item studio-link-item">
+              <span class="item-icon">🎹</span>
+              <div class="item-text">
+                <div class="item-title-row">
+                  <strong>궁디 오디오 스튜디오</strong>
+                  <span class="badge-pro badge-pro-sm">PRO</span>
+                </div>
+                <span>웹 DAW · 파형 편집 & 신스 피아노 롤 작곡</span>
+              </div>
+              <span class="external-icon">↗</span>
+            </a>
+          </div>
+        </div>
+
         <!-- 1. 이미지 드롭다운 그룹 -->
         <div class="nav-dropdown-group" data-group="image">
           <button type="button" class="nav-tab nav-group-trigger active" id="navTriggerImage" data-default-target="img-compress">
@@ -1457,12 +1502,12 @@
 
   <!-- 푸터 -->
   <footer class="app-footer">
-    <p>V-인코더 (V-Encoder) · 모든 이미지 및 동영상 파일 처리는 서버 전송 없이 사용자의 브라우저 내부에서 안전하게 실행됩니다.</p>
+    <p>궁디 스튜디오 (GOONGDI Studio) · Great Output Of New Generation Directory · 모든 미디어 처리는 서버 전송 없이 100% 브라우저에서 안전하게 실행됩니다.</p>
   </footer>
 
   <!-- 토스트 알림 -->
   <div id="toastContainer" class="toast-container"></div>
 
-  <script src="app.js?v=20261013_10"></script>
+  <script src="app.js?v=20261013_11"></script>
 </body>
 </html>
