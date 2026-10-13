@@ -1302,6 +1302,30 @@
     });
   }
 
+  // 진행 취소 / 추출기 강제 초기화 버튼 제어
+  const resetYtExtractorBtn = document.getElementById('resetYtExtractorBtn');
+  const resetYtExtractorBtn2 = document.getElementById('resetYtExtractorBtn2');
+
+  function resetYtExtractors() {
+    if (!currentYtFullUrl) return;
+    if (ytEmbedFrame1) {
+      ytEmbedFrame1.src = 'about:blank';
+      setTimeout(() => {
+        ytEmbedFrame1.src = `https://loader.to/api/card2/?url=${encodeURIComponent(currentYtFullUrl)}&t=${Date.now()}`;
+      }, 80);
+    }
+    if (ytEmbedFrame2) {
+      ytEmbedFrame2.src = 'about:blank';
+      setTimeout(() => {
+        ytEmbedFrame2.src = `https://loader.to/api/button/?url=${encodeURIComponent(currentYtFullUrl)}&f=mp4&t=${Date.now()}`;
+      }, 80);
+    }
+    showToast('진행 중인 추출 작업을 취소하고 추출기를 초기화했습니다.');
+  }
+
+  if (resetYtExtractorBtn) resetYtExtractorBtn.addEventListener('click', resetYtExtractors);
+  if (resetYtExtractorBtn2) resetYtExtractorBtn2.addEventListener('click', resetYtExtractors);
+
   // Cobalt / SnapSave 클릭 시 자동으로 클립보드에 유튜브 주소 복사
   [gwCobalt, gwSnapsave].forEach((link) => {
     if (!link) return;

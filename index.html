@@ -513,12 +513,17 @@
 
             <!-- 엔진 1: 내장형 멀티 포맷 추출 위젯 (화질별 MP4 / MP3 카드) -->
             <div class="engine-view active" id="engineViewLoader">
-              <div class="iframe-notice" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
-                <span>💡 아래 박스 안에서 <strong>MP4 화질(720p, 1080p 등)</strong>이나 <strong>MP3</strong>를 고른 뒤 <strong>Download</strong> 버튼을 누르면 바로 추출됩니다.</span>
-                <label class="checkbox-label" style="font-size:0.82rem; font-weight:700; margin:0;">
-                  <input type="checkbox" id="blockPopupToggle" checked />
-                  <span>광고 새 창(팝업) 자동 차단</span>
-                </label>
+              <div class="iframe-notice" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                <span>💡 아래에서 화질 선택 후 <strong>Download</strong>를 누르세요. (※ 1~2시간 이상의 초장편 영상은 무료 서버 한계로 변환이 멈출 수 있습니다)</span>
+                <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                  <label class="checkbox-label" style="font-size:0.82rem; font-weight:700; margin:0;">
+                    <input type="checkbox" id="blockPopupToggle" checked />
+                    <span>광고 새 창 차단</span>
+                  </label>
+                  <button type="button" id="resetYtExtractorBtn" class="btn btn-danger btn-sm" style="padding:5px 10px; font-size:0.78rem;">
+                    ⛔ 진행 취소 / 추출기 초기화
+                  </button>
+                </div>
               </div>
               <div class="embed-frame-wrap">
                 <iframe
@@ -535,8 +540,11 @@
 
             <!-- 엔진 2: 버튼형 내장 위젯 -->
             <div class="engine-view" id="engineViewWidget2">
-              <div class="iframe-notice">
+              <div class="iframe-notice" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
                 <span>💡 서버 1이 느릴 때 사용하세요. 포맷 선택 후 클릭하면 변환 즉시 파일이 내려받아집니다.</span>
+                <button type="button" id="resetYtExtractorBtn2" class="btn btn-danger btn-sm" style="padding:5px 10px; font-size:0.78rem;">
+                  ⛔ 진행 취소 / 추출기 초기화
+                </button>
               </div>
               <div class="embed-frame-wrap embed-frame-compact">
                 <iframe
