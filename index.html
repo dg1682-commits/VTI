@@ -6,7 +6,7 @@
   <title>V-인코더 | 이미지·동영상 압축/변환 & 유튜브 다운로드</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23e11d48'/%3E%3Cpath d='M15 17 L28 49 L35 49 L45 27 L36 27 L31.5 38 L23.5 17 Z' fill='%23ffffff'/%3E%3Ccircle cx='45' cy='18' r='5' fill='%23ffffff'/%3E%3C/svg%3E" />
   <link rel="alternate icon" href="favicon.svg" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=20261013_3" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -349,11 +349,11 @@
             <!-- 1. 픽셀(px) 리사이즈 및 규격 지정 -->
             <div class="form-group">
               <div class="label-row">
-                <label>원하는 픽셀(px) 크기 지정 (리사이즈)</label>
+                <label>원하는 픽셀(px) 크기 지정 (리사이즈 / 규격 맞춤)</label>
               </div>
               <label class="checkbox-label" style="margin-bottom:8px; font-size:0.8rem; color:var(--text-secondary);">
-                <input type="checkbox" id="cropKeepAspectInput" checked />
-                <span>가로·세로 비율 자동 맞춤</span>
+                <input type="checkbox" id="cropKeepAspectInput" />
+                <span>원본 비율 유지하며 한쪽만 입력해 자동 계산</span>
               </label>
               <div class="pixel-input-row">
                 <div class="pixel-col">
@@ -595,10 +595,20 @@
 
             <!-- 배경 제거 작업 캔버스 카드 -->
             <div class="editor-stage-card hidden" id="bgStageCard">
-              <div class="editor-info-bar">
-                <span id="bgImgInfoText">해상도: 0 × 0 px</span>
-                <span class="arrow-sep">|</span>
-                <strong id="bgModeGuideText" class="accent-text">💡 배경을 마우스로 클릭하면 투명해집니다! (잘못 클릭 시 Ctrl+Z 취소)</strong>
+              <div class="editor-info-bar" style="justify-content: space-between;">
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                  <span id="bgImgInfoText">해상도: 0 × 0 px</span>
+                  <span class="arrow-sep">|</span>
+                  <strong id="bgModeGuideText" class="accent-text">💡 배경을 마우스로 클릭하면 투명해집니다! (잘못 클릭 시 Ctrl+Z 취소)</strong>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <button type="button" id="undoBgTopBtn" class="btn btn-outline btn-xs" disabled title="실행 취소 (Ctrl+Z)">
+                    ↩️ 실행 취소 (Ctrl+Z)
+                  </button>
+                  <button type="button" id="redoBgTopBtn" class="btn btn-outline btn-xs" disabled title="다시 실행 (Ctrl+Y)">
+                    ↪️ 다시 실행 (Ctrl+Y)
+                  </button>
+                </div>
               </div>
 
               <!-- AI 진행 상태 바 -->
@@ -925,6 +935,6 @@
   <!-- 토스트 알림 -->
   <div id="toastContainer" class="toast-container"></div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=20261013_3"></script>
 </body>
 </html>
