@@ -1522,12 +1522,20 @@
   }
 
   function updateCropBoxUI() {
-    const s = cropState.displayScale;
+    const mw = cropState.masterCanvas.width || 1;
+    const mh = cropState.masterCanvas.height || 1;
     const r = cropState.rect;
-    cropBox.style.left = `${Math.round(r.x * s)}px`;
-    cropBox.style.top = `${Math.round(r.y * s)}px`;
-    cropBox.style.width = `${Math.max(12, Math.round(r.w * s))}px`;
-    cropBox.style.height = `${Math.max(12, Math.round(r.h * s))}px`;
+
+    // 퍼센트(%) 기반 배치로 어떤 해상도/창 크기에서도 이미지 전체(100%)에 빈틈없이 꽉 차도록 설정
+    const leftPct = Math.max(0, Math.min(100, (r.x / mw) * 100));
+    const topPct = Math.max(0, Math.min(100, (r.y / mh) * 100));
+    const widthPct = Math.max(1, Math.min(100 - leftPct, (r.w / mw) * 100));
+    const heightPct = Math.max(1, Math.min(100 - topPct, (r.h / mh) * 100));
+
+    cropBox.style.left = `${leftPct}%`;
+    cropBox.style.top = `${topPct}%`;
+    cropBox.style.width = `${widthPct}%`;
+    cropBox.style.height = `${heightPct}%`;
 
     const selW = Math.max(1, Math.round(r.w));
     const selH = Math.max(1, Math.round(r.h));
@@ -1539,7 +1547,7 @@
     const finalH = useExact ? th : selH;
 
     cropSizeFloating.textContent = `${finalW} × ${finalH} px`;
-    cropOrigInfo.textContent = `원본: ${cropState.masterCanvas.width} × ${cropState.masterCanvas.height} px`;
+    cropOrigInfo.textContent = `원본: ${mw} × ${mh} px`;
     cropBoxInfo.textContent = `선택 영역: ${selW} × ${selH} px`;
     cropFinalInfo.textContent = `최종 저장 크기: ${finalW} × ${finalH} px`;
   }
@@ -1564,21 +1572,22 @@
       cropFineAngle.value = '0';
       cropFineAngleVal.textContent = '0°';
 
+      cropDropzone.classList.add('hidden');
+      cropStageCard.classList.remove('hidden');
+
       rebuildCropMasterCanvas();
       const mw = cropState.masterCanvas.width;
       const mh = cropState.masterCanvas.height;
-      // 초기 영역: 이미지 전체 선택 (잘림 없음) + 입력칸에 원본 해상도 자동 표시
+      // 초기 영역: 이미지 전체 100% 꽉 차게 선택 + 입력칸에 원본 해상도 자동 표시
       cropState.rect = { x: 0, y: 0, w: mw, h: mh };
       cropTargetW.value = String(mw);
       cropTargetH.value = String(mh);
       updateCropBoxUI();
 
-      cropDropzone.classList.add('hidden');
-      cropStageCard.classList.remove('hidden');
       downloadCroppedBtn.disabled = false;
       resetCropBtn.disabled = false;
       changeCropImgBtn.disabled = false;
-      showToast(`이미지를 불러왔습니다 (${mw}×${mh} px). 원하는 픽셀 숫자를 입력해 리사이즈하거나 틀을 조절하세요!`);
+      showToast(`이미지를 불러왔습니다 (${mw}×${mh} px). 원하는 픽셀 크기를 입력하거나 틀을 조절하세요!`);
     } catch (err) {
       showToast('이미지를 불러오지 못했습니다.');
     }
@@ -1609,7 +1618,7 @@
     changeCropImgBtn.addEventListener('click', () => cropFileInput.click());
   }
 
-  // 비율 버튼 클릭
+  // 비율 버튼 클릭 (전체(안 자름) 클릭 시 전체 이미지 100% 꽉 차게 선택)
   cropRatioBtns.forEach((btn) => {
     btn.addEventListener('click', () => {
       cropRatioBtns.forEach((b) => b.classList.remove('active'));
@@ -1625,7 +1634,7 @@
     });
   });
 
-  // 가로(W) 또는 세로(H) 입력 시 비율 자동 맞춤 계산
+  // 가로(W) 또는 세로(H) 입력 시 비율 자동 맞춤 계산 및 즉시 반영
   if (cropTargetW) {
     cropTargetW.addEventListener('input', () => {
       const tw = parseInt(cropTargetW.value, 10);
@@ -1648,56 +1657,7 @@
     });
   }
 
-  // [전체 리사이즈 적용] 버튼: 자르지 않고 이미지 전체를 선택한 뒤 입력한 W x H 해상도로 리사이즈
-  if (applyFullResizeBtn) {
-    applyFullResizeBtn.addEventListener('click', () => {
-      const tw = parseInt(cropTargetW.value, 10);
-      const th = parseInt(cropTargetH.value, 10);
-      if (!tw || !th || tw <= 0 || th <= 0) {
-        showToast('리사이즈할 가로(W)와 세로(H) 픽셀 숫자를 입력해 주세요.');
-        return;
-      }
-      cropRatioBtns.forEach((b) => {
-        b.classList.toggle('active', b.getAttribute('data-ratio') === 'full');
-      });
-      cropState.ratioMode = 'full';
-      cropState.customRatio = null;
-      cropForceExactSize.checked = true;
-
-      if (cropState.img) {
-        const mw = cropState.masterCanvas.width;
-        const mh = cropState.masterCanvas.height;
-        cropState.rect = { x: 0, y: 0, w: mw, h: mh };
-        updateCropBoxUI();
-        showToast(`전체 사진(${mw}×${mh})을 자르지 않고 ${tw} × ${th} px 크기로 리사이즈합니다!`);
-      }
-    });
-  }
-
-  // [자르기 틀 비율 적용] 버튼: 사진에 꽉 차는 가로:세로 비율 틀을 잡고 저장 시 W x H로 리사이즈
-  function applyCustomPixelFrame() {
-    const tw = parseInt(cropTargetW.value, 10);
-    const th = parseInt(cropTargetH.value, 10);
-    if (!tw || !th || tw <= 0 || th <= 0) {
-      showToast('가로(W)와 세로(H) 픽셀 숫자를 모두 입력해 주세요.');
-      return;
-    }
-    cropRatioBtns.forEach((b) => b.classList.remove('active'));
-    cropState.ratioMode = 'custom';
-    cropState.customRatio = tw / th;
-    cropForceExactSize.checked = true;
-
-    if (cropState.img) {
-      constrainCropRectToRatio(false);
-      updateCropBoxUI();
-      showToast(`자르기 틀이 ${tw} : ${th} 비율로 맞춰졌으며, 저장 시 ${tw} × ${th} px로 저장됩니다!`);
-    }
-  }
-
-  if (applyCropPixelBtn) applyCropPixelBtn.addEventListener('click', applyCustomPixelFrame);
   if (cropForceExactSize) cropForceExactSize.addEventListener('change', updateCropBoxUI);
-  if (cropTargetW) cropTargetW.addEventListener('input', updateCropBoxUI);
-  if (cropTargetH) cropTargetH.addEventListener('input', updateCropBoxUI);
 
   // 회전 및 반전 이벤트
   if (rotateLeftBtn) {
@@ -1706,6 +1666,8 @@
       cropState.baseRot = (cropState.baseRot + 270) % 360;
       rebuildCropMasterCanvas();
       constrainCropRectToRatio(false);
+      cropTargetW.value = String(Math.round(cropState.rect.w));
+      cropTargetH.value = String(Math.round(cropState.rect.h));
       updateCropBoxUI();
     });
   }
@@ -1716,6 +1678,8 @@
       cropState.baseRot = (cropState.baseRot + 90) % 360;
       rebuildCropMasterCanvas();
       constrainCropRectToRatio(false);
+      cropTargetW.value = String(Math.round(cropState.rect.w));
+      cropTargetH.value = String(Math.round(cropState.rect.h));
       updateCropBoxUI();
     });
   }
@@ -1793,11 +1757,14 @@
 
     cropBox.addEventListener('pointermove', (e) => {
       if (!dragAction || !cropState.img) return;
-      const scale = cropState.displayScale || 1;
-      const dx = (e.clientX - dragAction.startX) / scale;
-      const dy = (e.clientY - dragAction.startY) / scale;
-      const mw = cropState.masterCanvas.width;
-      const mh = cropState.masterCanvas.height;
+      const mw = cropState.masterCanvas.width || 1;
+      const mh = cropState.masterCanvas.height || 1;
+      const canvasRect = cropPreviewCanvas.getBoundingClientRect();
+      const scaleX = (canvasRect.width || cropPreviewCanvas.width) / mw;
+      const scaleY = (canvasRect.height || cropPreviewCanvas.height) / mh;
+
+      const dx = (e.clientX - dragAction.startX) / scaleX;
+      const dy = (e.clientY - dragAction.startY) / scaleY;
       const sr = dragAction.startRect;
       const minSize = 20;
 
@@ -1850,10 +1817,8 @@
         w: Math.max(minSize, Math.round(w)),
         h: Math.max(minSize, Math.round(h))
       };
-      if (cropState.ratioMode !== 'custom') {
-        cropTargetW.value = String(cropState.rect.w);
-        cropTargetH.value = String(cropState.rect.h);
-      }
+      cropTargetW.value = String(cropState.rect.w);
+      cropTargetH.value = String(cropState.rect.h);
       updateCropBoxUI();
     });
 
@@ -1920,8 +1885,12 @@
     height: 0,
     origData: null, // Uint8ClampedArray 원본 픽셀 복사본
     workData: null, // ImageData 현재 작업본
-    activePointerTool: 'wand' // 'wand' | 'erase' | 'restore'
+    activePointerTool: 'wand', // 'wand' | 'erase' | 'restore'
+    undoStack: [], // 이전 작업 스냅샷 (Uint8ClampedArray 최대 20단계)
+    redoStack: [] // 다시 실행 스냅샷
   };
+
+  const MAX_BG_HISTORY = 20;
 
   const bgRemoveDropzone = document.getElementById('bgRemoveDropzone');
   const bgRemoveFileInput = document.getElementById('bgRemoveFileInput');
@@ -1948,8 +1917,45 @@
   const bgBrushSizeVal = document.getElementById('bgBrushSizeVal');
   const bgPreviewFill = document.getElementById('bgPreviewFill');
   const downloadBgRemovedBtn = document.getElementById('downloadBgRemovedBtn');
+  const undoBgBtn = document.getElementById('undoBgBtn');
+  const redoBgBtn = document.getElementById('redoBgBtn');
   const restoreOrigBgBtn = document.getElementById('restoreOrigBgBtn');
   const changeBgImgBtn = document.getElementById('changeBgImgBtn');
+
+  function updateBgHistoryBtns() {
+    if (undoBgBtn) undoBgBtn.disabled = !bgState.workData || bgState.undoStack.length === 0;
+    if (redoBgBtn) redoBgBtn.disabled = !bgState.workData || bgState.redoStack.length === 0;
+  }
+
+  function pushBgHistory() {
+    if (!bgState.workData) return;
+    bgState.undoStack.push(new Uint8ClampedArray(bgState.workData.data));
+    if (bgState.undoStack.length > MAX_BG_HISTORY) {
+      bgState.undoStack.shift();
+    }
+    bgState.redoStack = [];
+    updateBgHistoryBtns();
+  }
+
+  function undoBgAction() {
+    if (!bgState.workData || bgState.undoStack.length === 0) return;
+    bgState.redoStack.push(new Uint8ClampedArray(bgState.workData.data));
+    const prevSnapshot = bgState.undoStack.pop();
+    bgState.workData.data.set(prevSnapshot);
+    renderBgEditorCanvas();
+    updateBgHistoryBtns();
+    showToast('↩️ 이전 작업 상태로 되돌렸습니다. (Ctrl+Z)');
+  }
+
+  function redoBgAction() {
+    if (!bgState.workData || bgState.redoStack.length === 0) return;
+    bgState.undoStack.push(new Uint8ClampedArray(bgState.workData.data));
+    const nextSnapshot = bgState.redoStack.pop();
+    bgState.workData.data.set(nextSnapshot);
+    renderBgEditorCanvas();
+    updateBgHistoryBtns();
+    showToast('↪️ 작업을 다시 실행했습니다. (Ctrl+Y)');
+  }
 
   function hexToRgb(hex) {
     const clean = hex.replace('#', '');
@@ -2025,6 +2031,9 @@
       const imgData = ctx.getImageData(0, 0, w, h);
       bgState.origData = new Uint8ClampedArray(imgData.data);
       bgState.workData = imgData;
+      bgState.undoStack = [];
+      bgState.redoStack = [];
+      updateBgHistoryBtns();
 
       sampleCornerColorAndSet();
       renderBgEditorCanvas();
@@ -2177,6 +2186,7 @@
   if (runColorBgRemoveBtn) {
     runColorBgRemoveBtn.addEventListener('click', () => {
       if (!bgState.workData) return;
+      pushBgHistory();
       const rgb = hexToRgb(bgTargetColor.value);
       const tol = parseInt(bgTolerance.value, 10) || 35;
       const fea = parseInt(bgFeather.value, 10) || 2;
@@ -2214,6 +2224,7 @@
         tempC.height = bgState.height;
         const tCtx = tempC.getContext('2d');
         tCtx.drawImage(resultImg, 0, 0, bgState.width, bgState.height);
+        pushBgHistory();
         bgState.workData = tCtx.getImageData(0, 0, bgState.width, bgState.height);
         renderBgEditorCanvas();
         aiBgProgressPanel.classList.add('hidden');
@@ -2222,6 +2233,7 @@
       } catch (err) {
         // 사내 방화벽 등으로 외부 AI 모델 다운로드가 차단된 경우 내장 멀티코너 스마트 분리 엔진 자동 실행
         aiBgProgressText.textContent = '내장 스마트 외곽 배경 분리 알고리즘으로 처리 중...';
+        pushBgHistory();
         const w = bgState.width;
         const h = bgState.height;
         const corners = [
@@ -2256,11 +2268,11 @@
       bgState.activePointerTool = btn.getAttribute('data-btool');
       bgBrushSizeWrap.classList.toggle('hidden', bgState.activePointerTool === 'wand');
       if (bgState.activePointerTool === 'wand') {
-        bgModeGuideText.textContent = '💡 이미지 위의 지우고 싶은 배경 부분을 마우스로 클릭하면 즉시 투명해집니다!';
+        bgModeGuideText.textContent = '💡 이미지 위의 지우고 싶은 배경 부분을 마우스로 클릭하면 즉시 투명해집니다! (실수 시 Ctrl+Z 취소)';
       } else if (bgState.activePointerTool === 'erase') {
-        bgModeGuideText.textContent = '🧽 이미지 위를 마우스로 문지르면 해당 부분이 지우개처럼 투명하게 지워집니다.';
+        bgModeGuideText.textContent = '🧽 이미지 위를 마우스로 문지르면 해당 부분이 지우개처럼 투명하게 지워집니다. (실수 시 Ctrl+Z 취소)';
       } else {
-        bgModeGuideText.textContent = '🖌️ 이미지 위를 마우스로 문지르면 지워졌던 원본 이미지가 다시 복원됩니다.';
+        bgModeGuideText.textContent = '🖌️ 이미지 위를 마우스로 문지르면 지워졌던 원본 이미지가 다시 복원됩니다. (실수 시 Ctrl+Z 취소)';
       }
     });
   });
@@ -2329,6 +2341,7 @@
       const pt = getCanvasPixelCoords(e);
 
       if (bgState.activePointerTool === 'wand') {
+        pushBgHistory();
         const idx = (pt.y * bgState.width + pt.x) * 4;
         const clickedRgb = {
           r: bgState.workData.data[idx],
@@ -2346,6 +2359,7 @@
         return;
       }
 
+      pushBgHistory();
       isBgDrawing = true;
       bgEditorCanvas.setPointerCapture(e.pointerId);
       applyBrushAt(pt.x, pt.y);
@@ -2364,9 +2378,18 @@
     bgEditorCanvas.addEventListener('pointercancel', stopBgDrawing);
   }
 
+  if (undoBgBtn) {
+    undoBgBtn.addEventListener('click', undoBgAction);
+  }
+
+  if (redoBgBtn) {
+    redoBgBtn.addEventListener('click', redoBgAction);
+  }
+
   if (restoreOrigBgBtn) {
     restoreOrigBgBtn.addEventListener('click', () => {
       if (!bgState.origData || !bgState.workData) return;
+      pushBgHistory();
       bgState.workData.data.set(bgState.origData);
       renderBgEditorCanvas();
       showToast('원본 이미지 상태로 복원되었습니다.');
@@ -2383,6 +2406,26 @@
       showToast('배경 제거된 PNG 파일이 다운로드되었습니다!');
     });
   }
+
+  // 배경 제거(누끼) 탭에서 Ctrl+Z (실행 취소) / Ctrl+Y 또는 Ctrl+Shift+Z (다시 실행) 단축키 지원
+  window.addEventListener('keydown', (e) => {
+    if (activeTabId !== 'img-edit' || activeEditSubtool !== 'bgremove') return;
+    if (!bgState.workData) return;
+    const tag = e.target && e.target.tagName ? e.target.tagName.toLowerCase() : '';
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+    const isCtrlOrMeta = e.ctrlKey || e.metaKey;
+    if (!isCtrlOrMeta) return;
+
+    const key = e.key.toLowerCase();
+    if (key === 'z' && !e.shiftKey) {
+      e.preventDefault();
+      undoBgAction();
+    } else if (key === 'y' || (key === 'z' && e.shiftKey)) {
+      e.preventDefault();
+      redoBgAction();
+    }
+  });
 
   // 이미지 편집 탭에서도 Ctrl+V 클립보드 붙여넣기 지원
   window.addEventListener('paste', (e) => {

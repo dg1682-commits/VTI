@@ -370,15 +370,7 @@
                   </div>
                 </div>
               </div>
-              <div class="transform-btn-grid" style="margin-top:8px;">
-                <button type="button" id="applyFullResizeBtn" class="btn btn-primary btn-sm" title="자르지 않고 사진 전체를 입력한 크기로 리사이즈합니다">
-                  📐 전체 리사이즈 적용
-                </button>
-                <button type="button" id="applyCropPixelBtn" class="btn btn-outline btn-sm" title="입력한 가로:세로 비율로 자르기 틀을 맞춥니다">
-                  ✂️ 자르기 틀 비율 적용
-                </button>
-              </div>
-              <label class="checkbox-label" style="margin-top:8px; font-size:0.8rem;">
+              <label class="checkbox-label" style="margin-top:10px; font-size:0.82rem;">
                 <input type="checkbox" id="cropForceExactSize" checked />
                 <span>저장 시 위 입력한 픽셀(px) 크기로 정확히 맞춰 저장</span>
               </label>
@@ -568,6 +560,14 @@
             </div>
 
             <div class="action-stack">
+              <div class="transform-btn-grid">
+                <button type="button" id="undoBgBtn" class="btn btn-outline btn-sm" disabled title="단축키: Ctrl + Z">
+                  ↩️ 실행 취소 (Ctrl+Z)
+                </button>
+                <button type="button" id="redoBgBtn" class="btn btn-outline btn-sm" disabled title="단축키: Ctrl + Y">
+                  ↪️ 다시 실행 (Ctrl+Y)
+                </button>
+              </div>
               <button type="button" id="downloadBgRemovedBtn" class="btn btn-success btn-full" disabled>
                 💾 배경 제거된 PNG 다운로드
               </button>
@@ -598,7 +598,7 @@
               <div class="editor-info-bar">
                 <span id="bgImgInfoText">해상도: 0 × 0 px</span>
                 <span class="arrow-sep">|</span>
-                <strong id="bgModeGuideText" class="accent-text">💡 이미지 위의 지우고 싶은 배경 부분을 마우스로 클릭하면 즉시 투명해집니다!</strong>
+                <strong id="bgModeGuideText" class="accent-text">💡 배경을 마우스로 클릭하면 투명해집니다! (잘못 클릭 시 Ctrl+Z 취소)</strong>
               </div>
 
               <!-- AI 진행 상태 바 -->
