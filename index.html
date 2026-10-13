@@ -6,7 +6,7 @@
   <title>V-인코더 | 이미지·동영상 올인원 편집/변환 & 유튜브 다운로드</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23e11d48'/%3E%3Cpath d='M15 17 L28 49 L35 49 L45 27 L36 27 L31.5 38 L23.5 17 Z' fill='%23ffffff'/%3E%3Ccircle cx='45' cy='18' r='5' fill='%23ffffff'/%3E%3C/svg%3E" />
   <link rel="alternate icon" href="favicon.svg" />
-  <link rel="stylesheet" href="style.css?v=20261013_8" />
+  <link rel="stylesheet" href="style.css?v=20261013_10" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -159,8 +159,8 @@
     <section id="tab-img-compress" class="tab-panel active" role="tabpanel">
       <div class="section-header">
         <div class="section-badge">내 PC 브라우저 직접 처리 · 보안 안전 100%</div>
-        <h1>이미지 용량 줄이기</h1>
-        <p>화질 저하는 최소화하면서 JPG, PNG, WebP 이미지 용량을 최대 90%까지 빠르게 압축합니다.</p>
+        <h1>이미지 · GIF 움짤 용량 줄이기</h1>
+        <p>화질 저하는 최소화하면서 JPG, PNG, WebP 및 <strong>움직이는 GIF(움짤)</strong> 용량을 최대 90%까지 빠르게 압축합니다.</p>
       </div>
 
       <div class="workspace-grid">
@@ -187,12 +187,13 @@
           <div class="form-group">
             <label for="compressFormat">출력 포맷 방식</label>
             <select id="compressFormat" class="form-select">
-              <option value="smart" selected>스마트 압축 (원본 유지 + 대용량 PNG 자동 최적화)</option>
-              <option value="keep">원본 포맷 무조건 유지 (JPG/PNG/WebP)</option>
+              <option value="smart" selected>스마트 압축 (원본 유지 + PNG/GIF 움짤 자동 최적화)</option>
+              <option value="keep">원본 포맷 무조건 유지 (JPG/PNG/WebP/GIF)</option>
+              <option value="image/gif">GIF 움짤 유지 압축 (.gif 애니메이션 보존)</option>
               <option value="image/webp">WebP로 압축 (용량 절감률 최고)</option>
               <option value="image/jpeg">JPG로 압축 (호환성 최고)</option>
             </select>
-            <p class="form-hint">※ PNG 파일도 색상 양자화 알고리즘으로 투명도를 유지하며 용량을 줄입니다.</p>
+            <p class="form-hint">※ 움직이는 GIF(움짤)도 멈추지 않고 애니메이션을 유지한 채 색상·프레임·크기 최적화로 용량을 줄입니다.</p>
           </div>
 
           <div class="form-group">
@@ -583,14 +584,16 @@
                 <button type="button" class="chip-btn active" data-btool="wand">🪄 클릭 투명화</button>
                 <button type="button" class="chip-btn" data-btool="erase">🧽 지우개 브러시</button>
                 <button type="button" class="chip-btn" data-btool="restore">🖌️ 복원 브러시</button>
+                <button type="button" class="chip-btn" data-btool="pan">✋ 화면 이동</button>
               </div>
               <div id="bgBrushSizeWrap" class="hidden" style="margin-top:10px;">
                 <div class="label-row">
-                  <label for="bgBrushSize">브러시 크기</label>
-                  <span class="value-badge" id="bgBrushSizeVal">25px</span>
+                  <label for="bgBrushSize">브러시 크기 (1px 초정밀 지원)</label>
+                  <span class="value-badge" id="bgBrushSizeVal">20px</span>
                 </div>
-                <input type="range" id="bgBrushSize" min="5" max="100" value="25" step="1" class="range-slider" />
+                <input type="range" id="bgBrushSize" min="1" max="100" value="20" step="1" class="range-slider" />
               </div>
+              <p class="form-hint" style="margin-top:8px;">💡 이미지 프레임 안에서 <strong>마우스 휠</strong>로 최대 800% 확대/축소 · <strong>우클릭 드래그</strong>(또는 스페이스바+드래그)로 화면 이동</p>
             </div>
 
             <!-- 4. 배경 색상 채우기 옵션 -->
@@ -644,7 +647,7 @@
                 <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                   <span id="bgImgInfoText">해상도: 0 × 0 px</span>
                   <span class="arrow-sep">|</span>
-                  <strong id="bgModeGuideText" class="accent-text">💡 배경을 마우스로 클릭하면 투명해집니다! (잘못 클릭 시 Ctrl+Z 취소)</strong>
+                  <strong id="bgModeGuideText" class="accent-text">💡 프레임 안에서 마우스 휠로 줌인/아웃하여 미세 영역을 클릭해 투명화하세요!</strong>
                 </div>
                 <div style="display:flex; align-items:center; gap:6px;">
                   <button type="button" id="undoBgTopBtn" class="btn btn-outline btn-xs" disabled title="실행 취소 (Ctrl+Z)">
@@ -667,9 +670,19 @@
                 </div>
               </div>
 
-              <div class="bg-canvas-viewport checkerboard-bg" id="bgCanvasViewport">
+              <div class="bg-canvas-viewport checkerboard-bg" id="bgCanvasViewport" title="마우스 휠: 줌인/줌아웃 | 우클릭 드래그(또는 스페이스바+드래그): 화면 이동">
                 <canvas id="bgEditorCanvas"></canvas>
+                <!-- 브러시 실시간 크기 가이드 원 -->
+                <div id="bgBrushCursor" class="bg-brush-cursor hidden"></div>
+                <!-- 프레임 내부 우측 하단 플로팅 줌 컨트롤 바 -->
+                <div class="bg-zoom-hud" id="bgZoomHud">
+                  <button type="button" class="bg-zoom-btn" id="bgZoomOutBtn" title="축소 (마우스 휠 아래로)">−</button>
+                  <span class="bg-zoom-label" id="bgZoomValText">100%</span>
+                  <button type="button" class="bg-zoom-btn" id="bgZoomInBtn" title="확대 (마우스 휠 위로)">+</button>
+                  <button type="button" class="bg-zoom-reset-btn" id="bgZoomResetBtn" title="화면 맞춤 초기화 (100%)">100% 맞춤</button>
+                </div>
               </div>
+              <p class="editor-bottom-hint">🔍 <strong>이미지 프레임 안</strong>에서 <strong>마우스 휠</strong>을 굴리면 커서 위치를 기준으로 최대 800%까지 확대/축소됩니다. (확대 후 <strong>우클릭 드래그</strong> 또는 <strong>✋ 화면 이동</strong>으로 이동)</p>
             </div>
           </div>
         </div>
@@ -1122,13 +1135,13 @@
     </section>
 
     <!-- ==========================================
-         탭 3-3: 동영상 확장자 변환 · 오디오 추출 (MP4 ↔ MOV ↔ WebM · WAV)
+         탭 3-3: 동영상 확장자 변환 · 오디오 추출 (MP4 · MOV · M4V · MKV · WebM · AVI · WAV · M4A)
          ========================================== -->
     <section id="tab-video-convert" class="tab-panel" role="tabpanel">
       <div class="section-header">
-        <div class="section-badge">MP4 ↔ MOV 초고속 무손실 변환 · WebM 변환 · WAV 오디오 추출</div>
+        <div class="section-badge">MP4 ↔ MOV ↔ M4V 초고속 무손실 변환 · MKV · WebM · AVI 변환 · WAV · M4A 음원 추출</div>
         <h1>동영상 확장자 변환 · 오디오 추출</h1>
-        <p>아이폰 MOV 영상을 MP4로 바꾸거나 MP4를 MOV, WebM으로 변환하고, 영상에서 고음질 오디오(WAV)만 빠르게 추출합니다.</p>
+        <p>MP4, MOV, M4V, MKV, WebM, AVI 등 다양한 동영상 확장자 간 변환과 고음질 오디오(WAV · M4A) 추출을 한곳에서 처리합니다.</p>
       </div>
 
       <div class="workspace-grid">
@@ -1141,21 +1154,37 @@
           <div class="form-group">
             <label>① 변환할 목표 확장자 선택</label>
             <div class="format-grid" id="videoConvertFormatGrid">
-              <button type="button" class="format-card active" data-vfmt="mp4">
-                <strong>MP4</strong>
+              <button type="button" class="format-pill format-card active" data-vfmt="mp4">
+                <strong>🎬 MP4</strong>
                 <span>표준 호환 영상 (.mp4)</span>
               </button>
-              <button type="button" class="format-card" data-vfmt="mov">
-                <strong>MOV</strong>
+              <button type="button" class="format-pill format-card" data-vfmt="mov">
+                <strong>🍎 MOV</strong>
                 <span>애플 QuickTime (.mov)</span>
               </button>
-              <button type="button" class="format-card" data-vfmt="webm">
-                <strong>WebM</strong>
+              <button type="button" class="format-pill format-card" data-vfmt="m4v">
+                <strong>📱 M4V</strong>
+                <span>아이튠즈/애플 (.m4v)</span>
+              </button>
+              <button type="button" class="format-pill format-card" data-vfmt="mkv">
+                <strong>🎞️ MKV</strong>
+                <span>Matroska 영상 (.mkv)</span>
+              </button>
+              <button type="button" class="format-pill format-card" data-vfmt="webm">
+                <strong>🌐 WebM</strong>
                 <span>고효율 웹 영상 (.webm)</span>
               </button>
-              <button type="button" class="format-card" data-vfmt="wav">
-                <strong>WAV 음원</strong>
-                <span>소리만 무손실 추출 (.wav)</span>
+              <button type="button" class="format-pill format-card" data-vfmt="avi">
+                <strong>📼 AVI</strong>
+                <span>호환 동영상 (.avi)</span>
+              </button>
+              <button type="button" class="format-pill format-card" data-vfmt="wav">
+                <strong>🎵 WAV 음원</strong>
+                <span>무손실 오디오 (.wav)</span>
+              </button>
+              <button type="button" class="format-pill format-card" data-vfmt="m4a">
+                <strong>🎧 M4A 음원</strong>
+                <span>가벼운 고음질 (.m4a)</span>
               </button>
             </div>
           </div>
@@ -1163,12 +1192,12 @@
           <div class="form-group" id="videoConvertMethodGroup">
             <label for="videoConvertMethodSelect">② 변환 처리 방식</label>
             <select id="videoConvertMethodSelect" class="form-select">
-              <option value="auto" selected>⚡ 스마트 자동 (MP4↔MOV는 1초 무손실 변환 / 외 인코딩)</option>
+              <option value="auto" selected>⚡ 스마트 자동 (MP4↔MOV↔M4V는 1초 무손실 변환 / 외 인코딩)</option>
               <option value="remux">⚡ 초고속 무손실 컨테이너 변환 (화질 100% 그대로 · 1초 완료)</option>
               <option value="reencode">🔄 호환성 재인코딩 변환 (코덱 재생성 · 해상도 조절 적용)</option>
             </select>
             <p class="form-hint" id="videoConvertMethodHint">
-              ※ <strong>스마트 자동</strong> 선택 시 MP4 ↔ MOV 간 변환은 화질 저하 없이 1초 만에 컨테이너 헤더를 변환합니다.
+              ※ <strong>스마트 자동</strong> 선택 시 MP4 ↔ MOV ↔ M4V 간 변환은 화질 저하 없이 1초 만에 컨테이너 헤더를 변환합니다.
             </p>
           </div>
 
@@ -1434,6 +1463,6 @@
   <!-- 토스트 알림 -->
   <div id="toastContainer" class="toast-container"></div>
 
-  <script src="app.js?v=20261013_8"></script>
+  <script src="app.js?v=20261013_10"></script>
 </body>
 </html>

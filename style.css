@@ -568,7 +568,9 @@ body {
   gap: 8px;
 }
 
-.format-pill {
+.format-pill,
+.format-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -579,33 +581,59 @@ body {
   color: var(--text-primary);
   font-family: inherit;
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition: all 0.16s ease;
   text-align: left;
 }
 
-.format-pill strong {
-  font-size: 0.92rem;
+.format-pill strong,
+.format-card strong {
+  font-size: 0.9rem;
   font-weight: 700;
 }
 
-.format-pill span {
-  font-size: 0.73rem;
+.format-pill span,
+.format-card span {
+  font-size: 0.72rem;
   color: var(--text-muted);
   margin-top: 2px;
 }
 
-.format-pill:hover {
+.format-pill:hover,
+.format-card:hover {
   border-color: var(--accent);
+  background-color: var(--bg-surface);
 }
 
-.format-pill.active {
+.format-pill.active,
+.format-card.active {
   background-color: var(--accent-soft);
-  border-color: var(--accent);
+  border: 2px solid var(--accent);
   color: var(--accent-text);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
 }
 
-.format-pill.active span {
+.format-pill.active span,
+.format-card.active span {
   color: var(--accent-text);
+  font-weight: 600;
+}
+
+.format-pill.active::after,
+.format-card.active::after {
+  content: '✓';
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background-color: var(--accent);
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .color-picker-row {
@@ -2090,18 +2118,20 @@ body {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
 }
 
-/* Background Removal Canvas */
+/* Background Removal Canvas (Wheel Zoom & Pan Inside Fixed Frame) */
 .bg-canvas-viewport {
+  position: relative;
   width: 100%;
-  min-height: 420px;
-  max-height: 620px;
+  height: 560px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-strong);
   padding: 16px;
-  overflow: auto;
+  overflow: hidden;
+  user-select: none;
+  touch-action: none;
 }
 
 .checkerboard-bg {
@@ -2117,9 +2147,103 @@ body {
 
 #bgEditorCanvas {
   max-width: 100%;
-  max-height: 560px;
+  max-height: 520px;
   cursor: crosshair;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  transform-origin: center center;
+  will-change: transform;
+}
+
+#bgEditorCanvas.zoomed-pixelated {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.bg-canvas-viewport.is-panning,
+.bg-canvas-viewport.is-panning #bgEditorCanvas {
+  cursor: grabbing !important;
+}
+
+.bg-canvas-viewport.pan-mode #bgEditorCanvas {
+  cursor: grab;
+}
+
+.bg-brush-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 0 0 1px #0f172a, inset 0 0 0 1px rgba(15, 23, 42, 0.5);
+  pointer-events: none;
+  z-index: 50;
+  transform: translate(-50%, -50%);
+}
+
+.bg-zoom-hud {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background-color: rgba(15, 23, 42, 0.84);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+  z-index: 20;
+}
+
+.bg-zoom-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.bg-zoom-btn:hover {
+  background-color: var(--accent);
+  border-color: var(--accent);
+}
+
+.bg-zoom-label {
+  min-width: 48px;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+}
+
+.bg-zoom-reset-btn {
+  height: 26px;
+  padding: 0 10px;
+  margin-left: 2px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background-color: rgba(255, 255, 255, 0.12);
+  color: #f8fafc;
+  font-size: 0.73rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.bg-zoom-reset-btn:hover {
+  background-color: rgba(255, 255, 255, 0.24);
+  border-color: #ffffff;
 }
 
 /* ==========================================================================

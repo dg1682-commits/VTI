@@ -338,6 +338,173 @@
     });
   }
 
+  // 움직이는 GIF(움짤) 애니메이션 유지 압축기 (ImageDecoder + 팔레트 스냅 양자화 + 프레임 다이어트 + LZW 인코딩)
+  async function compressAnimatedGifFile(file, targetW, targetH, qualityNum, scaleOption) {
+    const outW = Math.max(16, Math.min(1920, targetW));
+    const outH = Math.max(16, Math.min(1920, targetH));
+
+    // 단일 패스 GIF 인코딩 헬퍼
+    const encodeGifPass = async (frames, snapStep, ditherScale, frameStride) => {
+      const workCanvas = document.createElement('canvas');
+      workCanvas.width = outW;
+      workCanvas.height = outH;
+      const workCtx = workCanvas.getContext('2d', { willReadFrequently: true });
+      workCtx.imageSmoothingEnabled = true;
+      workCtx.imageSmoothingQuality = 'high';
+
+      const chunks = [];
+      chunks.push(
+        new Uint8Array([
+          0x47, 0x49, 0x46, 0x38, 0x39, 0x61, // "GIF89a"
+          outW & 0xff, (outW >> 8) & 0xff,
+          outH & 0xff, (outH >> 8) & 0xff,
+          0xf7, 0x00, 0x00,
+        ])
+      );
+      chunks.push(GIF_GLOBAL_PALETTE);
+      chunks.push(
+        new Uint8Array([
+          0x21, 0xff, 0x0b,
+          0x4e, 0x45, 0x54, 0x53, 0x43, 0x41, 0x50, 0x45, 0x32, 0x2e, 0x30,
+          0x03, 0x01, 0x00, 0x00, 0x00,
+        ])
+      );
+
+      const indicesBuf = new Uint8Array(outW * outH);
+      const trieBuffer = new Int32Array(4096 * 256);
+
+      for (let i = 0; i < frames.length; i += frameStride) {
+        let combinedDurationUs = 0;
+        for (let k = i; k < Math.min(frames.length, i + frameStride); k++) {
+          combinedDurationUs += frames[k].durationUs || 80000;
+        }
+        const delayCs = Math.max(2, Math.round(combinedDurationUs / 10000));
+
+        workCtx.clearRect(0, 0, outW, outH);
+        workCtx.drawImage(frames[i].bitmap, 0, 0, outW, outH);
+        const imgData = workCtx.getImageData(0, 0, outW, outH);
+        const rgba = imgData.data;
+
+        // 품질(qualityNum)에 맞춰 인접 픽셀 색상을 정리해 LZW 압축률을 극대화
+        let p = 0;
+        for (let y = 0; y < outH; y++) {
+          const bayerRow = BAYER_4X4[y & 3];
+          for (let x = 0; x < outW; x++) {
+            const i4 = p << 2;
+            const dither = Math.round(bayerRow[x & 3] * ditherScale);
+            let r = Math.max(0, Math.min(255, rgba[i4] + dither));
+            let g = Math.max(0, Math.min(255, rgba[i4 + 1] + dither));
+            let b = Math.max(0, Math.min(255, rgba[i4 + 2] + dither));
+
+            if (snapStep > 1) {
+              r = Math.min(255, Math.round(r / snapStep) * snapStep);
+              g = Math.min(255, Math.round(g / snapStep) * snapStep);
+              b = Math.min(255, Math.round(b / snapStep) * snapStep);
+            }
+
+            const maxDiff = Math.max(Math.abs(r - g), Math.abs(g - b), Math.abs(r - b));
+            const rq = Math.round(r / 51);
+            const gq = Math.round(g / 51);
+            const bq = Math.round(b / 51);
+            const cubeIdx = rq * 36 + gq * 6 + bq;
+
+            if (maxDiff <= 10) {
+              const lum = (r + g + b) / 3;
+              const gStep = Math.max(0, Math.min(39, Math.floor((lum / 256) * 40)));
+              indicesBuf[p] = 216 + gStep;
+            } else {
+              indicesBuf[p] = cubeIdx;
+            }
+            p++;
+          }
+        }
+
+        const compressedBlock = lzwEncodeGifFrame(indicesBuf, trieBuffer);
+        const frameHeader = new Uint8Array([
+          0x21, 0xf9, 0x04, 0x04,
+          delayCs & 0xff, (delayCs >> 8) & 0xff,
+          0x00, 0x00,
+          0x2c,
+          0x00, 0x00, 0x00, 0x00,
+          outW & 0xff, (outW >> 8) & 0xff,
+          outH & 0xff, (outH >> 8) & 0xff,
+          0x00,
+        ]);
+        chunks.push(frameHeader);
+        chunks.push(compressedBlock);
+      }
+
+      chunks.push(new Uint8Array([0x3b]));
+      return new Blob(chunks, { type: 'image/gif' });
+    };
+
+    const decodedFrames = [];
+    try {
+      if (typeof window.ImageDecoder === 'function') {
+        const buf = await file.arrayBuffer();
+        const decoder = new window.ImageDecoder({ data: buf, type: 'image/gif' });
+        await decoder.tracks.ready;
+        const track = decoder.tracks.selectedTrack;
+        const totalFrames = Math.min(240, (track && track.frameCount) || 1);
+
+        // 합성용 캔버스 (투명/부분 갱신 프레임 처리)
+        const compCanvas = document.createElement('canvas');
+        compCanvas.width = outW;
+        compCanvas.height = outH;
+        const compCtx = compCanvas.getContext('2d');
+
+        for (let f = 0; f < totalFrames; f++) {
+          const res = await decoder.decode({ frameIndex: f });
+          const vf = res.image;
+          const durationUs = vf.duration || 80000;
+          compCtx.drawImage(vf, 0, 0, outW, outH);
+          vf.close();
+
+          const frameCopy = document.createElement('canvas');
+          frameCopy.width = outW;
+          frameCopy.height = outH;
+          frameCopy.getContext('2d').drawImage(compCanvas, 0, 0);
+          decodedFrames.push({ bitmap: frameCopy, durationUs });
+        }
+        decoder.close();
+      }
+    } catch (_) {
+      // ImageDecoder 미지원 또는 디코딩 예외 시 단일 이미지 폴백
+    }
+
+    if (decodedFrames.length === 0) {
+      const img = await loadImageFromFile(file);
+      decodedFrames.push({ bitmap: img, durationUs: 100000 });
+    }
+
+    // 품질 설정에 따른 1차 파라미터
+    const snap1 = qualityNum >= 85 ? 6 : qualityNum >= 65 ? 18 : qualityNum >= 45 ? 30 : 42;
+    const dither1 = qualityNum >= 85 ? 0.65 : qualityNum >= 65 ? 0.2 : 0.0;
+    const stride1 =
+      decodedFrames.length >= 14 && qualityNum <= 45
+        ? 3
+        : decodedFrames.length >= 12 && qualityNum <= 68
+        ? 2
+        : 1;
+
+    let resultBlob = await encodeGifPass(decodedFrames, snap1, dither1, stride1);
+
+    // 만약 1차 압축 결과가 원본보다 크거나 비슷하면 자동으로 2차 다이어트(프레임/색상 추가 최적화) 수행
+    if (resultBlob.size >= file.size * 0.96 && decodedFrames.length > 2) {
+      const stride2 = Math.min(3, Math.max(2, stride1 + 1));
+      const smallerBlob = await encodeGifPass(decodedFrames, Math.max(snap1, 32), 0.0, stride2);
+      if (smallerBlob.size < resultBlob.size) {
+        resultBlob = smallerBlob;
+      }
+    }
+
+    // 해상도를 유지('1')했는데도 원본 GIF가 이미 극한 압축본이어서 용량이 줄지 않은 경우 원본 보존
+    if (scaleOption === '1' && resultBlob.size >= file.size && file.type === 'image/gif') {
+      return file;
+    }
+    return resultBlob;
+  }
+
   async function compressSingleImage(item) {
     const qualityNum = parseInt(compressQualityInput.value, 10);
     const quality = Math.min(0.98, Math.max(0.1, qualityNum / 100));
@@ -351,6 +518,19 @@
     const { width, height } = calculateTargetDimensions(item.origWidth, item.origHeight, scaleOption);
     item.newWidth = width;
     item.newHeight = height;
+
+    const isGifInput = item.file.type === 'image/gif' || /\.gif$/i.test(item.file.name);
+
+    // 원본이 GIF이고 (스마트/원본유지/GIF유지) 옵션이거나, 출력 포맷을 명시적으로 GIF로 지정한 경우 -> 애니메이션 유지 GIF 압축
+    if (
+      formatOption === 'image/gif' ||
+      (isGifInput && (formatOption === 'smart' || formatOption === 'keep'))
+    ) {
+      const gifBlob = await compressAnimatedGifFile(item.file, width, height, qualityNum, scaleOption);
+      item.compressedBlob = gifBlob;
+      item.outputExt = 'gif';
+      return;
+    }
 
     const canvas = document.createElement('canvas');
     canvas.width = width;
@@ -2030,7 +2210,10 @@
     height: 0,
     origData: null, // Uint8ClampedArray 원본 픽셀 복사본
     workData: null, // ImageData 현재 작업본
-    activePointerTool: 'wand', // 'wand' | 'erase' | 'restore'
+    activePointerTool: 'wand', // 'wand' | 'erase' | 'restore' | 'pan'
+    zoom: 1, // 0.5 ~ 8.0 (50% ~ 800%)
+    panX: 0,
+    panY: 0,
     undoStack: [], // 이전 작업 스냅샷 (Uint8ClampedArray 최대 20단계)
     redoStack: [] // 다시 실행 스냅샷
   };
@@ -2040,7 +2223,13 @@
   const bgRemoveDropzone = document.getElementById('bgRemoveDropzone');
   const bgRemoveFileInput = document.getElementById('bgRemoveFileInput');
   const bgStageCard = document.getElementById('bgStageCard');
+  const bgCanvasViewport = document.getElementById('bgCanvasViewport');
   const bgEditorCanvas = document.getElementById('bgEditorCanvas');
+  const bgBrushCursor = document.getElementById('bgBrushCursor');
+  const bgZoomOutBtn = document.getElementById('bgZoomOutBtn');
+  const bgZoomInBtn = document.getElementById('bgZoomInBtn');
+  const bgZoomResetBtn = document.getElementById('bgZoomResetBtn');
+  const bgZoomValText = document.getElementById('bgZoomValText');
   const bgImgInfoText = document.getElementById('bgImgInfoText');
   const bgModeGuideText = document.getElementById('bgModeGuideText');
   const runAiBgRemoveBtn = document.getElementById('runAiBgRemoveBtn');
@@ -2068,6 +2257,54 @@
   const redoBgTopBtn = document.getElementById('redoBgTopBtn');
   const restoreOrigBgBtn = document.getElementById('restoreOrigBgBtn');
   const changeBgImgBtn = document.getElementById('changeBgImgBtn');
+
+  function applyBgZoomTransform() {
+    if (!bgEditorCanvas) return;
+    bgEditorCanvas.style.transform = `translate3d(${bgState.panX}px, ${bgState.panY}px, 0) scale(${bgState.zoom})`;
+    bgEditorCanvas.classList.toggle('zoomed-pixelated', bgState.zoom >= 2);
+    if (bgZoomValText) {
+      bgZoomValText.textContent = `${Math.round(bgState.zoom * 100)}%`;
+    }
+  }
+
+  function resetBgZoom() {
+    bgState.zoom = 1;
+    bgState.panX = 0;
+    bgState.panY = 0;
+    applyBgZoomTransform();
+  }
+
+  function zoomBgAtPoint(targetZoom, clientX, clientY) {
+    if (!bgCanvasViewport || !bgState.workData) return;
+    let nextZoom = Math.max(0.5, Math.min(8, targetZoom));
+    if (Math.abs(nextZoom - 1) < 0.04) nextZoom = 1;
+
+    const vpRect = bgCanvasViewport.getBoundingClientRect();
+    const vpCenterX = vpRect.left + vpRect.width / 2;
+    const vpCenterY = vpRect.top + vpRect.height / 2;
+
+    const anchorX = typeof clientX === 'number' ? clientX : vpCenterX;
+    const anchorY = typeof clientY === 'number' ? clientY : vpCenterY;
+
+    const relX = anchorX - vpCenterX;
+    const relY = anchorY - vpCenterY;
+    const ratio = nextZoom / (bgState.zoom || 1);
+
+    if (nextZoom <= 1) {
+      bgState.panX = 0;
+      bgState.panY = 0;
+    } else {
+      const rawPanX = relX - (relX - bgState.panX) * ratio;
+      const rawPanY = relY - (relY - bgState.panY) * ratio;
+      const maxPanX = vpRect.width * nextZoom * 0.65;
+      const maxPanY = vpRect.height * nextZoom * 0.65;
+      bgState.panX = Math.max(-maxPanX, Math.min(maxPanX, rawPanX));
+      bgState.panY = Math.max(-maxPanY, Math.min(maxPanY, rawPanY));
+    }
+
+    bgState.zoom = nextZoom;
+    applyBgZoomTransform();
+  }
 
   function updateBgHistoryBtns() {
     const canUndo = Boolean(bgState.workData && bgState.undoStack.length > 0);
@@ -2198,6 +2435,7 @@
 
       sampleCornerColorAndSet();
       renderBgEditorCanvas();
+      resetBgZoom();
 
       bgImgInfoText.textContent = `해상도: ${w} × ${h} px`;
       bgRemoveDropzone.classList.add('hidden');
@@ -2208,7 +2446,7 @@
       downloadBgRemovedBtn.disabled = false;
       restoreOrigBgBtn.disabled = false;
       changeBgImgBtn.disabled = false;
-      showToast('이미지를 불러왔습니다. AI 자동 제거 또는 배경을 클릭해 투명화하세요!');
+      showToast('이미지를 불러왔습니다. 프레임 안에서 마우스 휠로 줌인/아웃하며 정밀하게 누끼를 따보세요!');
     } catch (e) {
       showToast('이미지를 불러올 수 없습니다.');
     }
@@ -2421,26 +2659,58 @@
     });
   }
 
-  // 마우스 클릭(마술봉) 및 지우개/복원 브러시 도구 전환
+  // 마우스 클릭(마술봉), 지우개/복원 브러시, 화면 이동 도구 전환
   bgPointerToolBtns.forEach((btn) => {
     btn.addEventListener('click', () => {
       bgPointerToolBtns.forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
       bgState.activePointerTool = btn.getAttribute('data-btool');
-      bgBrushSizeWrap.classList.toggle('hidden', bgState.activePointerTool === 'wand');
+      const isBrush = bgState.activePointerTool === 'erase' || bgState.activePointerTool === 'restore';
+      bgBrushSizeWrap.classList.toggle('hidden', !isBrush);
+      if (bgCanvasViewport) {
+        bgCanvasViewport.classList.toggle('pan-mode', bgState.activePointerTool === 'pan');
+      }
+      if (!isBrush && bgBrushCursor) {
+        bgBrushCursor.classList.add('hidden');
+      }
       if (bgState.activePointerTool === 'wand') {
-        bgModeGuideText.textContent = '💡 이미지 위의 지우고 싶은 배경 부분을 마우스로 클릭하면 즉시 투명해집니다! (실수 시 Ctrl+Z 취소)';
+        bgModeGuideText.textContent = '💡 마우스 휠로 줌인/아웃 후 지우고 싶은 배경 픽셀을 클릭하면 즉시 투명해집니다! (Ctrl+Z 취소)';
       } else if (bgState.activePointerTool === 'erase') {
-        bgModeGuideText.textContent = '🧽 이미지 위를 마우스로 문지르면 해당 부분이 지우개처럼 투명하게 지워집니다. (실수 시 Ctrl+Z 취소)';
+        bgModeGuideText.textContent = '🧽 마우스 휠로 확대한 뒤 세밀한 경계를 문질러 지우개처럼 투명하게 다듬으세요. (우클릭 드래그: 이동)';
+      } else if (bgState.activePointerTool === 'restore') {
+        bgModeGuideText.textContent = '🖌️ 마우스 휠로 확대한 뒤 지워졌던 원본 부분을 문질러 정밀하게 복원하세요. (우클릭 드래그: 이동)';
       } else {
-        bgModeGuideText.textContent = '🖌️ 이미지 위를 마우스로 문지르면 지워졌던 원본 이미지가 다시 복원됩니다. (실수 시 Ctrl+Z 취소)';
+        bgModeGuideText.textContent = '✋ 이미지를 마우스로 잡고 원하는 위치로 이동하세요. (마우스 휠: 줌인/줌아웃)';
       }
     });
   });
 
+  function updateBgBrushCursor(clientX, clientY) {
+    if (!bgBrushCursor || !bgEditorCanvas || !bgState.workData) return;
+    const isBrush = bgState.activePointerTool === 'erase' || bgState.activePointerTool === 'restore';
+    if (!isBrush || isBgPanning || isBgSpaceDown) {
+      bgBrushCursor.classList.add('hidden');
+      return;
+    }
+    const rect = bgEditorCanvas.getBoundingClientRect();
+    if (!rect.width || !bgState.width) return;
+    const radiusPx = parseInt(bgBrushSize ? bgBrushSize.value : '20', 10) || 20;
+    const screenScale = rect.width / bgState.width;
+    const diameterOnScreen = Math.max(4, radiusPx * 2 * screenScale);
+
+    bgBrushCursor.style.width = `${diameterOnScreen}px`;
+    bgBrushCursor.style.height = `${diameterOnScreen}px`;
+    if (typeof clientX === 'number' && typeof clientY === 'number') {
+      bgBrushCursor.style.left = `${clientX}px`;
+      bgBrushCursor.style.top = `${clientY}px`;
+      bgBrushCursor.classList.remove('hidden');
+    }
+  }
+
   if (bgBrushSize) {
     bgBrushSize.addEventListener('input', () => {
       bgBrushSizeVal.textContent = `${bgBrushSize.value}px`;
+      updateBgBrushCursor();
     });
   }
 
@@ -2448,8 +2718,80 @@
     bgPreviewFill.addEventListener('change', renderBgEditorCanvas);
   }
 
-  // 캔버스 위에서 마우스 클릭(마술봉) 또는 드래그(지우개/복원 브러시) 동작
+  // 이미지 프레임(#bgCanvasViewport) 내부에서만 마우스 휠로 줌인 / 줌아웃 작동 (페이지 스크롤 차단)
+  if (bgCanvasViewport) {
+    bgCanvasViewport.addEventListener(
+      'wheel',
+      (e) => {
+        if (!bgState.workData) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const zoomFactor = e.deltaY < 0 ? 1.18 : 1 / 1.18;
+        zoomBgAtPoint(bgState.zoom * zoomFactor, e.clientX, e.clientY);
+        updateBgBrushCursor(e.clientX, e.clientY);
+      },
+      { passive: false }
+    );
+
+    // 우클릭 드래그 이동을 위해 프레임 내부 우클릭 메뉴 방지
+    bgCanvasViewport.addEventListener('contextmenu', (e) => {
+      if (bgState.workData) e.preventDefault();
+    });
+
+    bgCanvasViewport.addEventListener('pointerleave', () => {
+      if (bgBrushCursor) bgBrushCursor.classList.add('hidden');
+    });
+  }
+
+  if (bgZoomInBtn) {
+    bgZoomInBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      zoomBgAtPoint(bgState.zoom * 1.25);
+    });
+  }
+
+  if (bgZoomOutBtn) {
+    bgZoomOutBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      zoomBgAtPoint(bgState.zoom / 1.25);
+    });
+  }
+
+  if (bgZoomResetBtn) {
+    bgZoomResetBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      resetBgZoom();
+    });
+  }
+
+  // 스페이스바 누른 채 드래그 시에도 화면 이동(Pan) 지원
+  let isBgSpaceDown = false;
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' && bgState.workData && activeTabId === 'img-bgremove') {
+      const tag = (e.target && e.target.tagName ? e.target.tagName : '').toLowerCase();
+      if (tag !== 'input' && tag !== 'textarea' && tag !== 'select' && tag !== 'button') {
+        isBgSpaceDown = true;
+        if (bgCanvasViewport) bgCanvasViewport.classList.add('pan-mode');
+      }
+    }
+  });
+  window.addEventListener('keyup', (e) => {
+    if (e.code === 'Space') {
+      isBgSpaceDown = false;
+      if (bgCanvasViewport && bgState.activePointerTool !== 'pan') {
+        bgCanvasViewport.classList.remove('pan-mode');
+      }
+    }
+  });
+
+  // 캔버스 위에서 마우스 클릭(마술봉), 드래그(지우개/복원 브러시), 또는 화면 이동(Pan) 동작
   let isBgDrawing = false;
+  let lastBrushPt = null;
+  let isBgPanning = false;
+  let panStartX = 0;
+  let panStartY = 0;
+  let panOriginX = 0;
+  let panOriginY = 0;
 
   function getCanvasPixelCoords(e) {
     const rect = bgEditorCanvas.getBoundingClientRect();
@@ -2461,20 +2803,13 @@
     };
   }
 
-  function applyBrushAt(cx, cy) {
-    if (!bgState.workData || !bgState.origData) return;
-    const radius = parseInt(bgBrushSize.value, 10) || 25;
-    const w = bgState.width;
-    const h = bgState.height;
-    const work = bgState.workData.data;
-    const orig = bgState.origData;
-    const isErase = bgState.activePointerTool === 'erase';
-    const rSq = radius * radius;
-
-    const minX = Math.max(0, cx - radius);
-    const maxX = Math.min(w - 1, cx + radius);
-    const minY = Math.max(0, cy - radius);
-    const maxY = Math.min(h - 1, cy + radius);
+  function stampBrushCircle(cx, cy, radius, w, h, work, orig, isErase) {
+    const r = Math.max(0, radius - 0.5);
+    const rSq = r * r;
+    const minX = Math.max(0, Math.floor(cx - r));
+    const maxX = Math.min(w - 1, Math.ceil(cx + r));
+    const minY = Math.max(0, Math.floor(cy - r));
+    const maxY = Math.min(h - 1, Math.ceil(cy + r));
 
     for (let y = minY; y <= maxY; y++) {
       for (let x = minX; x <= maxX; x++) {
@@ -2493,12 +2828,59 @@
         }
       }
     }
+  }
+
+  function applyBrushStroke(fromX, fromY, toX, toY) {
+    if (!bgState.workData || !bgState.origData) return;
+    const radius = Math.max(1, parseInt(bgBrushSize.value, 10) || 20);
+    const w = bgState.width;
+    const h = bgState.height;
+    const work = bgState.workData.data;
+    const orig = bgState.origData;
+    const isErase = bgState.activePointerTool === 'erase';
+
+    const dist = Math.hypot(toX - fromX, toY - fromY);
+    const step = Math.max(1, radius * 0.35);
+    const steps = Math.max(1, Math.ceil(dist / step));
+
+    for (let i = 0; i <= steps; i++) {
+      const t = steps === 0 ? 0 : i / steps;
+      const cx = Math.round(fromX + (toX - fromX) * t);
+      const cy = Math.round(fromY + (toY - fromY) * t);
+      stampBrushCircle(cx, cy, radius, w, h, work, orig, isErase);
+    }
     renderBgEditorCanvas();
   }
 
-  if (bgEditorCanvas) {
-    bgEditorCanvas.addEventListener('pointerdown', (e) => {
+  if (bgCanvasViewport) {
+    bgCanvasViewport.addEventListener('pointerdown', (e) => {
       if (!bgState.workData) return;
+      if (e.target && e.target.closest && e.target.closest('#bgZoomHud')) return;
+
+      // 우클릭(2), 휠클릭(1), 스페이스바+좌클릭, '✋ 화면 이동' 도구, 또는 이미지 바깥 여백 드래그 시 화면 이동(Pan)
+      const shouldPan =
+        e.button === 1 ||
+        e.button === 2 ||
+        isBgSpaceDown ||
+        bgState.activePointerTool === 'pan' ||
+        e.target !== bgEditorCanvas;
+
+      if (shouldPan) {
+        e.preventDefault();
+        isBgPanning = true;
+        panStartX = e.clientX;
+        panStartY = e.clientY;
+        panOriginX = bgState.panX;
+        panOriginY = bgState.panY;
+        bgCanvasViewport.classList.add('is-panning');
+        if (bgBrushCursor) bgBrushCursor.classList.add('hidden');
+        try {
+          bgCanvasViewport.setPointerCapture(e.pointerId);
+        } catch (err) {}
+        return;
+      }
+
+      if (e.button !== 0) return;
       const pt = getCanvasPixelCoords(e);
 
       if (bgState.activePointerTool === 'wand') {
@@ -2527,21 +2909,52 @@
 
       pushBgHistory();
       isBgDrawing = true;
-      bgEditorCanvas.setPointerCapture(e.pointerId);
-      applyBrushAt(pt.x, pt.y);
+      lastBrushPt = pt;
+      try {
+        bgCanvasViewport.setPointerCapture(e.pointerId);
+      } catch (err) {}
+      applyBrushStroke(pt.x, pt.y, pt.x, pt.y);
+      updateBgBrushCursor(e.clientX, e.clientY);
     });
 
-    bgEditorCanvas.addEventListener('pointermove', (e) => {
-      if (!isBgDrawing || !bgState.workData) return;
+    bgCanvasViewport.addEventListener('pointermove', (e) => {
+      if (!bgState.workData) return;
+      if (isBgPanning) {
+        const vpRect = bgCanvasViewport.getBoundingClientRect();
+        const maxPanX = vpRect.width * Math.max(1, bgState.zoom) * 0.65;
+        const maxPanY = vpRect.height * Math.max(1, bgState.zoom) * 0.65;
+        const nextPanX = panOriginX + (e.clientX - panStartX);
+        const nextPanY = panOriginY + (e.clientY - panStartY);
+        bgState.panX = Math.max(-maxPanX, Math.min(maxPanX, nextPanX));
+        bgState.panY = Math.max(-maxPanY, Math.min(maxPanY, nextPanY));
+        applyBgZoomTransform();
+        return;
+      }
+
+      if (e.target && e.target.closest && e.target.closest('#bgZoomHud')) {
+        if (bgBrushCursor) bgBrushCursor.classList.add('hidden');
+        return;
+      }
+
+      updateBgBrushCursor(e.clientX, e.clientY);
+
+      if (!isBgDrawing) return;
       const pt = getCanvasPixelCoords(e);
-      applyBrushAt(pt.x, pt.y);
+      const fromPt = lastBrushPt || pt;
+      applyBrushStroke(fromPt.x, fromPt.y, pt.x, pt.y);
+      lastBrushPt = pt;
     });
 
-    const stopBgDrawing = () => {
+    const stopBgPointerAction = () => {
       isBgDrawing = false;
+      lastBrushPt = null;
+      if (isBgPanning) {
+        isBgPanning = false;
+        bgCanvasViewport.classList.remove('is-panning');
+      }
     };
-    bgEditorCanvas.addEventListener('pointerup', stopBgDrawing);
-    bgEditorCanvas.addEventListener('pointercancel', stopBgDrawing);
+    bgCanvasViewport.addEventListener('pointerup', stopBgPointerAction);
+    bgCanvasViewport.addEventListener('pointercancel', stopBgPointerAction);
   }
 
   if (undoBgBtn) {
@@ -4614,7 +5027,8 @@
     if (vconvTargetBadge) {
       vconvTargetBadge.textContent = `목표 포맷: ${fmt.toUpperCase()}`;
     }
-    if (fmt === 'wav') {
+    const isAudioOnly = fmt === 'wav' || fmt === 'm4a';
+    if (isAudioOnly) {
       if (videoConvertMethodGroup) videoConvertMethodGroup.classList.add('hidden');
       if (videoConvertEncodeOpts) videoConvertEncodeOpts.classList.add('hidden');
     } else {
@@ -4628,9 +5042,11 @@
 
   if (videoConvertFormatGrid) {
     videoConvertFormatGrid.addEventListener('click', (e) => {
-      const card = e.target.closest('.format-card');
+      const card = e.target.closest('.format-card, .format-pill');
       if (!card) return;
-      videoConvertFormatGrid.querySelectorAll('.format-card').forEach((c) => c.classList.remove('active'));
+      videoConvertFormatGrid
+        .querySelectorAll('.format-card, .format-pill')
+        .forEach((c) => c.classList.remove('active'));
       card.classList.add('active');
       vconvState.targetFmt = card.dataset.vfmt || 'mp4';
       updateVconvOptionVisibility();
@@ -4651,15 +5067,17 @@
     vconvState.file = file;
     vconvState.origUrl = URL.createObjectURL(file);
 
-    // 입력 확장자가 .mov이면 기본 목표를 MP4로, .mp4이면 MOV로 스마트 추천
+    // 입력 확장자와 목표 확장자가 같으면 자동으로 다른 대표 확장자로 스마트 추천
     const ext = (file.name.split('.').pop() || '').toLowerCase();
     if (ext === 'mov' && vconvState.targetFmt === 'mov') {
       vconvState.targetFmt = 'mp4';
     } else if (ext === 'mp4' && vconvState.targetFmt === 'mp4') {
       vconvState.targetFmt = 'mov';
+    } else if (ext === vconvState.targetFmt) {
+      vconvState.targetFmt = 'mp4';
     }
     if (videoConvertFormatGrid) {
-      videoConvertFormatGrid.querySelectorAll('.format-card').forEach((c) => {
+      videoConvertFormatGrid.querySelectorAll('.format-card, .format-pill').forEach((c) => {
         c.classList.toggle('active', c.dataset.vfmt === vconvState.targetFmt);
       });
     }
@@ -4696,9 +5114,9 @@
     changeVideoConvertBtn.addEventListener('click', () => videoConvertFileInput && videoConvertFileInput.click());
   }
 
-  // ISOBMFF (MP4 <-> MOV) 컨테이너 ftyp 헤더 In-Place 무손실 리먹싱 (stco/co64 오프셋 100% 보존)
+  // ISOBMFF (MP4 <-> MOV <-> M4V) 컨테이너 ftyp 헤더 In-Place 무손실 리먹싱 (stco/co64 오프셋 100% 보존)
   async function tryLosslessIsoBmffRemux(file, targetFmt) {
-    if (targetFmt !== 'mp4' && targetFmt !== 'mov') return null;
+    if (targetFmt !== 'mp4' && targetFmt !== 'mov' && targetFmt !== 'm4v') return null;
     const buf = await file.arrayBuffer();
     if (buf.byteLength < 16) return null;
 
@@ -4733,6 +5151,20 @@
         writeFourCC(pos, 'qt  ');
       }
       return new Blob([outBytes], { type: 'video/quicktime' });
+    } else if (targetFmt === 'm4v') {
+      // Apple iTunes Video 컨테이너 브랜드 ('M4V ')
+      writeFourCC(8, 'M4V ');
+      outBytes[12] = 0x00;
+      outBytes[13] = 0x00;
+      outBytes[14] = 0x00;
+      outBytes[15] = 0x01;
+      const m4vBrands = ['M4V ', 'M4A ', 'mp42', 'isom'];
+      let bIdx = 0;
+      for (let pos = 16; pos + 4 <= boxSize; pos += 4) {
+        writeFourCC(pos, m4vBrands[bIdx % m4vBrands.length]);
+        bIdx++;
+      }
+      return new Blob([outBytes], { type: 'video/x-m4v' });
     } else {
       // 표준 MP4 컨테이너 브랜드 ('mp42', 'isom', 'iso2', 'avc1')
       writeFourCC(8, 'mp42');
@@ -4808,7 +5240,104 @@
     }
   }
 
-  // 호환성 재인코딩 변환 (MediaRecorder 기반)
+  // 동영상 -> M4A (AAC 고음질 압축 오디오) 추출기
+  async function extractM4aFromVideoFile(file) {
+    // 1) 원본이 ISOBMFF(MP4/MOV/M4V)이고 브라우저가 audio/mp4 MediaRecorder를 지원하지 않는 경우에도
+    //    먼저 AudioContext + MediaRecorder로 순수 오디오 스트림 인코딩 시도, 실패 시 고속 WAV 폴백
+    return new Promise((resolve, reject) => {
+      const tempVideo = document.createElement('video');
+      const tempUrl = URL.createObjectURL(file);
+      tempVideo.src = tempUrl;
+      tempVideo.playsInline = true;
+      tempVideo.crossOrigin = 'anonymous';
+
+      let recorder = null;
+      let audioCtx = null;
+      let timer = null;
+      let cancelled = false;
+
+      vconvState.abortFn = () => {
+        cancelled = true;
+        try {
+          if (timer) clearInterval(timer);
+          tempVideo.pause();
+          if (recorder && recorder.state !== 'inactive') recorder.stop();
+        } catch (_) {}
+        reject(new Error('USER_CANCELLED'));
+      };
+
+      tempVideo.onloadedmetadata = async () => {
+        try {
+          const dur = tempVideo.duration || 1;
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new AudioContextClass();
+          const sourceNode = audioCtx.createMediaElementSource(tempVideo);
+          const destNode = audioCtx.createMediaStreamDestination();
+          sourceNode.connect(destNode);
+
+          const audioMimes = [
+            'audio/mp4;codecs=mp4a.40.2',
+            'audio/mp4',
+            'audio/aac',
+            'audio/webm;codecs=opus',
+            'audio/webm',
+          ];
+          const chosenMime =
+            audioMimes.find((m) => window.MediaRecorder && MediaRecorder.isTypeSupported(m)) || '';
+
+          const recOpts = { audioBitsPerSecond: 192000 };
+          if (chosenMime) recOpts.mimeType = chosenMime;
+
+          recorder = new MediaRecorder(destNode.stream, recOpts);
+          const chunks = [];
+          recorder.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) chunks.push(e.data);
+          };
+
+          recorder.onstop = async () => {
+            if (timer) clearInterval(timer);
+            URL.revokeObjectURL(tempUrl);
+            if (audioCtx) {
+              try {
+                await audioCtx.close();
+              } catch (_) {}
+            }
+            if (cancelled) return;
+            resolve(new Blob(chunks, { type: 'audio/mp4' }));
+          };
+
+          tempVideo.onended = () => {
+            if (recorder && recorder.state !== 'inactive') recorder.stop();
+          };
+
+          timer = setInterval(() => {
+            if (cancelled || tempVideo.paused || tempVideo.ended) return;
+            const pct = Math.min(99, Math.round((tempVideo.currentTime / dur) * 100));
+            if (vconvProgressPercent) vconvProgressPercent.textContent = `${pct}%`;
+            if (vconvProgressBar) vconvProgressBar.style.width = `${pct}%`;
+          }, 120);
+
+          recorder.start(200);
+          await tempVideo.play();
+        } catch (err) {
+          URL.revokeObjectURL(tempUrl);
+          try {
+            const wavFallback = await extractWavFromVideoFile(file);
+            resolve(wavFallback);
+          } catch (e2) {
+            reject(e2);
+          }
+        }
+      };
+
+      tempVideo.onerror = () => {
+        URL.revokeObjectURL(tempUrl);
+        reject(new Error('오디오 트랙을 디코딩할 수 없습니다.'));
+      };
+    });
+  }
+
+  // 호환성 재인코딩 변환 (MediaRecorder 기반: MP4, MOV, M4V, MKV, WebM, AVI 지원)
   function reencodeVideoToFormat(file, targetFmt, maxHeightSetting, bitrate) {
     return new Promise((resolve, reject) => {
       const tempVideo = document.createElement('video');
@@ -4871,6 +5400,14 @@
               'video/webm;codecs=vp8,opus',
               'video/webm',
             ];
+          } else if (targetFmt === 'mkv') {
+            mimeCandidates = [
+              'video/x-matroska;codecs=avc1,opus',
+              'video/x-matroska',
+              'video/webm;codecs=h264,opus',
+              'video/webm;codecs=vp9,opus',
+              'video/webm',
+            ];
           } else {
             mimeCandidates = [
               'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
@@ -4902,12 +5439,20 @@
             }
             if (cancelled) return;
 
+            const mimeMap = {
+              mp4: 'video/mp4',
+              mov: 'video/quicktime',
+              m4v: 'video/x-m4v',
+              mkv: 'video/x-matroska',
+              webm: 'video/webm',
+              avi: 'video/x-msvideo',
+            };
             let rawBlob = new Blob(chunks, {
-              type: targetFmt === 'webm' ? 'video/webm' : targetFmt === 'mov' ? 'video/quicktime' : 'video/mp4',
+              type: mimeMap[targetFmt] || 'video/mp4',
             });
 
-            if (targetFmt === 'mov') {
-              const remuxed = await tryLosslessIsoBmffRemux(rawBlob, 'mov');
+            if (targetFmt === 'mov' || targetFmt === 'm4v') {
+              const remuxed = await tryLosslessIsoBmffRemux(rawBlob, targetFmt);
               if (remuxed) rawBlob = remuxed;
             }
             resolve(rawBlob);
@@ -4977,9 +5522,13 @@
           if (vconvProgressBar) vconvProgressBar.style.width = '50%';
           outBlob = await extractWavFromVideoFile(file);
           usedModeLabel = '무손실 WAV 오디오 추출 완료';
+        } else if (targetFmt === 'm4a') {
+          if (vconvProgressStatus) vconvProgressStatus.textContent = '동영상에서 고음질 M4A 오디오 트랙 추출 중...';
+          outBlob = await extractM4aFromVideoFile(file);
+          usedModeLabel = '고음질 M4A 오디오 추출 완료';
         } else if (
           (method === 'auto' || method === 'remux') &&
-          (targetFmt === 'mp4' || targetFmt === 'mov')
+          (targetFmt === 'mp4' || targetFmt === 'mov' || targetFmt === 'm4v')
         ) {
           if (vconvProgressStatus) {
             vconvProgressStatus.textContent = `${targetFmt.toUpperCase()} 컨테이너 무손실 고속 변환 중...`;
@@ -4988,7 +5537,7 @@
           if (outBlob) {
             usedModeLabel = `${targetFmt.toUpperCase()} 초고속 무손실 컨테이너 변환 완료`;
           } else if (method === 'remux') {
-            showToast('원본이 WebM 등이므로 호환성 재인코딩으로 자동 전환하여 변환합니다.');
+            showToast('원본 컨테이너가 달라 호환성 재인코딩으로 자동 전환하여 변환합니다.');
           }
         }
 
@@ -5007,7 +5556,7 @@
         vconvState.resultUrl = URL.createObjectURL(outBlob);
 
         if (vconvResultTag) vconvResultTag.textContent = usedModeLabel;
-        if (targetFmt === 'wav') {
+        if (targetFmt === 'wav' || targetFmt === 'm4a') {
           vconvResultVideoPlayer.classList.add('hidden');
           vconvResultVideoPlayer.removeAttribute('src');
           vconvResultAudioPlayer.classList.remove('hidden');
