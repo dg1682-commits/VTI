@@ -50,27 +50,27 @@
               </div>
               <span class="external-icon">↗</span>
             </a>
-            <a href="video-studio.html" target="_blank" rel="noopener noreferrer" class="nav-dropdown-item studio-link-item">
+            <a href="javascript:void(0)" class="nav-dropdown-item studio-link-item studio-under-dev" data-dev-target="video">
               <span class="item-icon">🎬</span>
               <div class="item-text">
                 <div class="item-title-row">
                   <strong>궁디 영상 스튜디오</strong>
-                  <span class="badge-pro badge-pro-sm">PRO</span>
+                  <span class="badge-pro badge-pro-sm badge-dev">공사 중</span>
                 </div>
                 <span>웹 캡컷 · 멀티트랙 타임라인 & 예능 자막</span>
               </div>
-              <span class="external-icon">↗</span>
+              <span class="external-icon">🔒</span>
             </a>
-            <a href="audio-studio.html" target="_blank" rel="noopener noreferrer" class="nav-dropdown-item studio-link-item">
+            <a href="javascript:void(0)" class="nav-dropdown-item studio-link-item studio-under-dev" data-dev-target="audio">
               <span class="item-icon">🎹</span>
               <div class="item-text">
                 <div class="item-title-row">
                   <strong>궁디 오디오 스튜디오</strong>
-                  <span class="badge-pro badge-pro-sm">PRO</span>
+                  <span class="badge-pro badge-pro-sm badge-dev">공사 중</span>
                 </div>
                 <span>웹 DAW · 파형 편집 & 신스 피아노 롤 작곡</span>
               </div>
-              <span class="external-icon">↗</span>
+              <span class="external-icon">🔒</span>
             </a>
           </div>
         </div>
@@ -1499,6 +1499,34 @@
     </section>
 
   </main>
+
+  <!-- 스튜디오 고도화 공사 중 안내 모달 -->
+  <div class="modal-backdrop" id="devNoticeModal" style="display: none;">
+    <div class="modal-box dev-notice-box">
+      <div class="modal-header">
+        <h3 id="devModalTitle">🚧 PRO 스튜디오 엔진 고도화 중</h3>
+        <button type="button" class="modal-close-btn" id="closeDevModalBtn">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="dev-modal-icon-wrap">
+          <span class="dev-modal-icon">⚙️</span>
+        </div>
+        <h4 id="devModalSubtitle">진짜 프로급 퀄리티를 위해 현재 집중 공사 중입니다!</h4>
+        <p id="devModalDesc">
+          현재 <strong>궁디 이미지 스튜디오(웹 포토샵 / 캔바)</strong>를 실제 프로 디자이너 수준으로 먼저 완성도 높게 제작하고 있습니다.<br><br>
+          영상 및 오디오 스튜디오는 더욱 완벽한 하드웨어 가속 엔진과 함께 순차적으로 오픈될 예정입니다.
+        </p>
+        <div class="dev-modal-actions">
+          <a href="image-studio.html" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-full" id="btnGoImageStudio">
+            🎨 궁디 이미지 스튜디오(PRO) 열기 →
+          </a>
+          <button type="button" class="btn btn-outline btn-full" id="closeDevModalBtn2">
+            닫기
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- 푸터 -->
   <footer class="app-footer">

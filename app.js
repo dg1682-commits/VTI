@@ -245,6 +245,47 @@
     brandLogo.addEventListener('click', () => switchTab('img-compress'));
   }
 
+  // 스튜디오 공사 중 모달 이벤트
+  const devNoticeModal = document.getElementById('devNoticeModal');
+  const closeDevModalBtn = document.getElementById('closeDevModalBtn');
+  const closeDevModalBtn2 = document.getElementById('closeDevModalBtn2');
+  const devModalTitle = document.getElementById('devModalTitle');
+  const devModalSubtitle = document.getElementById('devModalSubtitle');
+  const studioUnderDevLinks = document.querySelectorAll('.studio-under-dev');
+
+  function openDevModal(type) {
+    if (!devNoticeModal) return;
+    if (type === 'video') {
+      devModalTitle.textContent = '🎬 영상 스튜디오 엔진 고도화 중';
+      devModalSubtitle.textContent = '웹 캡컷급 멀티트랙 NLE 엔진을 위해 현재 공사 중입니다!';
+    } else if (type === 'audio') {
+      devModalTitle.textContent = '🎹 오디오 스튜디오 엔진 고도화 중';
+      devModalSubtitle.textContent = '웹 FL스튜디오급 신스 & DAW 엔진을 위해 현재 공사 중입니다!';
+    }
+    devNoticeModal.style.display = 'flex';
+  }
+
+  function closeDevModal() {
+    if (devNoticeModal) devNoticeModal.style.display = 'none';
+  }
+
+  studioUnderDevLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const type = link.getAttribute('data-dev-target');
+      openDevModal(type);
+    });
+  });
+
+  if (closeDevModalBtn) closeDevModalBtn.addEventListener('click', closeDevModal);
+  if (closeDevModalBtn2) closeDevModalBtn2.addEventListener('click', closeDevModal);
+  if (devNoticeModal) {
+    devNoticeModal.addEventListener('click', (e) => {
+      if (e.target === devNoticeModal) closeDevModal();
+    });
+  }
+
   /* ==========================================================================
      2. 탭 1: 이미지 압축 (Image Compressor)
      ========================================================================== */
