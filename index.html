@@ -6,7 +6,7 @@
   <title>V-인코더 | 이미지·동영상 올인원 편집/변환 & 유튜브 다운로드</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23e11d48'/%3E%3Cpath d='M15 17 L28 49 L35 49 L45 27 L36 27 L31.5 38 L23.5 17 Z' fill='%23ffffff'/%3E%3Ccircle cx='45' cy='18' r='5' fill='%23ffffff'/%3E%3C/svg%3E" />
   <link rel="alternate icon" href="favicon.svg" />
-  <link rel="stylesheet" href="style.css?v=20261013_7" />
+  <link rel="stylesheet" href="style.css?v=20261013_8" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -94,10 +94,10 @@
               </div>
             </button>
             <button type="button" class="nav-dropdown-item" data-nav-target="video-gif">
-              <span class="item-icon">🎞️</span>
+              <span class="item-icon">✂️</span>
               <div class="item-text">
-                <strong>동영상 → GIF 움짤 변환</strong>
-                <span>타임라인 구간 선택 · 화면 비율 크롭 · 사이즈 조절</span>
+                <strong>동영상 컷편집 · GIF / MP4 변환</strong>
+                <span>타임라인 컷편집·이어붙이기 · 화면 크롭 · MP4 및 GIF 저장</span>
               </div>
             </button>
             <button type="button" class="nav-dropdown-item" data-nav-target="video-convert">
@@ -806,26 +806,26 @@
     </section>
 
     <!-- ==========================================
-         탭 3-2: 동영상 → GIF 움짤 변환 (타임라인 구간 · 비율 크롭 · 사이즈 동시 조절)
+         탭 3-2: 동영상 컷편집 · GIF / MP4 변환 (타임라인 컷편집 · 비율 크롭 · 사이즈 동시 조절)
          ========================================== -->
     <section id="tab-video-gif" class="tab-panel" role="tabpanel">
       <div class="section-header">
-        <div class="section-badge">타임라인 구간 선택 · 화면 비율 크롭 · 원하는 픽셀 사이즈 동시 변환</div>
-        <h1>동영상 → GIF 움짤 변환</h1>
-        <p>동영상에서 원하는 시간 구간(최대 15초)을 선택하고, 1:1 정사각형 등 원하는 비율로 화면을 잘라낸 뒤 지정한 픽셀 크기의 GIF로 한 번에 변환합니다.</p>
+        <div class="section-badge">비주얼 타임라인 다중 컷편집 · 화면 비율 크롭 · MP4 동영상 및 GIF 움짤 저장</div>
+        <h1>동영상 컷편집 · GIF / MP4 변환</h1>
+        <p>영상 바로 아래 타임라인에서 필요 없는 장면을 자르고(✂️) 지워(🗑️) 이어붙인 뒤, 원하는 크롭 비율·해상도로 <strong>MP4 동영상</strong>이나 <strong>GIF 움짤</strong>로 바로 저장합니다.</p>
       </div>
 
       <div class="workspace-grid">
         <aside class="settings-card">
           <h2 class="card-title">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line></svg>
-            GIF 구간 · 크롭 · 사이즈 설정
+            컷편집 · 크롭 · 저장 설정
           </h2>
 
           <!-- 1. 선택된 컷 미세 조절 & 컷 목록 -->
           <div class="form-group">
             <div class="label-row">
-              <label>① 컷편집 구간 목록 (합산 최대 15초)</label>
+              <label>① 컷편집 구간 목록</label>
               <span class="value-badge" id="gifDurationBadge">총 1컷 · 0.0초</span>
             </div>
 
@@ -878,7 +878,7 @@
           <!-- 2. 픽셀(px) 사이즈 지정 & 화면 비율 크롭 (한 번에 조절) -->
           <div class="form-group">
             <div class="label-row">
-              <label>② 출력 GIF 픽셀(px) 크기 지정</label>
+              <label>② 출력 픽셀(px) 크기 지정</label>
             </div>
             <label class="checkbox-label" style="margin-bottom:8px; font-size:0.8rem; color:var(--text-secondary);">
               <input type="checkbox" id="gifKeepAspectInput" />
@@ -900,9 +900,10 @@
               </div>
             </div>
             <div class="preset-chips" id="gifQuickSizeChips" style="margin-top:8px;">
-              <button type="button" class="chip-btn" data-gifw="320">320px (가벼움)</button>
-              <button type="button" class="chip-btn active" data-gifw="480">480px (추천)</button>
-              <button type="button" class="chip-btn" data-gifw="640">640px (고화질)</button>
+              <button type="button" class="chip-btn" data-gifw="320">320px</button>
+              <button type="button" class="chip-btn active" data-gifw="480">480px</button>
+              <button type="button" class="chip-btn" data-gifw="640">640px</button>
+              <button type="button" class="chip-btn" data-gifw="orig">원본크기</button>
             </div>
             <label class="checkbox-label" style="margin-top:10px; font-size:0.82rem;">
               <input type="checkbox" id="gifForceExactSize" checked />
@@ -923,11 +924,11 @@
             </div>
           </div>
 
-          <!-- 4. 프레임(FPS) 및 배속 -->
+          <!-- 4. 프레임(FPS) 및 배속 & 오디오 옵션 -->
           <div class="form-group">
             <div class="pixel-input-row" style="gap:10px;">
               <div class="pixel-col">
-                <span class="pixel-col-label">프레임 속도 (FPS)</span>
+                <span class="pixel-col-label">GIF 프레임 (FPS)</span>
                 <select id="gifFpsSelect" class="form-select">
                   <option value="10">10 FPS (저용량)</option>
                   <option value="12" selected>12 FPS (추천)</option>
@@ -946,11 +947,18 @@
                 </select>
               </div>
             </div>
+            <label class="checkbox-label" style="margin-top:10px; font-size:0.82rem;">
+              <input type="checkbox" id="gifIncludeAudioInput" checked />
+              <span>🔊 MP4 동영상으로 저장 시 원본 소리(오디오) 포함</span>
+            </label>
           </div>
 
           <div class="action-stack">
-            <button type="button" id="startGifConvertBtn" class="btn btn-primary btn-full" disabled>
-              🎞️ 편집된 컷 · 크기로 GIF 만들기
+            <button type="button" id="startMp4CutExportBtn" class="btn btn-primary btn-full" disabled>
+              🎬 편집된 컷 · 크기로 MP4 영상 저장
+            </button>
+            <button type="button" id="startGifConvertBtn" class="btn btn-outline btn-full nle-export-gif-btn" disabled>
+              🎞️ 편집된 컷 · 크기로 GIF 움짤 만들기
             </button>
             <button type="button" id="cancelGifConvertBtn" class="btn btn-danger btn-full hidden">
               변환 중지
@@ -972,19 +980,19 @@
                 <line x1="2" y1="12" x2="22" y2="12"></line>
               </svg>
             </div>
-            <h3>GIF로 컷편집·변환할 동영상 파일을 이곳에 드롭하거나 선택하세요</h3>
-            <p>MP4, MOV, WebM 지원 · 영상 편집기처럼 장면을 보며 분할(✂️)·삭제(🗑️)·되돌리기(Ctrl+Z)로 원하는 장면만 이어붙여 GIF를 만듭니다</p>
+            <h3>컷편집 · 크롭하여 MP4 또는 GIF로 저장할 동영상 파일을 드롭하거나 선택하세요</h3>
+            <p>MP4, MOV, WebM 지원 · 영상 바로 아래 타임라인에서 분할(✂️)·삭제(🗑️)·되돌리기(Ctrl+Z) 후 MP4 영상 또는 GIF로 즉시 내보냅니다</p>
             <button type="button" class="btn btn-primary">동영상 파일 선택</button>
           </div>
 
-          <!-- GIF 편집 및 NLE 컷편집 타임라인 카드 -->
+          <!-- 동영상 화면 + 바로 아래 밀착된 타임라인 + 하단 소형 컨트롤 바 -->
           <div class="editor-stage-card hidden" id="gifStageCard">
             <div class="editor-info-bar">
               <span id="gifOrigInfo">원본: 0 × 0 px</span>
               <span class="arrow-sep">|</span>
               <span id="gifBoxInfo">크롭 영역: 0 × 0 px</span>
               <span class="arrow-sep">→</span>
-              <strong id="gifFinalInfo" class="accent-text">최종 GIF 크기: 0 × 0 px</strong>
+              <strong id="gifFinalInfo" class="accent-text">출력 크기: 0 × 0 px</strong>
             </div>
 
             <!-- 동영상 화면 + 드래그 가능한 크롭 박스 -->
@@ -1007,58 +1015,9 @@
               </div>
             </div>
 
-            <!-- 🎬 캡컷/프리미어 스타일 비주얼 컷편집 타임라인 패널 -->
+            <!-- 🎬 영상 바로 밑에 밀착된 비주얼 컷편집 타임라인 패널 -->
             <div class="gif-timeline-panel">
-              <!-- 상단 컨트롤 & 컷편집 툴바 -->
-              <div class="nle-toolbar">
-                <div class="nle-toolbar-group">
-                  <button type="button" id="gifPlayPauseBtn" class="btn btn-outline btn-xs" title="현재 위치부터 재생/일시정지 (Space)">
-                    ▶️ 재생
-                  </button>
-                  <button type="button" id="previewGifLoopBtn" class="btn btn-primary btn-xs" disabled title="남긴 컷들만 순서대로 이어서 미리 재생">
-                    🔁 편집본 연속 미리보기
-                  </button>
-                  <button type="button" id="gifStepBackBtn" class="btn btn-outline btn-xs" title="0.1초 뒤로">
-                    ◀ -0.1s
-                  </button>
-                  <button type="button" id="gifStepFwdBtn" class="btn btn-outline btn-xs" title="0.1초 앞으로">
-                    +0.1s ▶
-                  </button>
-                  <span id="gifCurrentTimeText" class="timeline-time-label">00:00.0 / 00:00.0</span>
-                </div>
-
-                <div class="nle-toolbar-group">
-                  <button type="button" id="gifSplitBtn" class="btn btn-outline btn-xs nle-btn-split" title="빨간 재생선 위치에서 클립을 둘로 자르기 (단축키: S)">
-                    ✂️ 여기서 자르기 (S)
-                  </button>
-                  <button type="button" id="gifDeleteCutBtn" class="btn btn-outline btn-xs nle-btn-delete" title="선택된 컷 구간 삭제 (단축키: Delete / Backspace)">
-                    🗑️ 선택 컷 삭제 (Del)
-                  </button>
-                  <button type="button" id="gifKeepOnlyCutBtn" class="btn btn-outline btn-xs" title="선택된 컷만 남기고 나머지 앞뒤 컷 모두 삭제">
-                    🎯 이 컷만 남기기
-                  </button>
-                  <span class="nle-divider"></span>
-                  <button type="button" id="gifUndoBtn" class="btn btn-outline btn-xs" disabled title="실행 취소 (Ctrl+Z)">
-                    ↩️ 실행 취소
-                  </button>
-                  <button type="button" id="gifRedoBtn" class="btn btn-outline btn-xs" disabled title="다시 실행 (Ctrl+Y)">
-                    ↪️ 다시 실행
-                  </button>
-                  <button type="button" id="gifResetCutsBtn" class="btn btn-outline btn-xs" title="모든 컷편집 초기화">
-                    🔄 초기화
-                  </button>
-                </div>
-              </div>
-
-              <!-- 타임라인 상태 요약 헤더 -->
-              <div class="nle-status-row">
-                <span class="nle-guide-text">
-                  💡 타임라인을 클릭/드래그해 <strong>빨간 재생선</strong>을 이동한 뒤 <strong>[✂️ 여기서 자르기]</strong>로 나누고, 필요 없는 조각을 클릭해 <strong>[🗑️ 선택 컷 삭제]</strong>하거나 클립 양끝 모서리(<strong>[ ]</strong>)를 잡고 드래그하세요!
-                </span>
-                <span id="gifRangeSummaryText" class="timeline-range-badge">남은 컷 합계: 0.0초 / 최대 15초</span>
-              </div>
-
-              <!-- 비주얼 필름스트립 + 클립 블록 타임라인 -->
+              <!-- 1) 비주얼 필름스트립 + 클립 블록 타임라인 (영상 바로 아래 배치!) -->
               <div class="nle-timeline-container" id="gifNleTimeline">
                 <!-- 시간 눈금자 (클릭/드래그 시 재생선 이동) -->
                 <div class="nle-time-ruler" id="gifTimeRuler"></div>
@@ -1076,14 +1035,66 @@
                 </div>
               </div>
 
-              <!-- 이어붙인 최종 시퀀스 미니 바 -->
-              <div class="nle-stitched-bar" id="gifStitchedSequenceBar"></div>
+              <!-- 2) 타임라인 바로 아래: 크기를 줄인 컴팩트 컨트롤 & 컷편집 버튼 바 -->
+              <div class="nle-toolbar">
+                <div class="nle-toolbar-group">
+                  <button type="button" id="gifPlayPauseBtn" class="nle-mini-btn" title="현재 위치부터 재생/일시정지 (Space)">
+                    ▶️ 재생
+                  </button>
+                  <button type="button" id="previewGifLoopBtn" class="nle-mini-btn nle-mini-primary" disabled title="남긴 컷들만 순서대로 이어서 미리 재생">
+                    🔁 편집본 미리보기
+                  </button>
+                  <button type="button" id="gifStepBackBtn" class="nle-mini-btn" title="0.1초 뒤로">
+                    ◀ -0.1s
+                  </button>
+                  <button type="button" id="gifStepFwdBtn" class="nle-mini-btn" title="0.1초 앞으로">
+                    +0.1s ▶
+                  </button>
+                  <span id="gifCurrentTimeText" class="timeline-time-label">00:00.0 / 00:00.0</span>
+                </div>
+
+                <div class="nle-toolbar-group">
+                  <button type="button" id="gifSplitBtn" class="nle-mini-btn nle-btn-split" title="빨간 재생선 위치에서 클립을 둘로 자르기 (단축키: S)">
+                    ✂️ 여기서 자르기 (S)
+                  </button>
+                  <button type="button" id="gifDeleteCutBtn" class="nle-mini-btn nle-btn-delete" title="선택된 컷 구간 삭제 (단축키: Delete / Backspace)">
+                    🗑️ 선택 컷 삭제 (Del)
+                  </button>
+                  <button type="button" id="gifKeepOnlyCutBtn" class="nle-mini-btn" title="선택된 컷만 남기고 나머지 앞뒤 컷 모두 삭제">
+                    🎯 이 컷만 남기기
+                  </button>
+                  <span class="nle-divider"></span>
+                  <button type="button" id="gifUndoBtn" class="nle-mini-btn" disabled title="실행 취소 (Ctrl+Z)">
+                    ↩️ 취소
+                  </button>
+                  <button type="button" id="gifRedoBtn" class="nle-mini-btn" disabled title="다시 실행 (Ctrl+Y)">
+                    ↪️ 다시
+                  </button>
+                  <button type="button" id="gifResetCutsBtn" class="nle-mini-btn" title="모든 컷편집 초기화">
+                    🔄 초기화
+                  </button>
+                </div>
+              </div>
+
+              <!-- 3) 하단 이어붙인 시퀀스 미니 바 + 합산 시간 배지 + 빠른 저장 버튼 -->
+              <div class="nle-bottom-bar">
+                <div class="nle-stitched-bar" id="gifStitchedSequenceBar"></div>
+                <div class="nle-bottom-right">
+                  <span id="gifRangeSummaryText" class="timeline-range-badge">남은 컷 합계: 0.0초</span>
+                  <button type="button" id="quickMp4ExportBtn" class="nle-mini-btn nle-mini-export-mp4" title="편집된 컷을 이어붙여 MP4 동영상으로 바로 저장">
+                    🎬 MP4 영상 저장
+                  </button>
+                  <button type="button" id="quickGifExportBtn" class="nle-mini-btn nle-mini-export-gif" title="편집된 컷을 이어붙여 GIF 움짤로 바로 저장">
+                    🎞️ GIF 저장
+                  </button>
+                </div>
+              </div>
             </div>
 
-            <!-- GIF 변환 진행률 패널 -->
-            <div class="progress-panel hidden" id="gifProgressPanel" style="margin-top:14px;">
+            <!-- 변환 진행률 패널 -->
+            <div class="progress-panel hidden" id="gifProgressPanel" style="margin-top:12px;">
               <div class="progress-label-row">
-                <span id="gifProgressStatus">GIF 프레임 추출 및 인코딩 준비 중...</span>
+                <span id="gifProgressStatus">인코딩 준비 중...</span>
                 <strong id="gifProgressPercent">0%</strong>
               </div>
               <div class="progress-bar-bg">
@@ -1091,17 +1102,18 @@
               </div>
             </div>
 
-            <!-- 생성된 GIF 결과 미리보기 및 다운로드 -->
+            <!-- 생성된 MP4 동영상 또는 GIF 결과 미리보기 및 다운로드 -->
             <div class="gif-result-box hidden" id="gifResultBox">
               <div class="gif-result-header">
-                <span class="video-tag tag-success">🎉 GIF 움짤 생성 완료</span>
+                <span class="video-tag tag-success" id="gifResultBadgeTag">🎉 편집 완료</span>
                 <strong id="gifResultStatText" class="accent-text"></strong>
               </div>
               <div class="gif-result-preview-wrap checkerboard-bg">
                 <img id="gifResultPreviewImg" alt="생성된 GIF 미리보기" />
+                <video id="gifResultPreviewVideo" class="hidden" controls playsinline loop style="max-width:100%; max-height:400px; border-radius:6px;"></video>
               </div>
               <a id="downloadGifResultBtn" class="btn btn-success btn-full" download="converted.gif" style="margin-top:12px;">
-                💾 생성된 GIF 움짤 다운로드
+                💾 결과 파일 다운로드
               </a>
             </div>
           </div>
@@ -1422,6 +1434,6 @@
   <!-- 토스트 알림 -->
   <div id="toastContainer" class="toast-container"></div>
 
-  <script src="app.js?v=20261013_7"></script>
+  <script src="app.js?v=20261013_8"></script>
 </body>
 </html>
