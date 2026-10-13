@@ -295,18 +295,24 @@
     updateUndoRedoUI();
   }
 
+  function updateDimUI() {
+    if (footerDimText) {
+      footerDimText.textContent = `${state.canvasWidth} × ${state.canvasHeight} px`;
+    }
+  }
+
   function updateTransform() {
     canvasPaperShadowWrap.style.transform = `translate(${state.panX}px, ${state.panY}px) scale(${state.zoom})`;
   }
 
   function setZoom(newZoom) {
+    if (isNaN(newZoom)) newZoom = 1;
     state.zoom = Math.max(0.15, Math.min(3.5, newZoom));
     updateTransform();
     if (zoomValLabel) zoomValLabel.textContent = `${Math.round(state.zoom * 100)}%`;
-    if (zoomLevelSelect) {
+    if (zoomLevelSelect && zoomLevelSelect.options) {
       // 가장 가까운 옵션 선택 또는 1
-      const rounded = (Math.round(state.zoom * 100) / 100).toString();
-      const matchOpt = Array.from(zoomLevelSelect.options).find(o => Math.abs(parseFloat(o.value) - state.zoom) < 0.1);
+      const matchOpt = Array.from(zoomLevelSelect.options || []).find(o => Math.abs(parseFloat(o.value) - state.zoom) < 0.1);
       if (matchOpt) zoomLevelSelect.value = matchOpt.value;
     }
   }
@@ -315,10 +321,10 @@
     state.panX = 0;
     state.panY = 0;
     const pad = 120;
-    const availW = canvasCenterStage.clientWidth - pad;
-    const availH = canvasCenterStage.clientHeight - pad;
-    const scale = Math.min(availW / state.canvasWidth, availH / state.canvasHeight);
-    setZoom(Math.max(0.2, Math.min(1.0, scale)));
+    const availW = Math.max(200, (canvasCenterStage?.clientWidth || 1000) - pad);
+    const availH = Math.max(200, (canvasCenterStage?.clientHeight || 700) - pad);
+    const scale = Math.min(availW / (state.canvasWidth || 1080), availH / (state.canvasHeight || 1080));
+    setZoom(Math.max(0.2, Math.min(1.0, isNaN(scale) || scale <= 0 ? 0.75 : scale)));
   }
 
   // ==========================================================================
@@ -1132,18 +1138,22 @@
     const selected = getSelectedLayer();
 
     if (selected) {
-      // 1. 회전 핸들 검사
+      const cRect = canvas.getBoundingClientRect();
+      const sX = canvas.width / (cRect.width || 1);
+      const sY = canvas.height / (cRect.height || 1);
+
+      // 1. 회전 핸들 검사 (화면 16px 기준)
       const cx = selected.x + selected.width / 2;
       const rotY = selected.y - 28;
-      if (Math.hypot(coords.x - cx, coords.y - rotY) <= 12) {
+      if (Math.hypot((coords.x - cx) / sX, (coords.y - rotY) / sY) <= 16) {
         canvas.style.cursor = 'crosshair';
         return;
       }
 
-      // 2. 8개 리사이즈 핸들 검사
+      // 2. 8개 리사이즈 핸들 검사 (화면 14px 기준, 줌 축소 시에도 정확하게 반응!)
       const handles = getHandles(selected);
       for (const h of handles) {
-        if (Math.hypot(coords.x - h.x, coords.y - h.y) <= 10) {
+        if (Math.hypot((coords.x - h.x) / sX, (coords.y - h.y) / sY) <= 14) {
           canvas.style.cursor = h.cursor;
           return;
         }
@@ -1198,9 +1208,14 @@
 
     // 1. 회전 핸들 검사
     if (selected) {
+      const cRect = canvas.getBoundingClientRect();
+      const sX = canvas.width / (cRect.width || 1);
+      const sY = canvas.height / (cRect.height || 1);
+
+      // 1. 회전 핸들 검사 (화면 16px 기준)
       const cx = selected.x + selected.width / 2;
       const rotY = selected.y - 28;
-      if (Math.hypot(coords.x - cx, coords.y - rotY) <= 12) {
+      if (Math.hypot((coords.x - cx) / sX, (coords.y - rotY) / sY) <= 16) {
         state.dragState = {
           isDragging: true,
           mode: 'rotate',
@@ -1211,10 +1226,10 @@
         return;
       }
 
-      // 2. 8개 리사이즈 핸들 검사
+      // 2. 8개 리사이즈 핸들 검사 (화면 14px 기준)
       const handles = getHandles(selected);
       for (const h of handles) {
-        if (Math.hypot(coords.x - h.x, coords.y - h.y) <= 10) {
+        if (Math.hypot((coords.x - h.x) / sX, (coords.y - h.y) / sY) <= 14) {
           state.dragState = {
             isDragging: true,
             mode: 'resize',
@@ -1900,13 +1915,16 @@
       renderCanvas();
     }
   });
-  ctxRadiusInput.addEventListener('input', () => {
-    const s = getSelectedLayer();
-    if (s) {
-      s.borderRadius = parseInt(ctxRadiusInput.value, 10) || 0;
-      renderCanvas();
-    }
-  });
+  if (ctxRadiusSlider) {
+    ctxRadiusSlider.addEventListener('input', () => {
+      const s = getSelectedLayer();
+      if (s) {
+        s.borderRadius = parseInt(ctxRadiusSlider.value, 10) || 0;
+        if (ctxRadiusVal) ctxRadiusVal.textContent = `${s.borderRadius}px`;
+        renderCanvas();
+      }
+    });
+  }
 
   // 캔버스 배경색 선택
   ctxCanvasBgPicker.addEventListener('input', () => {
@@ -2663,6 +2681,16 @@
     showToast('템플릿이 로드되었습니다!');
   }
 
+  // 스페이스바 브라우저 기본 스크롤 동작 즉시 차단 (캡처링 단계에서 최우선 가로채기)
+  window.addEventListener('keydown', (e) => {
+    if ((e.code === 'Space' || e.key === ' ') &&
+        e.target.tagName !== 'INPUT' &&
+        e.target.tagName !== 'TEXTAREA' &&
+        !e.target.isContentEditable) {
+      e.preventDefault();
+    }
+  }, { capture: true, passive: false });
+
   // ==========================================================================
   // 단축키 시스템 (Adobe Express & Photoshop 단축키 완벽 대응)
   // ==========================================================================
@@ -2973,6 +3001,7 @@
 
       const format = btn.getAttribute('data-format');
       const scale = parseInt(btn.getAttribute('data-scale'), 10) || 1;
+      const isTransparentExport = btn.getAttribute('data-transparent') === 'true';
 
       showToast(`${scale}X 고해상도 이미지 렌더링 중...`);
 
@@ -2984,7 +3013,7 @@
         eCtx.scale(scale, scale);
 
         // 🌟 3. 배경 처리 (투명 PNG 선택 시 완전 투명 알파 채널 유지)
-        if (state.bgType === 'transparent' && format === 'png') {
+        if ((isTransparentExport || state.bgType === 'transparent') && format === 'png') {
           eCtx.clearRect(0, 0, canvas.width, canvas.height);
         } else if (state.bgType === 'gradient' && state.bgGradient) {
           const angle = state.bgGradient.angle !== undefined ? state.bgGradient.angle : 135;
