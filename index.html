@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>VTI 미디어 스튜디오 - 이미지·동영상 압축/변환 & 유튜브 다운로드</title>
+  <title>V-인코더 | 이미지·동영상 압축/변환 & 유튜브 다운로드</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23e11d48'/%3E%3Cpath d='M15 17 L28 49 L35 49 L45 27 L36 27 L31.5 38 L23.5 17 Z' fill='%23ffffff'/%3E%3Ccircle cx='45' cy='18' r='5' fill='%23ffffff'/%3E%3C/svg%3E" />
+  <link rel="alternate icon" href="favicon.svg" />
   <link rel="stylesheet" href="style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,13 +17,14 @@
     <div class="header-inner">
       <div class="brand" id="brandLogo" title="홈으로 이동">
         <div class="brand-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          <svg width="24" height="24" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14 16 L28 50 L35 50 L46 26 L36.5 26 L31.5 38 L23 16 Z" fill="#ffffff" />
+            <circle cx="46" cy="17" r="5.5" fill="#ffffff" />
           </svg>
         </div>
         <div class="brand-text">
-          <span class="brand-title">VTI Media Studio</span>
-          <span class="brand-badge">All-in-One Web</span>
+          <span class="brand-title">V-인코더</span>
+          <span class="brand-badge">All-in-One Encoder</span>
         </div>
       </div>
 
@@ -466,6 +469,15 @@
         <div class="yt-helper-chips">
           <span>지원 주소: 일반 유튜브 영상, Shorts(쇼츠), 공유 링크(youtu.be) 모두 가능</span>
         </div>
+
+        <!-- 1시간 이상 장편 영상 다운로드 안내 박스 -->
+        <div class="yt-long-guide-box">
+          <div class="guide-title">📌 1시간 이상 장편 영상 다운로드 안내</div>
+          <ul class="guide-list">
+            <li><strong>480p / 720p / 1080p 고화질</strong>은 추출 서버에서 화면과 소리를 합치는(인코딩) 작업이 필요하여, 1시간 이상 긴 영상은 변환 시간이 매우 오래 걸리거나 무료 서버 한계로 멈출 수 있습니다.</li>
+            <li><strong>1시간 이상의 긴 영상</strong>을 받으실 때는 변환 대기 없이 즉시 다운로드되는 <strong>360p (MP4)</strong> 화질을 선택하시거나, 우측의 <strong>[외부 다이렉트 서버 모음] (SSYouTube, Y2Mate 등)</strong> 탭을 이용해 받아주시기 바랍니다.</li>
+          </ul>
+        </div>
       </div>
 
       <!-- 유튜브 결과 영역 -->
@@ -514,7 +526,7 @@
             <!-- 엔진 1: 내장형 멀티 포맷 추출 위젯 (화질별 MP4 / MP3 카드) -->
             <div class="engine-view active" id="engineViewLoader">
               <div class="iframe-notice" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
-                <span>💡 아래에서 화질 선택 후 <strong>Download</strong>를 누르세요. (※ 1~2시간 이상의 초장편 영상은 무료 서버 한계로 변환이 멈출 수 있습니다)</span>
+                <span>💡 화질 선택 후 <strong>Download</strong>를 누르세요. (1시간 이상 장편 영상은 <strong>360p</strong> 또는 <strong>외부 다이렉트 서버</strong> 권장)</span>
                 <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
                   <label class="checkbox-label" style="font-size:0.82rem; font-weight:700; margin:0;">
                     <input type="checkbox" id="blockPopupToggle" checked />
@@ -563,16 +575,16 @@
             <div class="engine-view" id="engineViewDirect">
               <div class="direct-gateway-box">
                 <p class="gateway-desc">
-                  사내 보안망(방화벽)에서 내장 위젯을 차단한 경우, 아래 버튼을 누르면 입력하신 유튜브 영상이 자동 입력된 상태로 즉시 다운로드 페이지가 열립니다.
+                  <strong>1시간 이상 장편 영상(360p 즉시 다운로드)</strong>을 받으시거나 사내 방화벽에서 내장 위젯이 막힌 경우, 아래 버튼을 누르면 입력하신 유튜브 영상이 자동 연결된 다운로드 페이지가 열립니다.
                 </p>
                 <div class="gateway-grid">
                   <a id="gwSsyoutube" href="#" target="_blank" rel="noopener noreferrer" class="gateway-card">
                     <strong>SSYouTube (SaveFrom)</strong>
-                    <span>가장 유명한 원클릭 MP4/720p 추출기 바로가기 →</span>
+                    <span>장편 영상 360p 즉시 다운로드 및 720p 추출기 바로가기 →</span>
                   </a>
                   <a id="gwY2mate" href="#" target="_blank" rel="noopener noreferrer" class="gateway-card">
                     <strong>Y2Mate 고속 변환기</strong>
-                    <span>1080p FHD MP4 및 고음질 MP3 변환 바로가기 →</span>
+                    <span>360p/720p/1080p MP4 및 고음질 MP3 변환 바로가기 →</span>
                   </a>
                   <a id="gwCobalt" href="https://cobalt.tools/" target="_blank" rel="noopener noreferrer" class="gateway-card" id="gwCobaltCard">
                     <strong>Cobalt 클린 다운로더 (광고 없음)</strong>
@@ -595,7 +607,7 @@
 
   <!-- 푸터 -->
   <footer class="app-footer">
-    <p>VTI Media Studio · 모든 이미지 및 동영상 파일 처리는 서버 전송 없이 사용자의 브라우저 내부에서 안전하게 실행됩니다.</p>
+    <p>V-인코더 (V-Encoder) · 모든 이미지 및 동영상 파일 처리는 서버 전송 없이 사용자의 브라우저 내부에서 안전하게 실행됩니다.</p>
   </footer>
 
   <!-- 토스트 알림 -->
