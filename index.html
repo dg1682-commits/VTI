@@ -49,6 +49,14 @@
           <span>이미지 변환</span>
         </button>
 
+        <button class="nav-tab" role="tab" aria-selected="false" data-tab="img-edit">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 2v14a2 2 0 0 0 2 2h14"></path>
+            <path d="M18 22V8a2 2 0 0 0-2-2H2"></path>
+          </svg>
+          <span>이미지 편집</span>
+        </button>
+
         <button class="nav-tab" role="tab" aria-selected="false" data-tab="video-compress">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="23 7 16 12 23 17 23 7"></polygon>
@@ -310,7 +318,294 @@
     </section>
 
     <!-- ==========================================
-         탭 3: 동영상 압축 (Video Compressor)
+         탭 3: 이미지 편집 (Image Editor: 자르기/회전 & 배경 제거)
+         ========================================== -->
+    <section id="tab-img-edit" class="tab-panel" role="tabpanel">
+      <div class="section-header">
+        <div class="section-badge">정밀 사이즈 자르기 · 회전/반전 · AI/스마트 배경 제거</div>
+        <h1>이미지 편집 스튜디오</h1>
+        <p>원하는 픽셀(px) 규격 틀에 맞춰 자르기·회전하거나, 이미지 배경(누끼)을 깔끔하게 제거하세요.</p>
+
+        <!-- 서브툴 전환 탭 (자르기/회전 vs 배경제거) -->
+        <div class="subtool-switcher" id="editSubtoolSwitcher">
+          <button type="button" class="subtool-btn active" data-subtool="crop">
+            ✂️ 이미지 자르기 · 회전 · 규격 맞춤
+          </button>
+          <button type="button" class="subtool-btn" data-subtool="bgremove">
+            🪄 이미지 배경 제거 (누끼 따기)
+          </button>
+        </div>
+      </div>
+
+      <!-- [서브툴 1] 이미지 자르기 / 회전 / 규격 맞춤 -->
+      <div id="subtool-crop" class="subtool-view active">
+        <div class="workspace-grid">
+          <aside class="settings-card">
+            <h2 class="card-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2v14a2 2 0 0 0 2 2h14"></path><path d="M18 22V8a2 2 0 0 0-2-2H2"></path></svg>
+              자르기 · 회전 설정
+            </h2>
+
+            <!-- 1. 비율 프리셋 -->
+            <div class="form-group">
+              <label>자르기 틀 비율 선택</label>
+              <div class="ratio-grid" id="cropRatioGrid">
+                <button type="button" class="chip-btn active" data-ratio="free">자유 비율</button>
+                <button type="button" class="chip-btn" data-ratio="1:1">1:1 (정사각)</button>
+                <button type="button" class="chip-btn" data-ratio="4:3">4:3 (표준)</button>
+                <button type="button" class="chip-btn" data-ratio="16:9">16:9 (와이드)</button>
+                <button type="button" class="chip-btn" data-ratio="3:4">3:4 (세로/증명)</button>
+                <button type="button" class="chip-btn" data-ratio="9:16">9:16 (쇼츠)</button>
+              </div>
+            </div>
+
+            <!-- 2. 원하는 픽셀 사이즈 고정 틀 -->
+            <div class="form-group">
+              <label>원하는 픽셀(px) 사이즈 지정</label>
+              <div class="pixel-input-row">
+                <div class="pixel-field">
+                  <span>가로(W)</span>
+                  <input type="number" id="cropTargetW" min="1" max="10000" placeholder="예: 800" />
+                </div>
+                <span class="pixel-x">×</span>
+                <div class="pixel-field">
+                  <span>세로(H)</span>
+                  <input type="number" id="cropTargetH" min="1" max="10000" placeholder="예: 600" />
+                </div>
+                <button type="button" id="applyCropPixelBtn" class="btn btn-outline btn-sm">적용</button>
+              </div>
+              <label class="checkbox-label" style="margin-top:8px; font-size:0.82rem;">
+                <input type="checkbox" id="cropForceExactSize" checked />
+                <span>저장 시 위 입력한 픽셀(px) 크기로 정확히 맞춰 저장</span>
+              </label>
+            </div>
+
+            <!-- 3. 회전 및 반전 -->
+            <div class="form-group">
+              <label>이미지 회전 및 반전</label>
+              <div class="transform-btn-grid">
+                <button type="button" id="rotateLeftBtn" class="btn btn-outline btn-sm">↺ 왼쪽 90°</button>
+                <button type="button" id="rotateRightBtn" class="btn btn-outline btn-sm">↻ 오른쪽 90°</button>
+                <button type="button" id="flipHBtn" class="btn btn-outline btn-sm">⇄ 좌우 반전</button>
+                <button type="button" id="flipVBtn" class="btn btn-outline btn-sm">⇅ 상하 반전</button>
+              </div>
+              <div class="label-row" style="margin-top:12px;">
+                <label for="cropFineAngle" style="font-size:0.82rem;">미세 각도 조절</label>
+                <span class="value-badge" id="cropFineAngleVal">0°</span>
+              </div>
+              <input type="range" id="cropFineAngle" min="-45" max="45" value="0" step="1" class="range-slider" />
+            </div>
+
+            <!-- 4. 출력 포맷 -->
+            <div class="form-group">
+              <label for="cropOutputFormat">저장 포맷</label>
+              <select id="cropOutputFormat" class="form-select">
+                <option value="image/png" data-ext="png" selected>PNG (고화질 무손실 · 추천)</option>
+                <option value="image/jpeg" data-ext="jpg">JPG (일반 사진용)</option>
+                <option value="image/webp" data-ext="webp">WebP (고효율 웹용)</option>
+              </select>
+            </div>
+
+            <div class="action-stack">
+              <button type="button" id="downloadCroppedBtn" class="btn btn-success btn-full" disabled>
+                ✂️ 잘라낸 이미지 다운로드
+              </button>
+              <button type="button" id="resetCropBtn" class="btn btn-outline btn-full" disabled>
+                영역 · 회전 초기화
+              </button>
+              <button type="button" id="changeCropImgBtn" class="btn btn-outline btn-full" disabled>
+                다른 이미지 불러오기
+              </button>
+            </div>
+          </aside>
+
+          <div class="content-area">
+            <div class="dropzone" id="cropDropzone">
+              <input type="file" id="cropFileInput" accept="image/*" hidden />
+              <div class="dropzone-icon">
+                <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 2v14a2 2 0 0 0 2 2h14"></path>
+                  <path d="M18 22V8a2 2 0 0 0-2-2H2"></path>
+                </svg>
+              </div>
+              <h3>자르거나 회전할 이미지를 이곳에 드롭하거나 선택하세요</h3>
+              <p>마우스로 파란색 틀을 자유롭게 조절하거나 정확한 가로×세로 픽셀 크기로 잘라낼 수 있습니다</p>
+              <button type="button" class="btn btn-primary">편집할 이미지 선택</button>
+            </div>
+
+            <!-- 크롭 작업 캔버스 영역 -->
+            <div class="editor-stage-card hidden" id="cropStageCard">
+              <div class="editor-info-bar">
+                <span id="cropOrigInfo">원본: 0 × 0 px</span>
+                <span class="arrow-sep">|</span>
+                <span id="cropBoxInfo">선택 영역: 0 × 0 px</span>
+                <span class="arrow-sep">→</span>
+                <strong id="cropFinalInfo" class="accent-text">최종 저장 크기: 0 × 0 px</strong>
+              </div>
+
+              <div class="crop-viewport" id="cropViewport">
+                <div class="crop-canvas-wrap" id="cropCanvasWrap">
+                  <canvas id="cropPreviewCanvas"></canvas>
+                  <!-- 드래그 및 크기 조절 가능한 자르기 틀(Crop Box) -->
+                  <div class="crop-box" id="cropBox">
+                    <div class="crop-grid-lines"></div>
+                    <div class="crop-size-floating" id="cropSizeFloating">0 × 0</div>
+                    <span class="crop-handle handle-nw" data-handle="nw"></span>
+                    <span class="crop-handle handle-n" data-handle="n"></span>
+                    <span class="crop-handle handle-ne" data-handle="ne"></span>
+                    <span class="crop-handle handle-e" data-handle="e"></span>
+                    <span class="crop-handle handle-se" data-handle="se"></span>
+                    <span class="crop-handle handle-s" data-handle="s"></span>
+                    <span class="crop-handle handle-sw" data-handle="sw"></span>
+                    <span class="crop-handle handle-w" data-handle="w"></span>
+                  </div>
+                </div>
+              </div>
+              <p class="editor-bottom-hint">💡 파란색 틀 안을 마우스로 잡고 이동하거나, 모서리·변의 흰색 점을 잡고 원하는 크기로 조절하세요.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- [서브툴 2] 이미지 배경 제거 (누끼 따기) -->
+      <div id="subtool-bgremove" class="subtool-view">
+        <div class="workspace-grid">
+          <aside class="settings-card">
+            <h2 class="card-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+              배경 제거 (누끼) 옵션
+            </h2>
+
+            <!-- 1. AI 자동 배경제거 -->
+            <div class="form-group">
+              <label>① AI 자동 배경 제거 (인물 · 상품 · 사물)</label>
+              <button type="button" id="runAiBgRemoveBtn" class="btn btn-primary btn-full" disabled>
+                🤖 AI로 배경 자동 제거하기
+              </button>
+              <p class="form-hint" id="aiBgStatusHint">※ 인물, 동물, 쇼핑몰 상품 사진 등의 배경을 AI가 자동으로 분리합니다. (첫 실행 시 모델 준비 약 5~10초 소요)</p>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- 2. 스마트 색상/클릭 배경 제거 (0.1초 즉시 처리) -->
+            <div class="form-group">
+              <label>② 스마트 색상 배경 제거 (로고·도장·단색 배경 0.1초 처리)</label>
+              <select id="bgRemoveModeSelect" class="form-select" style="margin-bottom:10px;">
+                <option value="flood" selected>외곽 연결 배경만 제거 (피사체 내부 색상 보호 · 추천)</option>
+                <option value="global">이미지 전체에서 선택한 배경색 모두 제거 (로고/도장/글자)</option>
+              </select>
+
+              <div class="color-picker-row" style="margin-bottom:10px;">
+                <input type="color" id="bgTargetColor" value="#ffffff" />
+                <span id="bgTargetColorText">지울 배경색 (#FFFFFF)</span>
+                <button type="button" id="autoCornerBgBtn" class="btn btn-outline btn-sm" style="margin-left:auto; padding:4px 8px; font-size:0.75rem;" disabled>
+                  모서리색 자동 추출
+                </button>
+              </div>
+
+              <div class="label-row">
+                <label for="bgTolerance">색상 허용 범위 (민감도)</label>
+                <span class="value-badge" id="bgToleranceVal">35</span>
+              </div>
+              <input type="range" id="bgTolerance" min="2" max="120" value="35" step="1" class="range-slider" />
+
+              <div class="label-row" style="margin-top:10px;">
+                <label for="bgFeather">테두리 부드럽게 (페더링)</label>
+                <span class="value-badge" id="bgFeatherVal">2px</span>
+              </div>
+              <input type="range" id="bgFeather" min="0" max="8" value="2" step="1" class="range-slider" />
+
+              <button type="button" id="runColorBgRemoveBtn" class="btn btn-outline btn-full" style="margin-top:10px;" disabled>
+                🎯 선택한 배경색 즉시 투명화
+              </button>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- 3. 마우스 클릭/브러시 도구 -->
+            <div class="form-group">
+              <label>③ 마우스 클릭 / 브러시 다듬기 도구</label>
+              <div class="preset-chips" id="bgPointerToolGrid">
+                <button type="button" class="chip-btn active" data-btool="wand">🪄 클릭 투명화</button>
+                <button type="button" class="chip-btn" data-btool="erase">🧽 지우개 브러시</button>
+                <button type="button" class="chip-btn" data-btool="restore">🖌️ 복원 브러시</button>
+              </div>
+              <div id="bgBrushSizeWrap" class="hidden" style="margin-top:10px;">
+                <div class="label-row">
+                  <label for="bgBrushSize">브러시 크기</label>
+                  <span class="value-badge" id="bgBrushSizeVal">25px</span>
+                </div>
+                <input type="range" id="bgBrushSize" min="5" max="100" value="25" step="1" class="range-slider" />
+              </div>
+            </div>
+
+            <!-- 4. 배경 색상 채우기 옵션 -->
+            <div class="form-group">
+              <label for="bgPreviewFill">배경 상태 (투명 유지 또는 배경색 합성)</label>
+              <select id="bgPreviewFill" class="form-select">
+                <option value="transparent" selected>투명 배경 유지 (체크무늬 표시 · 투명 PNG 저장)</option>
+                <option value="#ffffff">흰색 배경으로 채우기 (증명사진/문서용)</option>
+                <option value="#000000">검은색 배경으로 채우기</option>
+                <option value="#dbeafe">하늘색 배경으로 채우기 (여권/증명사진용)</option>
+              </select>
+            </div>
+
+            <div class="action-stack">
+              <button type="button" id="downloadBgRemovedBtn" class="btn btn-success btn-full" disabled>
+                💾 배경 제거된 PNG 다운로드
+              </button>
+              <button type="button" id="restoreOrigBgBtn" class="btn btn-outline btn-full" disabled>
+                원본 이미지로 되돌리기
+              </button>
+              <button type="button" id="changeBgImgBtn" class="btn btn-outline btn-full" disabled>
+                다른 이미지 선택
+              </button>
+            </div>
+          </aside>
+
+          <div class="content-area">
+            <div class="dropzone" id="bgRemoveDropzone">
+              <input type="file" id="bgRemoveFileInput" accept="image/*" hidden />
+              <div class="dropzone-icon">
+                <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+                </svg>
+              </div>
+              <h3>배경을 제거할 이미지를 이곳에 드롭하거나 선택하세요</h3>
+              <p>AI 자동 누끼 따기 및 클릭 한 번으로 원하는 배경색을 투명하게 지우는 마술봉·브러시 기능을 지원합니다</p>
+              <button type="button" class="btn btn-primary">이미지 선택하기</button>
+            </div>
+
+            <!-- 배경 제거 작업 캔버스 카드 -->
+            <div class="editor-stage-card hidden" id="bgStageCard">
+              <div class="editor-info-bar">
+                <span id="bgImgInfoText">해상도: 0 × 0 px</span>
+                <span class="arrow-sep">|</span>
+                <strong id="bgModeGuideText" class="accent-text">💡 이미지 위의 지우고 싶은 배경 부분을 마우스로 클릭하면 즉시 투명해집니다!</strong>
+              </div>
+
+              <!-- AI 진행 상태 바 -->
+              <div class="progress-panel hidden" id="aiBgProgressPanel" style="margin-bottom:14px;">
+                <div class="progress-label-row">
+                  <span id="aiBgProgressText">AI 배경 제거 모델 준비 및 분석 중...</span>
+                  <strong id="aiBgProgressPct">처리 중</strong>
+                </div>
+                <div class="progress-bar-bg">
+                  <div class="progress-bar-fill" id="aiBgProgressBar" style="width: 100%"></div>
+                </div>
+              </div>
+
+              <div class="bg-canvas-viewport checkerboard-bg" id="bgCanvasViewport">
+                <canvas id="bgEditorCanvas"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         탭 4: 동영상 압축 (Video Compressor)
          ========================================== -->
     <section id="tab-video-compress" class="tab-panel" role="tabpanel">
       <div class="section-header">
