@@ -191,6 +191,7 @@
     panStartX: 0,
     panStartY: 0,
     selectedId: null,
+    selectedIds: [], // 다중 선택 레이어 ID 배열
     editingTextId: null, // 캔버스 인라인 타이핑 중인 텍스트 레이어 ID
     layers: [],
     clipboard: null, // 레이어 복사 버퍼
@@ -199,11 +200,12 @@
 
     dragState: {
       isDragging: false,
-      mode: null, // 'move' | 'resize' | 'rotate'
+      mode: null, // 'move' | 'resize' | 'rotate' | 'marquee'
       handle: null, // 'tl','tr','br','bl','tc','bc','ml','mr','rot'
       startX: 0,
       startY: 0,
-      initialLayer: null
+      initialLayer: null,
+      initialLayers: [] // 다중 선택 시 초기 위치 목록
     },
 
     snapGuides: { xList: [], yList: [] }
@@ -869,20 +871,95 @@
   // ==========================================================================
   // Canva & Adobe Express 스타일 바운딩 박스 & 8방향 리사이즈 핸들
   // ==========================================================================
-  function drawCanvaBoundingBox(layer) {
+  function drawCanvaBoundingBox(target) {
+    const selectedList = getSelectedLayers();
+    if (selectedList.length === 0) return;
+
+    // A. 다중 선택 상태 (2개 이상 선택됨)
+    if (selectedList.length > 1) {
+      // 1) 개별 개체들에 얇은 보조 외곽선 표시 (미디어 3번 스크린샷 스타일)
+      selectedList.forEach(l => {
+        ctx.save();
+        const lcx = l.x + l.width / 2;
+        const lcy = l.y + l.height / 2;
+        ctx.translate(lcx, lcy);
+        ctx.rotate(((l.rotation || 0) * Math.PI) / 180);
+        ctx.translate(-lcx, -lcy);
+        ctx.strokeStyle = 'rgba(59, 130, 246, 0.7)';
+        ctx.lineWidth = 1.2;
+        ctx.strokeRect(l.x, l.y, l.width, l.height);
+        ctx.restore();
+      });
+
+      // 2) 전체를 감싸는 그룹 바운딩 박스
+      const bounds = getSelectionBounds();
+      ctx.save();
+      ctx.strokeStyle = '#2563eb';
+      ctx.lineWidth = 1.8;
+      ctx.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+
+      // 3) 그룹 8방향 핸들
+      const handles = getHandles(bounds);
+      handles.forEach(h => {
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#2563eb';
+        ctx.lineWidth = 2;
+        if (['tl', 'tr', 'br', 'bl'].includes(h.id)) {
+          const size = 10;
+          ctx.beginPath();
+          drawRoundedRect(ctx, h.x - size / 2, h.y - size / 2, size, size, 2.5);
+          ctx.fill(); ctx.stroke();
+        } else if (h.id === 'tc' || h.id === 'bc') {
+          const bw = 14, bh = 6;
+          ctx.beginPath();
+          drawRoundedRect(ctx, h.x - bw / 2, h.y - bh / 2, bw, bh, 2.5);
+          ctx.fill(); ctx.stroke();
+        } else if (h.id === 'ml' || h.id === 'mr') {
+          const bw = 6, bh = 14;
+          ctx.beginPath();
+          drawRoundedRect(ctx, h.x - bw / 2, h.y - bh / 2, bw, bh, 2.5);
+          ctx.fill(); ctx.stroke();
+        }
+      });
+      ctx.restore();
+      return;
+    }
+
+    // B. 단일 개체 선택 상태
+    const layer = target || selectedList[0];
+    if (!layer) return;
+
     ctx.save();
     const cx = layer.x + layer.width / 2;
     const cy = layer.y + layer.height / 2;
     ctx.translate(cx, cy);
-    ctx.rotate((layer.rotation * Math.PI) / 180);
+    ctx.rotate(((layer.rotation || 0) * Math.PI) / 180);
     ctx.translate(-cx, -cy);
 
-    // 슬림한 보라색 프레임 (외곽선)
+    // 잠긴 레이어인 경우: 회색 점선 + 🔒 뱃지
+    if (layer.locked) {
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 1.6;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeRect(layer.x, layer.y, layer.width, layer.height);
+
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#ef4444';
+      ctx.font = '12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText('🔒 잠김', cx, layer.y - 6);
+
+      ctx.restore();
+      return;
+    }
+
+    // 일반 레이어 바운딩 박스
     ctx.strokeStyle = '#6366f1';
     ctx.lineWidth = 1.6;
     ctx.strokeRect(layer.x, layer.y, layer.width, layer.height);
 
-    // 상단 회전 핸들 스템 (연결선)
+    // 상단 회전 핸들
     const rotY = layer.y - 28;
     ctx.beginPath();
     ctx.moveTo(cx, layer.y);
@@ -891,7 +968,6 @@
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // 상단 둥근 회전 아이콘 핸들
     ctx.fillStyle = '#ffffff';
     ctx.strokeStyle = '#6366f1';
     ctx.lineWidth = 2;
@@ -900,41 +976,33 @@
     ctx.fill();
     ctx.stroke();
 
-    // 회전 핸들 내부 회전 심볼
     ctx.strokeStyle = '#6366f1';
     ctx.lineWidth = 1.4;
     ctx.beginPath();
     ctx.arc(cx, rotY, 4, 0.4 * Math.PI, 1.8 * Math.PI);
     ctx.stroke();
 
-    // 8개 리사이즈 핸들 (모서리 4개 + 변 4개)
+    // 8개 리사이즈 핸들
     const handles = getHandles(layer);
     handles.forEach(h => {
       ctx.fillStyle = '#ffffff';
       ctx.strokeStyle = '#6366f1';
       ctx.lineWidth = 2;
-
       if (['tl', 'tr', 'br', 'bl'].includes(h.id)) {
-        // 모서리 핸들: 둥근 사각형 핸들 (10x10px)
         const size = 10;
         ctx.beginPath();
         drawRoundedRect(ctx, h.x - size / 2, h.y - size / 2, size, size, 2.5);
-        ctx.fill();
-        ctx.stroke();
+        ctx.fill(); ctx.stroke();
       } else if (h.id === 'tc' || h.id === 'bc') {
-        // 상/하 변 핸들: 가로 바 (14x6px)
         const bw = 14, bh = 6;
         ctx.beginPath();
         drawRoundedRect(ctx, h.x - bw / 2, h.y - bh / 2, bw, bh, 2.5);
-        ctx.fill();
-        ctx.stroke();
+        ctx.fill(); ctx.stroke();
       } else if (h.id === 'ml' || h.id === 'mr') {
-        // 좌/우 변 핸들: 세로 바 (6x14px)
         const bw = 6, bh = 14;
         ctx.beginPath();
         drawRoundedRect(ctx, h.x - bw / 2, h.y - bh / 2, bw, bh, 2.5);
-        ctx.fill();
-        ctx.stroke();
+        ctx.fill(); ctx.stroke();
       }
     });
 
@@ -962,7 +1030,8 @@
   }
 
   // ==========================================================================
-  // 어도비 익스프레스 스타일 플로팅 퀵 액션 툴바
+  // 어도비 익스프레스 / 캔바 스타일 플로팅 퀵 액션 툴바
+  // 🌟 1. 캔버스 줌 배율(Zoom)과 완전히 무관하게 화면상 100% 정상 크기로 모달처럼 렌더링!
   // ==========================================================================
   function renderFloatingQuickBar(layer) {
     let bar = interactiveOverlay.querySelector('.floating-quick-bar');
@@ -972,12 +1041,39 @@
       interactiveOverlay.appendChild(bar);
     }
 
-    const barX = layer.x + layer.width / 2;
-    const barY = Math.max(20, layer.y - 36);
+    const bounds = getSelectionBounds();
+    const barX = bounds.x + bounds.width / 2;
+    // 캔버스 줌 배율에 맞춰 화면상 16px의 일정한 간격 유지
+    const gap = 16 / Math.max(0.1, state.zoom);
+    const barY = bounds.y - gap;
+
     bar.style.left = `${barX}px`;
     bar.style.top = `${barY}px`;
+    // 🌟 핵심: 부모 캔버스의 scale(zoom)을 1/zoom으로 상쇄시켜 화면상 항상 100% 정상 크기로 또렷하게 렌더링!
+    bar.style.transform = `translate(-50%, -100%) scale(${1 / state.zoom})`;
+    bar.style.transformOrigin = 'center bottom';
 
-    if (layer.type === 'text') {
+    const selectedList = getSelectedLayers();
+
+    // 다중 선택 상태 (2개 이상 개체 동시 선택)
+    if (selectedList.length > 1) {
+      const isAllText = selectedList.every(l => l.type === 'text');
+      bar.innerHTML = `
+        <span class="quick-bar-btn" style="cursor:default;color:#4f46e5;font-weight:700;">✨ ${selectedList.length}개 선택</span>
+        <div class="quick-bar-sep"></div>
+        ${isAllText ? `
+          <button type="button" class="quick-bar-btn" data-act="multi-bold" title="일괄 굵게"><strong>B</strong></button>
+          <button type="button" class="quick-bar-btn" data-act="multi-italic" title="일괄 기울임"><em>I</em></button>
+          <div class="quick-bar-sep"></div>
+        ` : ''}
+        <button type="button" class="quick-bar-btn" data-act="duplicate" title="일괄 복제 (Alt+드래그)">📄 복제</button>
+        <button type="button" class="quick-bar-btn" data-act="lock-all" title="일괄 잠금">🔒 일괄 잠금</button>
+        <div class="quick-bar-sep"></div>
+        <button type="button" class="quick-bar-btn" data-act="delete" style="color:#ef4444;" title="일괄 삭제 (Delete)">🗑️</button>
+      `;
+    }
+    // 단일 텍스트 개체
+    else if (layer.type === 'text') {
       bar.innerHTML = `
         <button type="button" class="quick-bar-btn btn-accent" data-act="edit">✏️ 인라인 편집</button>
         <button type="button" class="quick-bar-btn" data-act="bold"><strong>B</strong></button>
@@ -985,13 +1081,17 @@
         <button type="button" class="quick-bar-btn" data-act="underline"><u>U</u></button>
         <div class="quick-bar-sep"></div>
         <button type="button" class="quick-bar-btn" data-act="duplicate" title="복제 (Ctrl+D)">📄 복제</button>
+        <button type="button" class="quick-bar-btn" data-act="toggle-lock" title="${layer.locked ? '잠금 해제' : '레이어 잠금'}">${layer.locked ? '🔒 잠김' : '🔓 잠금'}</button>
         <button type="button" class="quick-bar-btn" data-act="delete" style="color:#ef4444;" title="삭제 (Delete)">🗑️</button>
       `;
-    } else {
+    }
+    // 단일 도형 및 기타 개체
+    else {
       bar.innerHTML = `
         <button type="button" class="quick-bar-btn" data-act="duplicate" title="복제 (Ctrl+D)">📄 복제</button>
         <button type="button" class="quick-bar-btn" data-act="bringFront" title="맨 앞으로">⬆️ 맨앞</button>
         <button type="button" class="quick-bar-btn" data-act="sendBack" title="맨 뒤로">⬇️ 맨뒤</button>
+        <button type="button" class="quick-bar-btn" data-act="toggle-lock" title="${layer.locked ? '잠금 해제' : '레이어 잠금'}">${layer.locked ? '🔒 잠김' : '🔓 잠금'}</button>
         <div class="quick-bar-sep"></div>
         <button type="button" class="quick-bar-btn" data-act="delete" style="color:#ef4444;" title="삭제 (Delete)">🗑️</button>
       `;
@@ -1003,14 +1103,36 @@
       const btn = e.target.closest('.quick-bar-btn');
       if (!btn) return;
       const act = btn.getAttribute('data-act');
+
       if (act === 'edit') startInlineTextEditor(layer);
       else if (act === 'bold') { layer.isBold = !layer.isBold; syncContextToolbar(); renderCanvas(); pushHistory(); }
       else if (act === 'italic') { layer.isItalic = !layer.isItalic; syncContextToolbar(); renderCanvas(); pushHistory(); }
       else if (act === 'underline') { layer.isUnderline = !layer.isUnderline; syncContextToolbar(); renderCanvas(); pushHistory(); }
+      else if (act === 'multi-bold') {
+        const anyBold = selectedList.some(l => l.isBold);
+        selectedList.forEach(l => { if (l.type === 'text') l.isBold = !anyBold; });
+        syncContextToolbar(); renderCanvas(); pushHistory();
+      }
+      else if (act === 'multi-italic') {
+        const anyItalic = selectedList.some(l => l.isItalic);
+        selectedList.forEach(l => { if (l.type === 'text') l.isItalic = !anyItalic; });
+        syncContextToolbar(); renderCanvas(); pushHistory();
+      }
       else if (act === 'duplicate') duplicateSelectedLayer();
       else if (act === 'delete') deleteSelectedLayer();
       else if (act === 'bringFront') bringToFront();
       else if (act === 'sendBack') sendToBack();
+      else if (act === 'toggle-lock') {
+        layer.locked = !layer.locked;
+        renderCanvas(); renderLayerList(); syncContextToolbar(); pushHistory();
+        showToast(layer.locked ? `[${layer.name}] 레이어가 잠겼습니다.` : `[${layer.name}] 잠금이 해제되었습니다.`);
+      }
+      else if (act === 'lock-all') {
+        selectedList.forEach(l => l.locked = true);
+        selectLayer(null);
+        renderCanvas(); renderLayerList(); pushHistory();
+        showToast('선택한 레이어들이 일괄 잠금되었습니다.');
+      }
     };
   }
 
@@ -1111,15 +1233,112 @@
     };
   }
 
-  function getSelectedLayer() {
-    return state.layers.find(l => l.id === state.selectedId);
+  function getSelectedLayers() {
+    return state.layers.filter(l => state.selectedIds.includes(l.id));
   }
 
-  function selectLayer(id) {
+  function getSelectedLayer() {
+    if (state.selectedId) {
+      const match = state.layers.find(l => l.id === state.selectedId);
+      if (match) return match;
+    }
+    const list = getSelectedLayers();
+    return list.length > 0 ? list[0] : null;
+  }
+
+  function getSelectionBounds() {
+    const list = getSelectedLayers();
+    if (list.length === 0) return { x: 0, y: 0, width: 0, height: 0 };
+    if (list.length === 1) {
+      return { x: list[0].x, y: list[0].y, width: list[0].width, height: list[0].height };
+    }
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    list.forEach(l => {
+      minX = Math.min(minX, l.x);
+      minY = Math.min(minY, l.y);
+      maxX = Math.max(maxX, l.x + l.width);
+      maxY = Math.max(maxY, l.y + l.height);
+    });
+    return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+  }
+
+  // 🌟 2. 개체 클릭 시 좌측 드로어 탭 자동 연동
+  function openDrawerTab(tabName) {
+    if (!tabName) return;
+    dockNavItems.forEach(item => {
+      item.classList.toggle('active', item.getAttribute('data-tab') === tabName);
+    });
+    drawerPageViews.forEach(v => v.classList.remove('active'));
+
+    const targetView = document.getElementById(
+      tabName === 'templates' ? 'drawerTemplates' :
+      tabName === 'text' ? 'drawerText' :
+      tabName === 'elements' ? 'drawerElements' :
+      tabName === 'uploads' ? 'drawerUploads' : 'drawerBackground'
+    );
+    if (targetView) targetView.classList.add('active');
+
+    const titleMap = {
+      templates: '디자인 템플릿',
+      text: '텍스트 스타일',
+      elements: '도형 & 그래픽',
+      uploads: '이미지 업로드',
+      background: '배경 설정'
+    };
+    if (drawerHeadingTitle) drawerHeadingTitle.textContent = titleMap[tabName] || '편집 패널';
+    if (sideDrawerPanel) sideDrawerPanel.classList.remove('collapsed');
+  }
+
+  function selectLayers(ids, openTab = true) {
+    commitInlineTextEditor();
+    state.selectedIds = Array.isArray(ids) ? [...ids] : (ids ? [ids] : []);
+    state.selectedId = state.selectedIds[0] || null;
+
+    if (openTab && state.selectedIds.length === 1) {
+      const single = state.layers.find(l => l.id === state.selectedId);
+      if (single) {
+        if (single.type === 'text') openDrawerTab('text');
+        else if (single.type === 'image') openDrawerTab('uploads');
+        else openDrawerTab('elements');
+      }
+    }
+
+    renderCanvas();
+    renderLayerList();
+    syncContextToolbar();
+  }
+
+  function selectLayer(id, isMulti = false, openTab = true) {
     if (state.editingTextId && state.editingTextId !== id) {
       commitInlineTextEditor();
     }
-    state.selectedId = id;
+
+    if (!id) {
+      state.selectedId = null;
+      state.selectedIds = [];
+    } else if (isMulti) {
+      const idx = state.selectedIds.indexOf(id);
+      if (idx > -1) {
+        state.selectedIds.splice(idx, 1);
+        state.selectedId = state.selectedIds[0] || null;
+      } else {
+        state.selectedIds.push(id);
+        state.selectedId = id;
+      }
+    } else {
+      state.selectedId = id;
+      state.selectedIds = [id];
+
+      if (openTab) {
+        const single = state.layers.find(l => l.id === id);
+        if (single) {
+          if (single.type === 'text') openDrawerTab('text');
+          else if (single.type === 'image') openDrawerTab('uploads');
+          else openDrawerTab('elements');
+        }
+      }
+    }
+
     renderCanvas();
     renderLayerList();
     syncContextToolbar();
@@ -1205,14 +1424,13 @@
 
     const coords = getCanvasCoords(e);
     const selected = getSelectedLayer();
+    const bounds = getSelectionBounds();
+    const cRect = canvas.getBoundingClientRect();
+    const sX = canvas.width / (cRect.width || 1);
+    const sY = canvas.height / (cRect.height || 1);
 
-    // 1. 회전 핸들 검사
-    if (selected) {
-      const cRect = canvas.getBoundingClientRect();
-      const sX = canvas.width / (cRect.width || 1);
-      const sY = canvas.height / (cRect.height || 1);
-
-      // 1. 회전 핸들 검사 (화면 16px 기준)
+    // 1. 회전 핸들 검사 (단일 선택이고 잠기지 않은 경우)
+    if (selected && state.selectedIds.length === 1 && !selected.locked) {
       const cx = selected.x + selected.width / 2;
       const rotY = selected.y - 28;
       if (Math.hypot((coords.x - cx) / sX, (coords.y - rotY) / sY) <= 16) {
@@ -1225,20 +1443,28 @@
         };
         return;
       }
+    }
 
-      // 2. 8개 리사이즈 핸들 검사 (화면 14px 기준)
-      const handles = getHandles(selected);
-      for (const h of handles) {
-        if (Math.hypot((coords.x - h.x) / sX, (coords.y - h.y) / sY) <= 14) {
-          state.dragState = {
-            isDragging: true,
-            mode: 'resize',
-            handle: h.id,
-            startX: coords.x,
-            startY: coords.y,
-            initialLayer: { ...selected }
-          };
-          return;
+    // 2. 8개 리사이즈 핸들 검사 (단일 또는 다중 통합 바운딩 박스)
+    if (state.selectedIds.length > 0) {
+      const targetBounds = state.selectedIds.length === 1 ? selected : bounds;
+      const isLocked = state.selectedIds.length === 1 && selected?.locked;
+      if (!isLocked) {
+        const handles = getHandles(targetBounds);
+        for (const h of handles) {
+          if (Math.hypot((coords.x - h.x) / sX, (coords.y - h.y) / sY) <= 14) {
+            state.dragState = {
+              isDragging: true,
+              mode: 'resize',
+              handle: h.id,
+              startX: coords.x,
+              startY: coords.y,
+              initialLayer: selected ? { ...selected } : null,
+              initialBounds: { ...bounds },
+              initialLayers: getSelectedLayers().map(l => ({ ...l }))
+            };
+            return;
+          }
         }
       }
     }
@@ -1258,36 +1484,70 @@
     }
 
     if (hitLayer) {
-      // 🌟 Alt + 드래그 즉시 복제 (포토샵 스타일!)
+      // 🌟 Shift + 클릭: 다중 선택 토글!
+      if (e.shiftKey) {
+        selectLayer(hitLayer.id, true);
+        return;
+      }
+
+      // 🌟 Alt + 드래그: 선택된 모든 개체(또는 클릭한 개체) 즉시 복제!
       if (e.altKey) {
-        const clone = JSON.parse(JSON.stringify(hitLayer));
-        clone.id = 'layer_' + Date.now();
-        clone.name = `${hitLayer.name} 복사`;
-        if (hitLayer.type === 'image' && hitLayer._imgEl) clone._imgEl = hitLayer._imgEl;
-        state.layers.push(clone);
-        selectLayer(clone.id);
+        const toClone = state.selectedIds.includes(hitLayer.id) ? getSelectedLayers() : [hitLayer];
+        const newClones = [];
+        toClone.forEach(orig => {
+          const clone = JSON.parse(JSON.stringify(orig));
+          clone.id = 'layer_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+          clone.name = `${orig.name} 복사`;
+          if (orig.type === 'image' && orig._imgEl) clone._imgEl = orig._imgEl;
+          state.layers.push(clone);
+          newClones.push(clone);
+        });
+        selectLayers(newClones.map(c => c.id));
         state.dragState = {
           isDragging: true,
           mode: 'move',
           startX: coords.x,
           startY: coords.y,
-          initialLayer: { ...clone }
+          initialLayer: { ...newClones[0] },
+          initialLayers: newClones.map(c => ({ ...c }))
         };
         pushHistory();
         showToast('Alt+드래그: 오브제가 복제되었습니다.');
         return;
       }
 
-      selectLayer(hitLayer.id);
+      // 이미 다중 선택된 개체들 중 하나를 클릭한 경우: 다중 선택 상태 유지하며 함께 이동!
+      if (state.selectedIds.includes(hitLayer.id) && state.selectedIds.length > 1) {
+        state.dragState = {
+          isDragging: true,
+          mode: 'move',
+          startX: coords.x,
+          startY: coords.y,
+          initialLayer: { ...hitLayer },
+          initialLayers: getSelectedLayers().map(l => ({ ...l }))
+        };
+        return;
+      }
+
+      // 일반 단일 선택 및 이동 시작
+      selectLayer(hitLayer.id, false);
       state.dragState = {
         isDragging: true,
         mode: 'move',
         startX: coords.x,
         startY: coords.y,
-        initialLayer: { ...hitLayer }
+        initialLayer: { ...hitLayer },
+        initialLayers: [{ ...hitLayer }]
       };
     } else {
+      // 🌟 7. 빈 공간 클릭 시: 마키 영역 다중 선택(Marquee Selection) 모드 시작!
       selectLayer(null);
+      state.dragState = {
+        isDragging: true,
+        mode: 'marquee',
+        startX: coords.x,
+        startY: coords.y
+      };
     }
   });
 
@@ -1300,7 +1560,7 @@
     }
   });
 
-  // 전역 마우스 무브 (드래그 조작 & 초정밀 스마트 외곽선 자석 스냅 & 패닝)
+  // 전역 마우스 무브 (드래그 조작 & 초정밀 스마트 외곽선 자석 스냅 & 패닝 & 마키)
   window.addEventListener('mousemove', (e) => {
     // A. 캔버스 화면 패닝(Pan)
     if (state.isPanning) {
@@ -1312,121 +1572,294 @@
 
     if (!state.dragState.isDragging) return;
     const coords = getCanvasCoords(e);
-    const selected = getSelectedLayer();
-    if (!selected) return;
-
     const dx = coords.x - state.dragState.startX;
     const dy = coords.y - state.dragState.startY;
-    const init = state.dragState.initialLayer;
 
-    // B. 레이어 이동 + 초정밀 외곽라인/중심선 다중 자석 스냅 (Smart Magnetic Snap)
-    if (state.dragState.mode === 'move') {
-      let tx = init.x + dx;
-      let ty = init.y + dy;
-
-      state.snapGuides.xList = [];
-      state.snapGuides.yList = [];
-
-      const w = selected.width;
-      const h = selected.height;
-      const snapThreshold = 8; // 8px 이내 시 자석 흡착
-
-      // 1) X축 스냅 후보 기준선들 (캔버스 모서리/중앙 + 다른 모든 레이어의 좌/우/중앙)
-      const targetXs = [0, state.canvasWidth / 2, state.canvasWidth];
-      state.layers.forEach(other => {
-        if (other.id === selected.id || !other.visible) return;
-        targetXs.push(other.x, other.x + other.width / 2, other.x + other.width);
-      });
-
-      // 현재 움직이는 요소의 좌(tx), 중(tx + w/2), 우(tx + w)
-      const movingXs = [
-        { type: 'left', val: tx, offset: 0 },
-        { type: 'center', val: tx + w / 2, offset: w / 2 },
-        { type: 'right', val: tx + w, offset: w }
-      ];
-
-      for (const m of movingXs) {
-        for (const t of targetXs) {
-          if (Math.abs(m.val - t) <= snapThreshold) {
-            tx = t - m.offset;
-            state.snapGuides.xList.push(t);
-            break;
-          }
-        }
-        if (state.snapGuides.xList.length > 0) break;
+    // 🌟 7. 마키 드래그 다중 선택 박스 실시간 렌더링
+    if (state.dragState.mode === 'marquee') {
+      let mBox = interactiveOverlay.querySelector('.canvas-marquee-box');
+      if (!mBox) {
+        mBox = document.createElement('div');
+        mBox.className = 'canvas-marquee-box';
+        interactiveOverlay.appendChild(mBox);
       }
+      const mx = Math.min(state.dragState.startX, coords.x);
+      const my = Math.min(state.dragState.startY, coords.y);
+      const mw = Math.abs(coords.x - state.dragState.startX);
+      const mh = Math.abs(coords.y - state.dragState.startY);
 
-      // 2) Y축 스냅 후보 기준선들 (캔버스 모서리/중앙 + 다른 모든 레이어의 상/하/중앙)
-      const targetYs = [0, state.canvasHeight / 2, state.canvasHeight];
-      state.layers.forEach(other => {
-        if (other.id === selected.id || !other.visible) return;
-        targetYs.push(other.y, other.y + other.height / 2, other.y + other.height);
-      });
+      mBox.style.left = `${mx}px`;
+      mBox.style.top = `${my}px`;
+      mBox.style.width = `${mw}px`;
+      mBox.style.height = `${mh}px`;
 
-      // 현재 움직이는 요소의 상(ty), 중(ty + h/2), 하(ty + h)
-      const movingYs = [
-        { type: 'top', val: ty, offset: 0 },
-        { type: 'center', val: ty + h / 2, offset: h / 2 },
-        { type: 'bottom', val: ty + h, offset: h }
-      ];
+      // 마키 박스와 교차하는 레이어 실시간 하이라이트
+      const hitIds = state.layers.filter(l => {
+        if (!l.visible || l.locked) return false;
+        return (
+          l.x < mx + mw &&
+          l.x + l.width > mx &&
+          l.y < my + mh &&
+          l.y + l.height > my
+        );
+      }).map(l => l.id);
 
-      for (const m of movingYs) {
-        for (const t of targetYs) {
-          if (Math.abs(m.val - t) <= snapThreshold) {
-            ty = t - m.offset;
-            state.snapGuides.yList.push(t);
-            break;
-          }
-        }
-        if (state.snapGuides.yList.length > 0) break;
-      }
-
-      selected.x = Math.round(tx);
-      selected.y = Math.round(ty);
+      state.selectedIds = hitIds;
+      state.selectedId = hitIds[0] || null;
+      renderCanvas();
+      renderLayerList();
+      return;
     }
 
-    // C. 8방향 리사이즈 정밀 연산 (텍스트 레이어 모서리 드래그 시 폰트 크기 비례 확대/축소!)
+    const selected = getSelectedLayer();
+    if (!selected) return;
+    const init = state.dragState.initialLayer;
+
+    // B. 레이어 이동 (🌟 4. Shift 수평/수직 축 제한 & 다중 선택 일괄 이동)
+    if (state.dragState.mode === 'move') {
+      let effDx = dx;
+      let effDy = dy;
+
+      // 🌟 4. Shift 누르고 이동 시 수평 또는 수직만 고정!
+      if (e.shiftKey) {
+        if (Math.abs(dx) >= Math.abs(dy)) effDy = 0;
+        else effDx = 0;
+      }
+
+      // 다중 레이어 일괄 이동
+      if (state.dragState.initialLayers && state.dragState.initialLayers.length > 1) {
+        state.dragState.initialLayers.forEach(initL => {
+          const l = state.layers.find(x => x.id === initL.id);
+          if (l) {
+            l.x = Math.round(initL.x + effDx);
+            l.y = Math.round(initL.y + effDy);
+          }
+        });
+        state.snapGuides.xList = [];
+        state.snapGuides.yList = [];
+      } else {
+        // 단일 개체 이동 + 스마트 외곽선 자석 스냅
+        let tx = init.x + effDx;
+        let ty = init.y + effDy;
+
+        state.snapGuides.xList = [];
+        state.snapGuides.yList = [];
+        const w = selected.width;
+        const h = selected.height;
+        const snapThreshold = 8;
+
+        const targetXs = [0, state.canvasWidth / 2, state.canvasWidth];
+        state.layers.forEach(other => {
+          if (other.id === selected.id || !other.visible) return;
+          targetXs.push(other.x, other.x + other.width / 2, other.x + other.width);
+        });
+
+        const movingXs = [
+          { val: tx, offset: 0 },
+          { val: tx + w / 2, offset: w / 2 },
+          { val: tx + w, offset: w }
+        ];
+        for (const m of movingXs) {
+          for (const t of targetXs) {
+            if (Math.abs(m.val - t) <= snapThreshold) {
+              tx = t - m.offset;
+              state.snapGuides.xList.push(t);
+              break;
+            }
+          }
+          if (state.snapGuides.xList.length > 0) break;
+        }
+
+        const targetYs = [0, state.canvasHeight / 2, state.canvasHeight];
+        state.layers.forEach(other => {
+          if (other.id === selected.id || !other.visible) return;
+          targetYs.push(other.y, other.y + other.height / 2, other.y + other.height);
+        });
+
+        const movingYs = [
+          { val: ty, offset: 0 },
+          { val: ty + h / 2, offset: h / 2 },
+          { val: ty + h, offset: h }
+        ];
+        for (const m of movingYs) {
+          for (const t of targetYs) {
+            if (Math.abs(m.val - t) <= snapThreshold) {
+              ty = t - m.offset;
+              state.snapGuides.yList.push(t);
+              break;
+            }
+          }
+          if (state.snapGuides.yList.length > 0) break;
+        }
+
+        selected.x = Math.round(tx);
+        selected.y = Math.round(ty);
+      }
+    }
+
+    // C. 8방향 리사이즈 정밀 연산 (🌟 5. Shift 비율 고정 & Alt 중심 기준 리사이즈)
     else if (state.dragState.mode === 'resize') {
       const h = state.dragState.handle;
       const minSize = 15;
+      const isShift = e.shiftKey;
+      const isAlt = e.altKey;
 
-      if (h === 'br') {
-        selected.width = Math.max(minSize, Math.round(init.width + dx));
-        selected.height = Math.max(minSize, Math.round(init.height + dy));
-      } else if (h === 'bl') {
-        selected.x = Math.round(init.x + dx);
-        selected.width = Math.max(minSize, Math.round(init.width - dx));
-        selected.height = Math.max(minSize, Math.round(init.height + dy));
-      } else if (h === 'tr') {
-        selected.y = Math.round(init.y + dy);
-        selected.width = Math.max(minSize, Math.round(init.width + dx));
-        selected.height = Math.max(minSize, Math.round(init.height - dy));
-      } else if (h === 'tl') {
-        selected.x = Math.round(init.x + dx);
-        selected.y = Math.round(init.y + dy);
-        selected.width = Math.max(minSize, Math.round(init.width - dx));
-        selected.height = Math.max(minSize, Math.round(init.height - dy));
-      } else if (h === 'tc') {
-        selected.y = Math.round(init.y + dy);
-        selected.height = Math.max(minSize, Math.round(init.height - dy));
-      } else if (h === 'bc') {
-        selected.height = Math.max(minSize, Math.round(init.height + dy));
-      } else if (h === 'ml') {
-        selected.x = Math.round(init.x + dx);
-        selected.width = Math.max(minSize, Math.round(init.width - dx));
-      } else if (h === 'mr') {
-        selected.width = Math.max(minSize, Math.round(init.width + dx));
+      // 1) 다중 선택 그룹 리사이즈
+      if (state.dragState.initialLayers && state.dragState.initialLayers.length > 1 && state.dragState.initialBounds) {
+        const initB = state.dragState.initialBounds;
+        const aspect = initB.width / Math.max(1, initB.height);
+        let newBW = initB.width;
+        let newBH = initB.height;
+        let newBX = initB.x;
+        let newBY = initB.y;
+
+        if (h === 'br') {
+          newBW = Math.max(minSize, initB.width + dx);
+          newBH = Math.max(minSize, initB.height + dy);
+          if (isShift) {
+            if (newBW / aspect >= newBH) newBH = newBW / aspect;
+            else newBW = newBH * aspect;
+          }
+        } else if (h === 'bl') {
+          newBW = Math.max(minSize, initB.width - dx);
+          newBH = Math.max(minSize, initB.height + dy);
+          if (isShift) newBH = newBW / aspect;
+          newBX = initB.x + (initB.width - newBW);
+        } else if (h === 'tr') {
+          newBW = Math.max(minSize, initB.width + dx);
+          newBH = Math.max(minSize, initB.height - dy);
+          if (isShift) newBW = newBH * aspect;
+          newBY = initB.y + (initB.height - newBH);
+        } else if (h === 'tl') {
+          newBW = Math.max(minSize, initB.width - dx);
+          newBH = Math.max(minSize, initB.height - dy);
+          if (isShift) {
+            newBW = Math.max(newBW, newBH * aspect);
+            newBH = newBW / aspect;
+          }
+          newBX = initB.x + (initB.width - newBW);
+          newBY = initB.y + (initB.height - newBH);
+        } else if (h === 'tc') {
+          newBH = Math.max(minSize, initB.height - dy);
+          newBY = initB.y + (initB.height - newBH);
+        } else if (h === 'bc') {
+          newBH = Math.max(minSize, initB.height + dy);
+        } else if (h === 'ml') {
+          newBW = Math.max(minSize, initB.width - dx);
+          newBX = initB.x + (initB.width - newBW);
+        } else if (h === 'mr') {
+          newBW = Math.max(minSize, initB.width + dx);
+        }
+
+        const scaleX = newBW / Math.max(1, initB.width);
+        const scaleY = newBH / Math.max(1, initB.height);
+
+        state.dragState.initialLayers.forEach(initL => {
+          const l = state.layers.find(x => x.id === initL.id);
+          if (l) {
+            l.x = Math.round(newBX + (initL.x - initB.x) * scaleX);
+            l.y = Math.round(newBY + (initL.y - initB.y) * scaleY);
+            l.width = Math.max(10, Math.round(initL.width * scaleX));
+            l.height = Math.max(10, Math.round(initL.height * scaleY));
+            if (l.type === 'text') {
+              l.fontSize = Math.max(10, Math.round((initL.fontSize || 32) * scaleX));
+            }
+          }
+        });
       }
+      // 2) 단일 개체 리사이즈 (Shift 종횡비 유지 + Alt 중심 기준 완벽 지원!)
+      else {
+        const aspect = init.width / Math.max(1, init.height);
+        const cx = init.x + init.width / 2;
+        const cy = init.y + init.height / 2;
 
-      // 🌟 1. 텍스트 박스 모서리 리사이즈 시 글자 크기(fontSize) 비례 연동!
-      if (selected.type === 'text' && ['tl', 'tr', 'br', 'bl'].includes(h)) {
-        const scale = selected.width / Math.max(10, init.width);
-        selected.fontSize = Math.max(10, Math.min(350, Math.round(init.fontSize * scale)));
-        if (ctxFontSizeInput) ctxFontSizeInput.value = selected.fontSize;
+        let w = init.width;
+        let h_val = init.height;
+        let x = init.x;
+        let y = init.y;
 
-        // 글자 크기에 맞춰 줄 높이/박스 높이 자동 보정
-        const lines = String(selected.text).split('\n');
-        selected.height = Math.round(lines.length * (selected.fontSize * (selected.lineHeight || 1.2)) + 14);
+        // A) Alt 누름: 중심 기준 대칭 확대/축소
+        if (isAlt) {
+          let halfW = Math.max(minSize / 2, Math.abs(coords.x - cx));
+          let halfH = Math.max(minSize / 2, Math.abs(coords.y - cy));
+
+          if (isShift) {
+            if (halfW / aspect >= halfH) halfH = halfW / aspect;
+            else halfW = halfH * aspect;
+          }
+
+          if (h === 'ml' || h === 'mr') {
+            w = halfW * 2;
+            if (isShift) h_val = w / aspect;
+          } else if (h === 'tc' || h === 'bc') {
+            h_val = halfH * 2;
+            if (isShift) w = h_val * aspect;
+          } else {
+            w = halfW * 2;
+            h_val = halfH * 2;
+          }
+
+          x = cx - w / 2;
+          y = cy - h_val / 2;
+        }
+        // B) 일반 및 Shift 리사이즈
+        else {
+          if (h === 'br') {
+            w = Math.max(minSize, init.width + dx);
+            h_val = Math.max(minSize, init.height + dy);
+            if (isShift) {
+              if (w / aspect >= h_val) h_val = w / aspect;
+              else w = h_val * aspect;
+            }
+          } else if (h === 'bl') {
+            w = Math.max(minSize, init.width - dx);
+            h_val = Math.max(minSize, init.height + dy);
+            if (isShift) h_val = w / aspect;
+            x = init.x + (init.width - w);
+          } else if (h === 'tr') {
+            w = Math.max(minSize, init.width + dx);
+            h_val = Math.max(minSize, init.height - dy);
+            if (isShift) w = h_val * aspect;
+            y = init.y + (init.height - h_val);
+          } else if (h === 'tl') {
+            w = Math.max(minSize, init.width - dx);
+            h_val = Math.max(minSize, init.height - dy);
+            if (isShift) {
+              w = Math.max(w, h_val * aspect);
+              h_val = w / aspect;
+            }
+            x = init.x + (init.width - w);
+            y = init.y + (init.height - h_val);
+          } else if (h === 'tc') {
+            h_val = Math.max(minSize, init.height - dy);
+            if (isShift) w = h_val * aspect;
+            y = init.y + (init.height - h_val);
+          } else if (h === 'bc') {
+            h_val = Math.max(minSize, init.height + dy);
+            if (isShift) w = h_val * aspect;
+          } else if (h === 'ml') {
+            w = Math.max(minSize, init.width - dx);
+            if (isShift) h_val = w / aspect;
+            x = init.x + (init.width - w);
+          } else if (h === 'mr') {
+            w = Math.max(minSize, init.width + dx);
+            if (isShift) h_val = w / aspect;
+          }
+        }
+
+        selected.x = Math.round(x);
+        selected.y = Math.round(y);
+        selected.width = Math.round(w);
+        selected.height = Math.round(h_val);
+
+        // 텍스트 레이어 모서리 리사이즈 시 폰트 크기 비례 확대/축소
+        if (selected.type === 'text' && ['tl', 'tr', 'br', 'bl'].includes(h)) {
+          const scale = selected.width / Math.max(10, init.width);
+          selected.fontSize = Math.max(10, Math.min(350, Math.round(init.fontSize * scale)));
+          if (ctxFontSizeInput) ctxFontSizeInput.value = selected.fontSize;
+          const lines = String(selected.text).split('\n');
+          selected.height = Math.round(lines.length * (selected.fontSize * (selected.lineHeight || 1.2)) + 14);
+        }
       }
     }
 
@@ -1452,6 +1885,17 @@
     }
 
     if (state.dragState.isDragging) {
+      if (state.dragState.mode === 'marquee') {
+        const mBox = interactiveOverlay.querySelector('.canvas-marquee-box');
+        if (mBox) mBox.remove();
+        if (state.selectedIds.length > 0) {
+          selectLayers(state.selectedIds);
+          showToast(`${state.selectedIds.length}개 개체가 선택되었습니다.`);
+        } else {
+          selectLayer(null);
+        }
+      }
+
       state.dragState.isDragging = false;
       state.dragState.mode = null;
       state.snapGuides.xList = [];
@@ -1697,89 +2141,94 @@
     ctxStarRatioSlider.addEventListener('change', pushHistory);
   }
 
-  // 폰트 변경
+  // 폰트 변경 (단일 및 다중 선택 텍스트 일괄 적용!)
   ctxFontSelect.addEventListener('change', () => {
-    const s = getSelectedLayer();
-    if (s && s.type === 'text') {
-      s.fontFamily = ctxFontSelect.value;
+    const list = getSelectedLayers().filter(l => l.type === 'text');
+    if (list.length > 0) {
+      list.forEach(s => { s.fontFamily = ctxFontSelect.value; });
       renderCanvas();
       pushHistory();
     }
   });
 
-  // 크기 조절
+  // 크기 조절 (일괄 적용)
   ctxFontSizeInput.addEventListener('input', () => {
-    const s = getSelectedLayer();
-    if (s && s.type === 'text') {
-      s.fontSize = parseInt(ctxFontSizeInput.value, 10) || 40;
+    const list = getSelectedLayers().filter(l => l.type === 'text');
+    const val = parseInt(ctxFontSizeInput.value, 10) || 40;
+    if (list.length > 0) {
+      list.forEach(s => { s.fontSize = val; });
       renderCanvas();
     }
   });
   ctxFontSizeMinus.addEventListener('click', () => {
-    const s = getSelectedLayer();
-    if (s && s.type === 'text') {
-      s.fontSize = Math.max(10, s.fontSize - 4);
-      ctxFontSizeInput.value = s.fontSize;
+    const list = getSelectedLayers().filter(l => l.type === 'text');
+    if (list.length > 0) {
+      list.forEach(s => { s.fontSize = Math.max(10, s.fontSize - 4); });
+      ctxFontSizeInput.value = list[0].fontSize;
       renderCanvas();
       pushHistory();
     }
   });
   ctxFontSizePlus.addEventListener('click', () => {
-    const s = getSelectedLayer();
-    if (s && s.type === 'text') {
-      s.fontSize = Math.min(300, s.fontSize + 4);
-      ctxFontSizeInput.value = s.fontSize;
+    const list = getSelectedLayers().filter(l => l.type === 'text');
+    if (list.length > 0) {
+      list.forEach(s => { s.fontSize = Math.min(300, s.fontSize + 4); });
+      ctxFontSizeInput.value = list[0].fontSize;
       renderCanvas();
       pushHistory();
     }
   });
 
-  // 글자색 변경
+  // 글자색 변경 (일괄 적용)
   ctxTextColorPicker.addEventListener('input', () => {
-    const s = getSelectedLayer();
-    if (s && s.type === 'text') {
-      s.textColor = ctxTextColorPicker.value;
-      ctxTextColorBar.style.backgroundColor = s.textColor;
+    const list = getSelectedLayers().filter(l => l.type === 'text');
+    if (list.length > 0) {
+      list.forEach(s => { s.textColor = ctxTextColorPicker.value; });
+      ctxTextColorBar.style.backgroundColor = ctxTextColorPicker.value;
       renderCanvas();
     }
   });
   ctxTextColorPicker.addEventListener('change', pushHistory);
 
-  // B / I / U 토글
+  // B / I / U 토글 (일괄 적용)
   ctxBoldBtn.addEventListener('click', () => {
-    const s = getSelectedLayer();
-    if (s && s.type === 'text') {
-      s.isBold = !s.isBold;
-      ctxBoldBtn.classList.toggle('active', s.isBold);
+    const list = getSelectedLayers().filter(l => l.type === 'text');
+    if (list.length > 0) {
+      const anyBold = list.some(s => s.isBold);
+      list.forEach(s => { s.isBold = !anyBold; });
+      ctxBoldBtn.classList.toggle('active', !anyBold);
       renderCanvas();
       pushHistory();
     }
   });
   ctxItalicBtn.addEventListener('click', () => {
-    const s = getSelectedLayer();
-    if (s && s.type === 'text') {
-      s.isItalic = !s.isItalic;
-      ctxItalicBtn.classList.toggle('active', s.isItalic);
+    const list = getSelectedLayers().filter(l => l.type === 'text');
+    if (list.length > 0) {
+      const anyItalic = list.some(s => s.isItalic);
+      list.forEach(s => { s.isItalic = !anyItalic; });
+      ctxItalicBtn.classList.toggle('active', !anyItalic);
       renderCanvas();
       pushHistory();
     }
   });
   ctxUnderlineBtn.addEventListener('click', () => {
-    const s = getSelectedLayer();
-    if (s && s.type === 'text') {
-      s.isUnderline = !s.isUnderline;
-      ctxUnderlineBtn.classList.toggle('active', s.isUnderline);
+    const list = getSelectedLayers().filter(l => l.type === 'text');
+    if (list.length > 0) {
+      const anyUnder = list.some(s => s.isUnderline);
+      list.forEach(s => { s.isUnderline = !anyUnder; });
+      ctxUnderlineBtn.classList.toggle('active', !anyUnder);
       renderCanvas();
       pushHistory();
     }
   });
 
-  // 정렬 순환
+  // 정렬 순환 (일괄 적용)
   ctxAlignBtn.addEventListener('click', () => {
-    const s = getSelectedLayer();
-    if (s && s.type === 'text') {
-      const next = s.textAlign === 'left' ? 'center' : s.textAlign === 'center' ? 'right' : 'left';
-      s.textAlign = next;
+    const list = getSelectedLayers().filter(l => l.type === 'text');
+    if (list.length > 0) {
+      const first = list[0];
+      const next = first.textAlign === 'left' ? 'center' : first.textAlign === 'center' ? 'right' : 'left';
+      list.forEach(s => { s.textAlign = next; });
       alignIcon.textContent = next === 'left' ? '⇤' : next === 'center' ? '≡' : '⇥';
       renderCanvas();
       pushHistory();
@@ -1906,21 +2355,22 @@
     }
   });
 
-  // 도형 채우기 & 둥글기
+  // 도형 채우기 & 둥글기 (일괄 적용)
   ctxFillColorPicker.addEventListener('input', () => {
-    const s = getSelectedLayer();
-    if (s) {
-      s.fillColor = ctxFillColorPicker.value;
-      ctxFillColorPreview.style.backgroundColor = s.fillColor;
+    const list = getSelectedLayers();
+    if (list.length > 0) {
+      list.forEach(s => { s.fillColor = ctxFillColorPicker.value; });
+      ctxFillColorPreview.style.backgroundColor = ctxFillColorPicker.value;
       renderCanvas();
     }
   });
   if (ctxRadiusSlider) {
     ctxRadiusSlider.addEventListener('input', () => {
-      const s = getSelectedLayer();
-      if (s) {
-        s.borderRadius = parseInt(ctxRadiusSlider.value, 10) || 0;
-        if (ctxRadiusVal) ctxRadiusVal.textContent = `${s.borderRadius}px`;
+      const list = getSelectedLayers();
+      const rad = parseInt(ctxRadiusSlider.value, 10) || 0;
+      if (list.length > 0) {
+        list.forEach(s => { s.borderRadius = rad; });
+        if (ctxRadiusVal) ctxRadiusVal.textContent = `${rad}px`;
         renderCanvas();
       }
     });
@@ -1935,11 +2385,12 @@
   });
   ctxCanvasBgPicker.addEventListener('change', pushHistory);
 
-  // 투명도
+  // 투명도 (일괄 적용)
   ctxOpacitySlider.addEventListener('input', () => {
-    const s = getSelectedLayer();
-    if (s) {
-      s.opacity = parseInt(ctxOpacitySlider.value, 10) / 100;
+    const list = getSelectedLayers();
+    if (list.length > 0) {
+      const val = parseInt(ctxOpacitySlider.value, 10) / 100;
+      list.forEach(s => { s.opacity = val; });
       ctxOpacityVal.textContent = `${ctxOpacitySlider.value}%`;
       renderCanvas();
     }
@@ -1949,39 +2400,100 @@
   ctxDeleteBtn.addEventListener('click', deleteSelectedLayer);
 
   function duplicateSelectedLayer() {
-    const s = getSelectedLayer();
-    if (!s) return;
-    const newL = {
-      ...s,
-      id: 'layer_' + Date.now(),
-      name: `${s.name} 복사`,
-      x: s.x + 24,
-      y: s.y + 24
-    };
-    if (s.type === 'image' && s._imgEl) newL._imgEl = s._imgEl;
-    state.layers.push(newL);
-    selectLayer(newL.id);
+    const list = getSelectedLayers();
+    if (list.length === 0) return;
+    const newClones = [];
+    list.forEach(s => {
+      const newL = {
+        ...s,
+        id: 'layer_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        name: `${s.name} 복사`,
+        x: s.x + 24,
+        y: s.y + 24
+      };
+      if (s.type === 'image' && s._imgEl) newL._imgEl = s._imgEl;
+      state.layers.push(newL);
+      newClones.push(newL);
+    });
+    selectLayers(newClones.map(c => c.id));
     pushHistory();
-    showToast('복제되었습니다 (Ctrl+D)');
+    showToast(`${newClones.length}개 레이어가 복제되었습니다 (Ctrl+D)`);
   }
 
   function deleteSelectedLayer() {
-    if (!state.selectedId) return;
-    state.layers = state.layers.filter(l => l.id !== state.selectedId);
+    if (state.selectedIds.length === 0) return;
+    const count = state.selectedIds.length;
+    state.layers = state.layers.filter(l => !state.selectedIds.includes(l.id));
     selectLayer(null);
     pushHistory();
-    showToast('삭제되었습니다');
+    showToast(`${count}개 레이어가 삭제되었습니다`);
   }
 
   // ==========================================================================
-  // 정렬 & 레이어 순서 (우측 패널)
+  // 정렬 & 레이어 순서 (우측 패널 - 다중 개체 상호 정렬 및 캔버스 기준 정렬 지원!)
   // ==========================================================================
-  alignLeftBtn.addEventListener('click', () => { const s = getSelectedLayer(); if (s) { s.x = 0; renderCanvas(); pushHistory(); } });
-  alignCenterHBtn.addEventListener('click', () => { const s = getSelectedLayer(); if (s) { s.x = Math.round((state.canvasWidth - s.width) / 2); renderCanvas(); pushHistory(); } });
-  alignRightBtn.addEventListener('click', () => { const s = getSelectedLayer(); if (s) { s.x = state.canvasWidth - s.width; renderCanvas(); pushHistory(); } });
-  alignTopBtn.addEventListener('click', () => { const s = getSelectedLayer(); if (s) { s.y = 0; renderCanvas(); pushHistory(); } });
-  alignCenterVBtn.addEventListener('click', () => { const s = getSelectedLayer(); if (s) { s.y = Math.round((state.canvasHeight - s.height) / 2); renderCanvas(); pushHistory(); } });
-  alignBottomBtn.addEventListener('click', () => { const s = getSelectedLayer(); if (s) { s.y = state.canvasHeight - s.height; renderCanvas(); pushHistory(); } });
+  alignLeftBtn.addEventListener('click', () => {
+    const list = getSelectedLayers();
+    if (list.length > 1) {
+      const minX = Math.min(...list.map(l => l.x));
+      list.forEach(l => l.x = minX);
+    } else if (list.length === 1) {
+      list[0].x = 0;
+    }
+    renderCanvas(); pushHistory();
+  });
+  alignCenterHBtn.addEventListener('click', () => {
+    const list = getSelectedLayers();
+    if (list.length > 1) {
+      const bounds = getSelectionBounds();
+      const targetCenter = bounds.x + bounds.width / 2;
+      list.forEach(l => l.x = Math.round(targetCenter - l.width / 2));
+    } else if (list.length === 1) {
+      list[0].x = Math.round((state.canvasWidth - list[0].width) / 2);
+    }
+    renderCanvas(); pushHistory();
+  });
+  alignRightBtn.addEventListener('click', () => {
+    const list = getSelectedLayers();
+    if (list.length > 1) {
+      const maxX = Math.max(...list.map(l => l.x + l.width));
+      list.forEach(l => l.x = maxX - l.width);
+    } else if (list.length === 1) {
+      list[0].x = state.canvasWidth - list[0].width;
+    }
+    renderCanvas(); pushHistory();
+  });
+  alignTopBtn.addEventListener('click', () => {
+    const list = getSelectedLayers();
+    if (list.length > 1) {
+      const minY = Math.min(...list.map(l => l.y));
+      list.forEach(l => l.y = minY);
+    } else if (list.length === 1) {
+      list[0].y = 0;
+    }
+    renderCanvas(); pushHistory();
+  });
+  alignCenterVBtn.addEventListener('click', () => {
+    const list = getSelectedLayers();
+    if (list.length > 1) {
+      const bounds = getSelectionBounds();
+      const targetCenter = bounds.y + bounds.height / 2;
+      list.forEach(l => l.y = Math.round(targetCenter - l.height / 2));
+    } else if (list.length === 1) {
+      list[0].y = Math.round((state.canvasHeight - list[0].height) / 2);
+    }
+    renderCanvas(); pushHistory();
+  });
+  alignBottomBtn.addEventListener('click', () => {
+    const list = getSelectedLayers();
+    if (list.length > 1) {
+      const maxY = Math.max(...list.map(l => l.y + l.height));
+      list.forEach(l => l.y = maxY - l.height);
+    } else if (list.length === 1) {
+      list[0].y = state.canvasHeight - list[0].height;
+    }
+    renderCanvas(); pushHistory();
+  });
 
   btnBringForward.addEventListener('click', () => {
     const idx = state.layers.findIndex(l => l.id === state.selectedId);
@@ -2015,7 +2527,8 @@
     for (let i = state.layers.length - 1; i >= 0; i--) {
       const layer = state.layers[i];
       const card = document.createElement('div');
-      card.className = `layer-card-item ${layer.id === state.selectedId ? 'active' : ''}`;
+      const isSelected = state.selectedIds.includes(layer.id);
+      card.className = `layer-card-item ${isSelected ? 'active' : ''} ${layer.locked ? 'is-locked' : ''}`;
       card.setAttribute('draggable', 'true');
       card.setAttribute('data-layer-id', layer.id);
 
@@ -2035,13 +2548,18 @@
         <span class="layer-item-name">${layer.name}</span>
         <div class="layer-item-actions">
           <button type="button" class="btn-mini-layer btn-vis" title="보이기/숨기기">${layer.visible ? '👁️' : '🙈'}</button>
+          <button type="button" class="btn-mini-layer btn-lock ${layer.locked ? 'is-locked' : ''}" title="${layer.locked ? '잠금 해제' : '레이어 잠금'}">${layer.locked ? '🔒' : '🔓'}</button>
           <button type="button" class="btn-mini-layer btn-del" title="삭제">✕</button>
         </div>
       `;
 
       card.addEventListener('click', (e) => {
         if (e.target.closest('.btn-mini-layer')) return;
-        selectLayer(layer.id);
+        if (e.shiftKey) {
+          selectLayer(layer.id, true);
+        } else {
+          selectLayer(layer.id, false);
+        }
       });
 
       card.querySelector('.btn-vis').addEventListener('click', (e) => {
@@ -2052,12 +2570,25 @@
         pushHistory();
       });
 
+      // 🌟 6. 레이어 자물쇠 버튼 (잠금/해제)
+      card.querySelector('.btn-lock').addEventListener('click', (e) => {
+        e.stopPropagation();
+        layer.locked = !layer.locked;
+        renderCanvas();
+        renderLayerList();
+        syncContextToolbar();
+        pushHistory();
+        showToast(layer.locked ? `[${layer.name}] 레이어가 잠겼습니다.` : `[${layer.name}] 잠금이 해제되었습니다.`);
+      });
+
       card.querySelector('.btn-del').addEventListener('click', (e) => {
         e.stopPropagation();
         state.layers = state.layers.filter(l => l.id !== layer.id);
-        if (state.selectedId === layer.id) selectLayer(null);
+        state.selectedIds = state.selectedIds.filter(id => id !== layer.id);
+        if (state.selectedId === layer.id) state.selectedId = state.selectedIds[0] || null;
         renderCanvas();
         renderLayerList();
+        syncContextToolbar();
         pushHistory();
       });
 
@@ -2777,16 +3308,28 @@
       e.preventDefault(); bringToFront();
     }
 
-    // 6. 방향키 미세 이동 (ArrowKeys)
+    // 전체 선택 (Ctrl + A)
+    else if (isCtrl && (e.key === 'a' || e.key === 'ㅁ')) {
+      e.preventDefault();
+      const allSelectable = state.layers.filter(l => l.visible && !l.locked).map(l => l.id);
+      if (allSelectable.length > 0) {
+        selectLayers(allSelectable);
+        showToast(`전체 ${allSelectable.length}개 레이어가 선택되었습니다 (Ctrl+A)`);
+      }
+    }
+
+    // 6. 방향키 미세 이동 (ArrowKeys - 다중 선택 일괄 이동 지원!)
     else if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
-      const s = getSelectedLayer();
-      if (!s) return;
+      const list = getSelectedLayers();
+      if (list.length === 0) return;
       e.preventDefault();
       const dist = e.shiftKey ? 10 : 1;
-      if (e.key === 'ArrowLeft') s.x -= dist;
-      if (e.key === 'ArrowRight') s.x += dist;
-      if (e.key === 'ArrowUp') s.y -= dist;
-      if (e.key === 'ArrowDown') s.y += dist;
+      list.forEach(s => {
+        if (e.key === 'ArrowLeft') s.x -= dist;
+        if (e.key === 'ArrowRight') s.x += dist;
+        if (e.key === 'ArrowUp') s.y -= dist;
+        if (e.key === 'ArrowDown') s.y += dist;
+      });
       renderCanvas();
     }
 

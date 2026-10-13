@@ -1411,61 +1411,143 @@ body.is-panning .canvas-interactive-overlay {
 /* ==========================================================================
    7. 어도비 익스프레스 스타일 플로팅 퀵 액션 툴바 (Floating Quick Action Bar)
    ========================================================================== */
+/* ==========================================================================
+   7. 어도비 익스프레스 / 캔바 스타일 플로팅 퀵 액션 툴바 (Floating Quick Action Bar)
+   - 캔버스 줌 배율(Zoom)과 완전히 무관하게 화면상 항상 100% 정상 크기로 선명하게 렌더링!
+   ========================================================================== */
 .floating-quick-bar {
   position: absolute;
-  transform: translate(-50%, -100%);
-  margin-top: -14px;
   background-color: #ffffff;
-  border: 1px solid var(--border-color);
-  border-radius: 9999px;
-  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(15, 23, 42, 0.05);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 12px;
+  box-shadow: 
+    0 10px 25px -5px rgba(15, 23, 42, 0.14),
+    0 8px 10px -6px rgba(15, 23, 42, 0.08),
+    0 0 0 1px rgba(15, 23, 42, 0.04);
   display: flex;
   align-items: center;
-  padding: 3px 6px;
-  gap: 2px;
+  padding: 4px 6px;
+  gap: 3px;
   pointer-events: auto;
-  z-index: 1200;
+  z-index: 1500;
   white-space: nowrap;
-  animation: popIn 0.14s ease-out;
+  animation: popIn 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: center bottom;
+  backdrop-filter: blur(8px);
 }
 
 @keyframes popIn {
-  from { opacity: 0; transform: translate(-50%, -90%) scale(0.95); }
-  to { opacity: 1; transform: translate(-50%, -100%) scale(1); }
+  from { opacity: 0; transform: translate(-50%, -85%) scale(0.9); }
+  to { opacity: 1; }
 }
 
 .quick-bar-btn {
-  height: 28px;
-  padding: 0 8px;
+  height: 32px;
+  padding: 0 10px;
   background: transparent;
   border: none;
-  border-radius: 9999px;
-  color: var(--text-secondary);
-  font-size: 0.76rem;
-  font-weight: 700;
+  border-radius: 8px;
+  color: #334155;
+  font-size: 0.82rem;
+  font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   font-family: inherit;
-  transition: all 0.12s;
+  transition: all 0.12s ease;
+  user-select: none;
 }
 
 .quick-bar-btn:hover {
-  background-color: var(--bg-hover);
-  color: var(--text-main);
+  background-color: #f1f5f9;
+  color: #0f172a;
 }
 
 .quick-bar-btn.btn-accent {
-  background-color: var(--bg-active);
-  color: var(--canva-purple);
+  background-color: #eff6ff;
+  color: #2563eb;
+  font-weight: 700;
+}
+.quick-bar-btn.btn-accent:hover {
+  background-color: #dbeafe;
 }
 
 .quick-bar-sep {
   width: 1px;
-  height: 14px;
-  background-color: var(--border-color);
-  margin: 0 2px;
+  height: 18px;
+  background-color: #e2e8f0;
+  margin: 0 3px;
+}
+
+/* 마키 영역 다중 선택 박스 (Canva / Adobe Express 스타일) */
+.canvas-marquee-box {
+  position: absolute;
+  border: 1.5px solid #3b82f6;
+  background-color: rgba(59, 130, 246, 0.18);
+  pointer-events: none;
+  z-index: 1300;
+  border-radius: 2px;
+}
+
+/* 좌측 드로어 세그먼트 서브탭 (추가/편집 vs 텍스트 효과) */
+.drawer-subtabs-row {
+  display: flex;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 10px;
+  gap: 4px;
+  margin: 12px 14px 16px 14px;
+  border: 1px solid #e2e8f0;
+}
+
+.drawer-subtab-btn {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.drawer-subtab-btn:hover {
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.drawer-subtab-btn.active {
+  background: #ffffff;
+  color: #4f46e5;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+/* 레이어 자물쇠 버튼 및 잠금 상태 스타일 */
+.btn-mini-layer.btn-lock {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+.btn-mini-layer.btn-lock:hover {
+  color: #0f172a;
+}
+.btn-mini-layer.btn-lock.is-locked {
+  color: #ef4444;
+}
+.layer-card-item.is-locked {
+  background-color: #f8fafc;
+  border-style: dashed;
+  opacity: 0.85;
+}
+.layer-card-item.is-locked .layer-item-name {
+  color: #64748b;
 }
 
 /* ==========================================================================
