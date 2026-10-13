@@ -1569,114 +1569,413 @@ body {
   color: var(--text-muted);
 }
 
-/* Video -> GIF Dual Timeline & Result Box */
+/* Video -> GIF NLE Visual Filmstrip Timeline & Result Box */
 .gif-timeline-panel {
   margin-top: 14px;
-  padding: 14px 16px;
+  padding: 16px;
   border-radius: var(--radius-md);
   background-color: var(--bg-subtle);
   border: 1px solid var(--border-color);
 }
 
-.gif-timeline-header {
+.nle-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.nle-toolbar-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.nle-divider {
+  width: 1px;
+  height: 18px;
+  background-color: var(--border-strong);
+  margin: 0 2px;
+}
+
+.nle-btn-split {
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+  font-weight: 700 !important;
+}
+
+.nle-btn-split:hover:not(:disabled) {
+  background-color: var(--accent) !important;
+  color: #ffffff !important;
+}
+
+.nle-btn-delete:hover:not(:disabled) {
+  border-color: #ef4444 !important;
+  background-color: rgba(239, 68, 68, 0.12) !important;
+  color: #ef4444 !important;
+}
+
+.nle-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.nle-guide-text {
+  font-size: 0.79rem;
+  color: var(--text-secondary);
 }
 
 .timeline-time-label {
   font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--text-secondary);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-left: 4px;
+  font-variant-numeric: tabular-nums;
 }
 
 .timeline-range-badge {
-  padding: 3px 10px;
+  padding: 4px 11px;
   border-radius: 999px;
   font-size: 0.78rem;
   font-weight: 700;
   background-color: var(--accent-soft);
   color: var(--accent);
+  white-space: nowrap;
 }
 
-.dual-timeline-wrap {
+.timeline-range-badge.over-limit {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+/* Visual NLE Timeline Track */
+.nle-timeline-container {
   position: relative;
-  height: 32px;
-  display: flex;
-  align-items: center;
+  border-radius: var(--radius-sm);
+  background-color: #0f172a;
+  border: 1px solid #334155;
+  overflow: hidden;
+  user-select: none;
+  touch-action: none;
 }
 
-.dual-timeline-track {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 10px;
-  border-radius: 999px;
-  background-color: var(--border-strong);
+.nle-time-ruler {
+  position: relative;
+  height: 24px;
+  background-color: #1e293b;
+  border-bottom: 1px solid #334155;
+  cursor: pointer;
   overflow: hidden;
 }
 
-.dual-timeline-Highlight {
+.nle-ruler-tick {
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 0%;
-  width: 50%;
-  background: linear-gradient(90deg, #e11d48, #f59e0b);
-  border-radius: 999px;
-}
-
-.dual-timeline-playhead {
-  position: absolute;
-  top: -3px;
-  bottom: -3px;
-  width: 3px;
-  background-color: #10b981;
-  left: 0%;
+  border-left: 1px solid rgba(148, 163, 184, 0.35);
+  padding-left: 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #cbd5e1;
+  line-height: 24px;
   pointer-events: none;
+  font-variant-numeric: tabular-nums;
 }
 
-.timeline-range-input {
+.nle-track-area {
+  position: relative;
+  height: 68px;
+  background-color: #090d16;
+  cursor: pointer;
+}
+
+.nle-filmstrip-canvas {
   position: absolute;
-  left: 0;
+  inset: 0;
   width: 100%;
-  height: 10px;
-  margin: 0;
-  background: transparent;
+  height: 100%;
+  display: block;
+  opacity: 0.85;
   pointer-events: none;
-  -webkit-appearance: none;
-  appearance: none;
 }
 
-.timeline-range-input::-webkit-slider-thumb {
-  pointer-events: auto;
-  -webkit-appearance: none;
-  appearance: none;
-  width: 18px;
-  height: 22px;
-  border-radius: 5px;
-  background-color: #ffffff;
-  border: 2px solid var(--accent);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
+.nle-clips-layer {
+  position: absolute;
+  inset: 0;
+}
+
+/* 살아있는 컷(클립) 블록 */
+.nle-clip-block {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  border-radius: 6px;
+  border: 2px solid #3b82f6;
+  background: rgba(37, 99, 235, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+  z-index: 2;
+  overflow: hidden;
+}
+
+.nle-clip-block:hover {
+  background: rgba(37, 99, 235, 0.32);
+}
+
+.nle-clip-block.selected {
+  border: 2.5px solid #facc15;
+  background: rgba(250, 204, 21, 0.18);
+  box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.35), inset 0 0 12px rgba(250, 204, 21, 0.22);
+  z-index: 3;
+}
+
+.nle-clip-label {
+  padding: 2px 7px;
+  border-radius: 4px;
+  background-color: rgba(15, 23, 42, 0.82);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  margin: 0 auto;
+}
+
+.nle-clip-block.selected .nle-clip-label {
+  background-color: #facc15;
+  color: #0f172a;
+}
+
+/* 클립 좌우 트림 드래그 핸들 ([ ]) */
+.nle-trim-handle {
+  width: 11px;
+  height: 100%;
+  background-color: rgba(59, 130, 246, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: ew-resize;
+  flex-shrink: 0;
+  z-index: 4;
 }
 
-.timeline-range-input.range-end::-webkit-slider-thumb {
-  border-color: #2563eb;
+.nle-clip-block.selected .nle-trim-handle {
+  background-color: #facc15;
 }
 
-.timeline-range-input::-moz-range-thumb {
-  pointer-events: auto;
+.nle-trim-handle::after {
+  content: '';
+  width: 2px;
+  height: 18px;
+  border-radius: 1px;
+  background-color: #0f172a;
+}
+
+/* 삭제된(건너뛰는) 구간 */
+.nle-deleted-gap {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(15, 23, 42, 0.82),
+    rgba(15, 23, 42, 0.82) 7px,
+    rgba(30, 41, 59, 0.88) 7px,
+    rgba(30, 41, 59, 0.88) 14px
+  );
+  border-left: 1px dashed rgba(148, 163, 184, 0.35);
+  border-right: 1px dashed rgba(148, 163, 184, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.nle-restore-gap-btn {
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background-color: rgba(15, 23, 42, 0.9);
+  color: #e2e8f0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  opacity: 0.78;
+  transition: all 0.15s;
+}
+
+.nle-restore-gap-btn:hover {
+  opacity: 1;
+  border-color: #38bdf8;
+  color: #38bdf8;
+  transform: scale(1.04);
+}
+
+/* 빨간색 재생선 (Playhead) */
+.nle-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.nle-playhead-head {
+  position: absolute;
+  top: -2px;
+  left: -9px;
   width: 18px;
-  height: 22px;
-  border-radius: 5px;
-  background-color: #ffffff;
-  border: 2px solid var(--accent);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
+  height: 18px;
+  border-radius: 4px;
+  background-color: #ef4444;
+  color: #ffffff;
+  font-size: 0.62rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
   cursor: ew-resize;
+  pointer-events: auto;
+}
+
+.nle-playhead-line {
+  position: absolute;
+  top: 14px;
+  bottom: 0;
+  left: -1px;
+  width: 2px;
+  background-color: #ef4444;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.8);
+}
+
+/* 이어붙인 최종 시퀀스 미니 바 */
+.nle-stitched-bar {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  font-size: 0.78rem;
+}
+
+.stitched-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.stitched-chip.active {
+  background-color: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.stitched-join-icon {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.gif-cut-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  max-height: 155px;
+  overflow-y: auto;
+}
+
+.gif-cut-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background-color: var(--bg-subtle);
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.15s ease;
+}
+
+.gif-cut-item:hover {
+  border-color: var(--accent);
+}
+
+.gif-cut-item.active {
+  border-color: var(--accent);
+  background-color: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.gif-cut-item-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gif-cut-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.gif-cut-item.active .gif-cut-badge {
+  background-color: var(--accent);
+  color: #ffffff;
+}
+
+.gif-cut-del-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.gif-cut-del-btn:hover {
+  background-color: rgba(239, 68, 68, 0.14);
+  color: #ef4444;
 }
 
 .gif-result-box {

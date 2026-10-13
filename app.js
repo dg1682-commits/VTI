@@ -29,9 +29,25 @@
     return idx > 0 ? filename.slice(0, idx) : filename;
   }
 
+  let lastToastMsg = '';
+  let lastToastTime = 0;
+
   function showToast(message) {
     const container = document.getElementById('toastContainer');
-    if (!container) return;
+    if (!container || !message) return;
+
+    const now = Date.now();
+    if (message === lastToastMsg && now - lastToastTime < 2200) {
+      return;
+    }
+    lastToastMsg = message;
+    lastToastTime = now;
+
+    // 기존에 떠 있는 토스트가 많으면 정리하여 화면에 1개만 깔끔하게 표시
+    while (container.children.length >= 1) {
+      container.firstElementChild.remove();
+    }
+
     const toast = document.createElement('div');
     toast.className = 'toast';
     toast.textContent = message;
@@ -40,7 +56,7 @@
       toast.style.opacity = '0';
       toast.style.transition = 'opacity 0.25s ease';
       setTimeout(() => toast.remove(), 260);
-    }, 2800);
+    }, 2600);
   }
 
   function triggerDownload(blobOrUrl, filename) {
@@ -2620,7 +2636,7 @@
   });
 
   /* ==========================================================================
-     [7] 탭 3-2: 동영상 → GIF 움짤 변환 (타임라인 구간 · 비율 크롭 · 사이즈 동시 조절)
+     [7] 탭 3-2: 동영상 → GIF 움짤 변환 (비주얼 필름스트립 NLE 컷편집 · 비율 크롭 · 사이즈 동시 조절)
      ========================================================================== */
   const gifVideoDropzone = document.getElementById('gifVideoDropzone');
   const gifVideoFileInput = document.getElementById('gifVideoFileInput');
@@ -2637,6 +2653,11 @@
   const gifCropBox = document.getElementById('gifCropBox');
 
   const gifDurationBadge = document.getElementById('gifDurationBadge');
+  const gifCutList = document.getElementById('gifCutList');
+  const addGifCutBtn = document.getElementById('addGifCutBtn');
+  const gifActiveCutLabel = document.getElementById('gifActiveCutLabel');
+  const gifSidebarUndoBtn = document.getElementById('gifSidebarUndoBtn');
+  const gifSidebarRedoBtn = document.getElementById('gifSidebarRedoBtn');
   const gifStartTimeInput = document.getElementById('gifStartTimeInput');
   const gifEndTimeInput = document.getElementById('gifEndTimeInput');
   const setGifStartNowBtn = document.getElementById('setGifStartNowBtn');
@@ -2644,12 +2665,25 @@
   const previewGifLoopBtn = document.getElementById('previewGifLoopBtn');
 
   const gifPlayPauseBtn = document.getElementById('gifPlayPauseBtn');
+  const gifStepBackBtn = document.getElementById('gifStepBackBtn');
+  const gifStepFwdBtn = document.getElementById('gifStepFwdBtn');
   const gifCurrentTimeText = document.getElementById('gifCurrentTimeText');
   const gifRangeSummaryText = document.getElementById('gifRangeSummaryText');
-  const gifTimelineHighlight = document.getElementById('gifTimelineHighlight');
-  const gifTimelinePlayhead = document.getElementById('gifTimelinePlayhead');
-  const gifRangeStart = document.getElementById('gifRangeStart');
-  const gifRangeEnd = document.getElementById('gifRangeEnd');
+
+  const gifSplitBtn = document.getElementById('gifSplitBtn');
+  const gifDeleteCutBtn = document.getElementById('gifDeleteCutBtn');
+  const gifKeepOnlyCutBtn = document.getElementById('gifKeepOnlyCutBtn');
+  const gifUndoBtn = document.getElementById('gifUndoBtn');
+  const gifRedoBtn = document.getElementById('gifRedoBtn');
+  const gifResetCutsBtn = document.getElementById('gifResetCutsBtn');
+
+  const gifNleTimeline = document.getElementById('gifNleTimeline');
+  const gifTimeRuler = document.getElementById('gifTimeRuler');
+  const gifNleTrack = document.getElementById('gifNleTrack');
+  const gifFilmstripCanvas = document.getElementById('gifFilmstripCanvas');
+  const gifNleClipsLayer = document.getElementById('gifNleClipsLayer');
+  const gifNlePlayhead = document.getElementById('gifNlePlayhead');
+  const gifStitchedSequenceBar = document.getElementById('gifStitchedSequenceBar');
 
   const gifKeepAspectInput = document.getElementById('gifKeepAspectInput');
   const gifTargetW = document.getElementById('gifTargetW');
@@ -2675,7 +2709,7 @@
   const gifResultPreviewImg = document.getElementById('gifResultPreviewImg');
   const downloadGifResultBtn = document.getElementById('downloadGifResultBtn');
 
-  const GIF_MAX_DURATION = 15.0; // 최대 15초 제한
+  const GIF_MAX_DURATION = 15.0; // 최종 GIF 변환 시 권장 최대 합산 시간 (15초)
 
   let gifState = {
     file: null,
@@ -2691,13 +2725,107 @@
     ratio: 'full',
     userTypedSize: false,
     quickWidth: 480,
+    cuts: [{ start: 0, end: 5 }],
+    activeCutIdx: 0,
+    previewCutIdx: 0,
+    undoStack: [],
+    redoStack: [],
     startTime: 0,
     endTime: 5,
     isLoopPreview: false,
     isEncoding: false,
     cancelRequested: false,
     rafId: null,
+    filmstripJobId: 0,
   };
+
+  function cloneCuts(cuts) {
+    return cuts.map((c) => ({ start: Number(c.start.toFixed(2)), end: Number(c.end.toFixed(2)) }));
+  }
+
+  function normalizeCutsList() {
+    const dur = gifState.duration || 10;
+    if (!gifState.cuts || gifState.cuts.length === 0) {
+      gifState.cuts = [{ start: 0, end: Number(dur.toFixed(2)) }];
+      gifState.activeCutIdx = 0;
+      return;
+    }
+    gifState.cuts.sort((a, b) => a.start - b.start);
+    for (let i = 0; i < gifState.cuts.length; i++) {
+      const c = gifState.cuts[i];
+      c.start = Math.max(0, Math.min(dur - 0.1, Number(c.start.toFixed(2))));
+      c.end = Math.max(c.start + 0.15, Math.min(dur, Number(c.end.toFixed(2))));
+      if (i > 0 && c.start < gifState.cuts[i - 1].end) {
+        c.start = gifState.cuts[i - 1].end;
+        if (c.end < c.start + 0.15) {
+          c.end = Math.min(dur, c.start + 0.15);
+        }
+      }
+    }
+    gifState.cuts = gifState.cuts.filter((c) => c.end - c.start >= 0.12);
+    if (gifState.cuts.length === 0) {
+      gifState.cuts = [{ start: 0, end: Number(dur.toFixed(2)) }];
+    }
+    if (gifState.activeCutIdx < 0 || gifState.activeCutIdx >= gifState.cuts.length) {
+      gifState.activeCutIdx = Math.max(0, gifState.cuts.length - 1);
+    }
+  }
+
+  function updateGifUndoRedoBtns() {
+    const canUndo = gifState.undoStack.length > 0 && !gifState.isEncoding;
+    const canRedo = gifState.redoStack.length > 0 && !gifState.isEncoding;
+    if (gifUndoBtn) gifUndoBtn.disabled = !canUndo;
+    if (gifRedoBtn) gifRedoBtn.disabled = !canRedo;
+    if (gifSidebarUndoBtn) gifSidebarUndoBtn.disabled = !canUndo;
+    if (gifSidebarRedoBtn) gifSidebarRedoBtn.disabled = !canRedo;
+  }
+
+  function pushGifCutHistory() {
+    gifState.undoStack.push({
+      cuts: cloneCuts(gifState.cuts),
+      activeCutIdx: gifState.activeCutIdx,
+    });
+    if (gifState.undoStack.length > 40) {
+      gifState.undoStack.shift();
+    }
+    gifState.redoStack = [];
+    updateGifUndoRedoBtns();
+  }
+
+  function undoGifCutAction() {
+    if (gifState.undoStack.length === 0 || gifState.isEncoding) return;
+    gifState.redoStack.push({
+      cuts: cloneCuts(gifState.cuts),
+      activeCutIdx: gifState.activeCutIdx,
+    });
+    const prev = gifState.undoStack.pop();
+    gifState.cuts = cloneCuts(prev.cuts);
+    gifState.activeCutIdx = Math.min(prev.activeCutIdx, gifState.cuts.length - 1);
+    syncGifTimelineUI();
+    updateGifUndoRedoBtns();
+    showToast('↩️ 컷편집 실행 취소 (Ctrl+Z)');
+  }
+
+  function redoGifCutAction() {
+    if (gifState.redoStack.length === 0 || gifState.isEncoding) return;
+    gifState.undoStack.push({
+      cuts: cloneCuts(gifState.cuts),
+      activeCutIdx: gifState.activeCutIdx,
+    });
+    const next = gifState.redoStack.pop();
+    gifState.cuts = cloneCuts(next.cuts);
+    gifState.activeCutIdx = Math.min(next.activeCutIdx, gifState.cuts.length - 1);
+    syncGifTimelineUI();
+    updateGifUndoRedoBtns();
+    showToast('↪️ 컷편집 다시 실행 (Ctrl+Y)');
+  }
+
+  function getTotalGifCutsDuration(excludeIdx = -1) {
+    return gifState.cuts.reduce((acc, c, idx) => {
+      if (idx === excludeIdx) return acc;
+      return acc + Math.max(0, c.end - c.start);
+    }, 0);
+  }
 
   function formatSecDetail(sec) {
     if (!Number.isFinite(sec) || sec < 0) return '00:00.0';
@@ -2720,11 +2848,11 @@
     const cur = gifSourceVideo.currentTime || 0;
     const dur = gifState.duration || 1;
     const pct = Math.max(0, Math.min(100, (cur / dur) * 100));
-    if (gifTimelinePlayhead) {
-      gifTimelinePlayhead.style.left = `${pct}%`;
+    if (gifNlePlayhead) {
+      gifNlePlayhead.style.left = `${pct}%`;
     }
     if (gifCurrentTimeText) {
-      gifCurrentTimeText.textContent = `현재: ${formatSecDetail(cur)} / 전체: ${formatSecDetail(dur)}`;
+      gifCurrentTimeText.textContent = `${formatSecDetail(cur)} / ${formatSecDetail(dur)}`;
     }
   }
 
@@ -2733,24 +2861,23 @@
     const tick = () => {
       if (!gifSourceVideo || gifSourceVideo.paused || gifSourceVideo.ended || gifState.isEncoding) {
         if (gifPlayPauseBtn && !gifState.isEncoding) {
-          gifPlayPauseBtn.textContent = '▶️ 재생 / 일시정지';
+          gifPlayPauseBtn.textContent = '▶️ 재생';
         }
         gifState.rafId = null;
         return;
       }
-      if (gifSourceVideo.currentTime >= gifState.endTime) {
-        if (gifState.isLoopPreview) {
-          gifSourceVideo.currentTime = gifState.startTime;
-        } else {
-          gifSourceVideo.pause();
-          gifSourceVideo.currentTime = gifState.startTime;
-          drawGifVideoFrame();
-          updateGifPlayheadUI();
-          if (gifPlayPauseBtn) gifPlayPauseBtn.textContent = '▶️ 재생 / 일시정지';
-          gifState.rafId = null;
-          return;
+
+      if (gifState.isLoopPreview && gifState.cuts.length > 0) {
+        const curCut = gifState.cuts[gifState.previewCutIdx] || gifState.cuts[0];
+        if (gifSourceVideo.currentTime >= curCut.end) {
+          gifState.previewCutIdx = (gifState.previewCutIdx + 1) % gifState.cuts.length;
+          const nextCut = gifState.cuts[gifState.previewCutIdx];
+          gifState.activeCutIdx = gifState.previewCutIdx;
+          syncGifTimelineUI();
+          gifSourceVideo.currentTime = nextCut.start;
         }
       }
+
       drawGifVideoFrame();
       updateGifPlayheadUI();
       gifState.rafId = requestAnimationFrame(tick);
@@ -2758,53 +2885,286 @@
     gifState.rafId = requestAnimationFrame(tick);
   }
 
-  function syncGifTimelineUI(changedSide) {
+  // 비주얼 시간 눈금자(Ruler) 렌더링
+  function renderGifTimeRuler() {
+    if (!gifTimeRuler || !gifState.duration) return;
+    gifTimeRuler.innerHTML = '';
+    const dur = gifState.duration;
+    const stepCandidates = [0.5, 1, 2, 5, 10, 15, 30, 60];
+    let step = stepCandidates.find((s) => dur / s <= 12) || Math.ceil(dur / 10);
+
+    for (let t = 0; t <= dur; t += step) {
+      const pct = (t / dur) * 100;
+      if (pct > 98) break;
+      const tick = document.createElement('div');
+      tick.className = 'nle-ruler-tick';
+      tick.style.left = `${pct}%`;
+      tick.textContent = t < 60 ? `${Number(t.toFixed(1))}s` : formatDuration(t);
+      gifTimeRuler.appendChild(tick);
+    }
+  }
+
+  // 백그라운드 필름스트립(장면 썸네일) 캔버스 생성
+  async function generateGifFilmstripAsync(videoUrl, duration) {
+    if (!gifFilmstripCanvas || !videoUrl || !duration) return;
+    const jobId = ++gifState.filmstripJobId;
+
+    const trackRect = gifNleTrack ? gifNleTrack.getBoundingClientRect() : null;
+    const canvasW = Math.max(480, Math.round((trackRect && trackRect.width) || 680));
+    const canvasH = 68;
+    gifFilmstripCanvas.width = canvasW;
+    gifFilmstripCanvas.height = canvasH;
+    const ctx = gifFilmstripCanvas.getContext('2d');
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(0, 0, canvasW, canvasH);
+
+    const thumbCount = 10;
+    const cellW = canvasW / thumbCount;
+
+    const tempVideo = document.createElement('video');
+    tempVideo.src = videoUrl;
+    tempVideo.muted = true;
+    tempVideo.playsInline = true;
+    tempVideo.preload = 'auto';
+
+    await new Promise((resolve) => {
+      tempVideo.onloadeddata = resolve;
+      tempVideo.onerror = resolve;
+      setTimeout(resolve, 1500);
+    });
+
+    for (let i = 0; i < thumbCount; i++) {
+      if (jobId !== gifState.filmstripJobId) break;
+      const t = Math.min(duration - 0.05, Math.max(0, ((i + 0.5) / thumbCount) * duration));
+      await seekVideoToTime(tempVideo, t);
+      if (jobId !== gifState.filmstripJobId) break;
+      try {
+        ctx.drawImage(tempVideo, i * cellW, 0, cellW, canvasH);
+        ctx.strokeStyle = 'rgba(15, 23, 42, 0.5)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(i * cellW, 0, cellW, canvasH);
+      } catch (_) {}
+    }
+    tempVideo.removeAttribute('src');
+    tempVideo.load();
+  }
+
+  // 비주얼 타임라인 클립 블록 & 삭제된 구간 & 좌측 리스트 & 하단 이어붙인 시퀀스 렌더링
+  function syncGifTimelineUI() {
+    normalizeCutsList();
     const dur = gifState.duration || 10;
-    let s = gifState.startTime;
-    let e = gifState.endTime;
+    const activeCut = gifState.cuts[gifState.activeCutIdx] || gifState.cuts[0];
+    gifState.startTime = activeCut.start;
+    gifState.endTime = activeCut.end;
 
-    s = Math.max(0, Math.min(dur - 0.2, s));
-    e = Math.max(0.2, Math.min(dur, e));
+    const activeSpan = Math.max(0.1, activeCut.end - activeCut.start);
+    const totalSpan = getTotalGifCutsDuration(-1);
+    const isOverLimit = totalSpan > GIF_MAX_DURATION + 0.05;
 
-    if (e - s < 0.2) {
-      if (changedSide === 'start') {
-        e = Math.min(dur, s + 0.2);
-        s = Math.max(0, e - 0.2);
-      } else {
-        s = Math.max(0, e - 0.2);
-        e = Math.min(dur, s + 0.2);
-      }
+    if (gifActiveCutLabel) {
+      gifActiveCutLabel.textContent = `🎬 선택된 컷: 컷 ${gifState.activeCutIdx + 1} (${activeSpan.toFixed(1)}초)`;
+    }
+    if (gifStartTimeInput && document.activeElement !== gifStartTimeInput) {
+      gifStartTimeInput.value = activeCut.start.toFixed(1);
+    }
+    if (gifEndTimeInput && document.activeElement !== gifEndTimeInput) {
+      gifEndTimeInput.value = activeCut.end.toFixed(1);
     }
 
-    if (e - s > GIF_MAX_DURATION) {
-      if (changedSide === 'start') {
-        e = Math.min(dur, s + GIF_MAX_DURATION);
-      } else {
-        s = Math.max(0, e - GIF_MAX_DURATION);
-      }
-      showToast(`GIF 용량 및 속도 최적화를 위해 최대 구간은 ${GIF_MAX_DURATION}초로 제한됩니다.`);
+    if (gifDurationBadge) {
+      gifDurationBadge.textContent = isOverLimit
+        ? `⚠️ 총 ${gifState.cuts.length}컷 · ${totalSpan.toFixed(1)}초 (15초 초과)`
+        : `✅ 총 ${gifState.cuts.length}컷 · ${totalSpan.toFixed(1)}초`;
     }
-
-    gifState.startTime = Number(s.toFixed(1));
-    gifState.endTime = Number(e.toFixed(1));
-    const span = Number((gifState.endTime - gifState.startTime).toFixed(1));
-
-    if (gifStartTimeInput) gifStartTimeInput.value = gifState.startTime.toFixed(1);
-    if (gifEndTimeInput) gifEndTimeInput.value = gifState.endTime.toFixed(1);
-    if (gifRangeStart) gifRangeStart.value = String(gifState.startTime);
-    if (gifRangeEnd) gifRangeEnd.value = String(gifState.endTime);
-
-    if (gifDurationBadge) gifDurationBadge.textContent = `${span.toFixed(1)}초`;
     if (gifRangeSummaryText) {
-      gifRangeSummaryText.textContent = `선택 구간: ${gifState.startTime.toFixed(1)}초 ~ ${gifState.endTime.toFixed(1)}초 (${span.toFixed(1)}초)`;
+      gifRangeSummaryText.classList.toggle('over-limit', isOverLimit);
+      gifRangeSummaryText.textContent = isOverLimit
+        ? `⚠️ 남은 컷 합계: ${totalSpan.toFixed(1)}초 (불필요한 구간을 잘라 15초 이하로 줄여주세요)`
+        : `✅ 남은 컷 합계: ${totalSpan.toFixed(1)}초 / 최대 ${GIF_MAX_DURATION}초 (총 ${gifState.cuts.length}개 컷 이어붙임)`;
     }
 
-    if (gifTimelineHighlight && dur > 0) {
-      const leftPct = (gifState.startTime / dur) * 100;
-      const widthPct = ((gifState.endTime - gifState.startTime) / dur) * 100;
-      gifTimelineHighlight.style.left = `${leftPct}%`;
-      gifTimelineHighlight.style.width = `${Math.max(1, widthPct)}%`;
+    // 1) 좌측 사이드바 컷 목록 렌더링
+    if (gifCutList) {
+      gifCutList.innerHTML = '';
+      gifState.cuts.forEach((cut, idx) => {
+        const span = Math.max(0.1, cut.end - cut.start).toFixed(1);
+        const item = document.createElement('div');
+        item.className = `gif-cut-item${idx === gifState.activeCutIdx ? ' active' : ''}`;
+        item.innerHTML = `
+          <div class="gif-cut-item-left">
+            <span class="gif-cut-badge">컷 ${idx + 1}</span>
+            <span>${cut.start.toFixed(1)}s ~ ${cut.end.toFixed(1)}s (${span}초)</span>
+          </div>
+          ${
+            gifState.cuts.length > 1
+              ? `<button type="button" class="gif-cut-del-btn" data-del-idx="${idx}" title="이 컷 삭제">🗑️ 삭제</button>`
+              : `<span style="font-size:0.72rem; color:var(--text-muted);">선택됨</span>`
+          }
+        `;
+        item.addEventListener('click', (e) => {
+          const delBtn = e.target.closest('.gif-cut-del-btn');
+          if (delBtn) {
+            e.stopPropagation();
+            deleteGifCutByIndex(idx);
+            return;
+          }
+          selectGifCut(idx, true);
+        });
+        gifCutList.appendChild(item);
+      });
     }
+
+    // 2) 메인 비주얼 NLE 타임라인 레이어 (살아있는 클립 블록 + 삭제된 빈 구간) 렌더링
+    if (gifNleClipsLayer && dur > 0) {
+      gifNleClipsLayer.innerHTML = '';
+
+      // 삭제된 빈 구간(Gaps) 계산 및 [+ 살리기] 버튼 표시
+      const gaps = [];
+      let cursor = 0;
+      gifState.cuts.forEach((cut) => {
+        if (cut.start - cursor >= 0.25) {
+          gaps.push({ start: cursor, end: cut.start });
+        }
+        cursor = cut.end;
+      });
+      if (dur - cursor >= 0.25) {
+        gaps.push({ start: cursor, end: dur });
+      }
+
+      gaps.forEach((g) => {
+        const gapEl = document.createElement('div');
+        gapEl.className = 'nle-deleted-gap';
+        const leftPct = (g.start / dur) * 100;
+        const widthPct = ((g.end - g.start) / dur) * 100;
+        gapEl.style.left = `${leftPct}%`;
+        gapEl.style.width = `${widthPct}%`;
+        gapEl.title = `삭제된 구간 (${g.start.toFixed(1)}s ~ ${g.end.toFixed(1)}s · 자동 건너뜀)`;
+
+        if (widthPct >= 6) {
+          const restoreBtn = document.createElement('button');
+          restoreBtn.type = 'button';
+          restoreBtn.className = 'nle-restore-gap-btn';
+          restoreBtn.textContent = '+ 구간 복원';
+          restoreBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            pushGifCutHistory();
+            gifState.cuts.push({ start: g.start, end: g.end });
+            normalizeCutsList();
+            const foundIdx = gifState.cuts.findIndex((c) => Math.abs(c.start - g.start) < 0.15);
+            if (foundIdx >= 0) gifState.activeCutIdx = foundIdx;
+            syncGifTimelineUI();
+            showToast('삭제했던 구간을 다시 살렸습니다.');
+          });
+          gapEl.appendChild(restoreBtn);
+        }
+        gifNleClipsLayer.appendChild(gapEl);
+      });
+
+      // 살아있는 클립 블록(.nle-clip-block) 렌더링
+      gifState.cuts.forEach((cut, idx) => {
+        const block = document.createElement('div');
+        block.className = `nle-clip-block${idx === gifState.activeCutIdx ? ' selected' : ''}`;
+        const leftPct = (cut.start / dur) * 100;
+        const widthPct = Math.max(1.2, ((cut.end - cut.start) / dur) * 100);
+        block.style.left = `${leftPct}%`;
+        block.style.width = `${widthPct}%`;
+        block.dataset.clipIdx = String(idx);
+
+        const span = Math.max(0.1, cut.end - cut.start).toFixed(1);
+        block.innerHTML = `
+          <div class="nle-trim-handle left" data-trim="left" data-idx="${idx}" title="마우스로 잡고 드래그하여 시작점 조절"></div>
+          <div class="nle-clip-label">컷 ${idx + 1} (${span}s)</div>
+          <div class="nle-trim-handle right" data-trim="right" data-idx="${idx}" title="마우스로 잡고 드래그하여 종료점 조절"></div>
+        `;
+        gifNleClipsLayer.appendChild(block);
+      });
+    }
+
+    // 3) 하단 이어붙인 시퀀스 바 렌더링
+    if (gifStitchedSequenceBar) {
+      gifStitchedSequenceBar.innerHTML = `<strong style="color:var(--text-secondary); margin-right:4px;">🧲 최종 이어붙인 구성:</strong>`;
+      gifState.cuts.forEach((cut, idx) => {
+        if (idx > 0) {
+          const join = document.createElement('span');
+          join.className = 'stitched-join-icon';
+          join.textContent = '➕';
+          gifStitchedSequenceBar.appendChild(join);
+        }
+        const chip = document.createElement('span');
+        chip.className = `stitched-chip${idx === gifState.activeCutIdx ? ' active' : ''}`;
+        chip.textContent = `컷 ${idx + 1} (${(cut.end - cut.start).toFixed(1)}초)`;
+        chip.title = `클릭 시 컷 ${idx + 1} (${cut.start.toFixed(1)}s ~ ${cut.end.toFixed(1)}s) 선택`;
+        chip.addEventListener('click', () => selectGifCut(idx, true));
+        gifStitchedSequenceBar.appendChild(chip);
+      });
+    }
+
+    updateGifUndoRedoBtns();
+  }
+
+  function selectGifCut(idx, seekToStart = false) {
+    if (idx < 0 || idx >= gifState.cuts.length) return;
+    gifState.activeCutIdx = idx;
+    const cut = gifState.cuts[idx];
+    gifState.startTime = cut.start;
+    gifState.endTime = cut.end;
+    syncGifTimelineUI();
+    if (seekToStart && gifSourceVideo && !gifState.isEncoding) {
+      gifSourceVideo.pause();
+      gifSourceVideo.currentTime = cut.start;
+    }
+  }
+
+  // ✂️ 빨간 재생선(Playhead) 위치에서 클립 분할(자르기)
+  function splitGifClipAtPlayhead() {
+    if (!gifSourceVideo || !gifState.duration || gifState.isEncoding) return;
+    const cur = Number((gifSourceVideo.currentTime || 0).toFixed(2));
+
+    const targetIdx = gifState.cuts.findIndex((c) => cur > c.start + 0.18 && cur < c.end - 0.18);
+    if (targetIdx === -1) {
+      showToast('재생선(▼)을 자르고 싶은 클립의 중간 위치에 놓은 뒤 [✂️ 여기서 자르기]를 눌러주세요.');
+      return;
+    }
+
+    pushGifCutHistory();
+    const orig = gifState.cuts[targetIdx];
+    const leftClip = { start: orig.start, end: cur };
+    const rightClip = { start: cur, end: orig.end };
+    gifState.cuts.splice(targetIdx, 1, leftClip, rightClip);
+    gifState.activeCutIdx = targetIdx + 1;
+    syncGifTimelineUI();
+    showToast(`✂️ ${cur.toFixed(1)}초 위치에서 클립이 분할되었습니다! 필요 없는 컷을 선택해 삭제(Del)하세요.`);
+  }
+
+  // 🗑️ 특정 컷 삭제
+  function deleteGifCutByIndex(idx) {
+    if (gifState.isEncoding) return;
+    if (gifState.cuts.length <= 1) {
+      showToast('최소 1개의 컷은 남아있어야 합니다. 먼저 [✂️ 여기서 자르기]로 구간을 나눈 뒤 불필요한 컷을 삭제하세요!');
+      return;
+    }
+    pushGifCutHistory();
+    gifState.cuts.splice(idx, 1);
+    if (gifState.activeCutIdx >= gifState.cuts.length) {
+      gifState.activeCutIdx = gifState.cuts.length - 1;
+    }
+    syncGifTimelineUI();
+    showToast(`🗑️ 컷 ${idx + 1} 구간이 삭제되고 남은 구간이 이어붙여졌습니다. (Ctrl+Z로 복구 가능)`);
+  }
+
+  // 🎯 현재 선택된 컷만 남기고 나머지 모두 삭제
+  function keepOnlyActiveGifClip() {
+    if (gifState.isEncoding) return;
+    if (gifState.cuts.length <= 1) {
+      showToast('현재 컷이 1개뿐입니다. 먼저 [✂️ 여기서 자르기]로 남길 구간을 분할해보세요!');
+      return;
+    }
+    pushGifCutHistory();
+    const keep = { ...gifState.cuts[gifState.activeCutIdx] };
+    gifState.cuts = [keep];
+    gifState.activeCutIdx = 0;
+    syncGifTimelineUI();
+    showToast(`🎯 선택한 구간(${keep.start.toFixed(1)}s~${keep.end.toFixed(1)}s)만 남기고 나머지를 모두 정리했습니다!`);
   }
 
   function applyGifQuickSizeFromCropBox(baseSize) {
@@ -2907,7 +3267,6 @@
         w: Math.round(newW),
         h: Math.round(newH),
       };
-      // 비율 프리셋(1:1 등)을 클릭하면 출력 픽셀 크기도 해당 비율에 맞춰 즉시 업데이트
       gifState.userTypedSize = false;
       updateGifCropBoxDOM();
     }
@@ -2932,6 +3291,8 @@
     gifState.isEncoding = false;
     gifState.cancelRequested = false;
     gifState.userTypedSize = false;
+    gifState.undoStack = [];
+    gifState.redoStack = [];
 
     gifSourceVideo.src = gifState.videoUrl;
     gifSourceVideo.muted = true;
@@ -2958,34 +3319,34 @@
       gifCanvasWrap.style.width = `${gifState.dispW}px`;
       gifCanvasWrap.style.height = `${gifState.dispH}px`;
 
-      if (gifRangeStart) {
-        gifRangeStart.min = '0';
-        gifRangeStart.max = dur.toFixed(1);
-      }
-      if (gifRangeEnd) {
-        gifRangeEnd.min = '0.2';
-        gifRangeEnd.max = dur.toFixed(1);
-      }
       if (gifStartTimeInput) gifStartTimeInput.max = dur.toFixed(1);
       if (gifEndTimeInput) gifEndTimeInput.max = dur.toFixed(1);
 
+      // 영상 편집기처럼 처음엔 전체 영상 클립 1개가 통째로 올라가 있도록 초기화
+      gifState.cuts = [{ start: 0, end: Number(dur.toFixed(2)) }];
+      gifState.activeCutIdx = 0;
+      gifState.previewCutIdx = 0;
       gifState.startTime = 0;
-      gifState.endTime = Math.min(dur, 5.0);
-      syncGifTimelineUI('end');
-
-      gifState.ratio = 'full';
-      applyGifRatioToCropBox('full');
+      gifState.endTime = Number(dur.toFixed(2));
 
       gifVideoDropzone.classList.add('hidden');
       gifStageCard.classList.remove('hidden');
       gifResultBox.classList.add('hidden');
       gifProgressPanel.classList.add('hidden');
 
+      renderGifTimeRuler();
+      syncGifTimelineUI();
+      generateGifFilmstripAsync(gifState.videoUrl, dur);
+
+      gifState.ratio = 'full';
+      applyGifRatioToCropBox('full');
+
       startGifConvertBtn.disabled = false;
       changeGifVideoBtn.disabled = false;
       setGifStartNowBtn.disabled = false;
       setGifEndNowBtn.disabled = false;
       previewGifLoopBtn.disabled = false;
+      if (addGifCutBtn) addGifCutBtn.disabled = false;
 
       gifSourceVideo.currentTime = 0;
     };
@@ -3008,62 +3369,256 @@
     changeGifVideoBtn.addEventListener('click', () => gifVideoFileInput && gifVideoFileInput.click());
   }
 
-  // 타임라인 슬라이더 및 숫자 입력 연동
-  if (gifRangeStart) {
-    gifRangeStart.addEventListener('input', () => {
-      gifState.startTime = parseFloat(gifRangeStart.value) || 0;
-      syncGifTimelineUI('start');
-      if (gifSourceVideo && !gifState.isEncoding) {
-        gifSourceVideo.pause();
-        gifSourceVideo.currentTime = gifState.startTime;
+  // 비주얼 타임라인(눈금자, 트랙, 재생선, 클립 좌우 모서리 핸들) 마우스 드래그/클릭 인터랙션
+  let nlePointerSession = null;
+
+  function clientXToVideoTime(clientX) {
+    if (!gifNleTimeline || !gifState.duration) return 0;
+    const rect = gifNleTimeline.getBoundingClientRect();
+    if (!rect.width) return 0;
+    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    return Number((ratio * gifState.duration).toFixed(2));
+  }
+
+  if (gifNleTimeline) {
+    gifNleTimeline.addEventListener('pointerdown', (e) => {
+      if (!gifState.duration || gifState.isEncoding) return;
+      if (e.target.closest('.nle-restore-gap-btn')) return;
+
+      e.preventDefault();
+      gifSourceVideo.pause();
+      gifState.isLoopPreview = false;
+      if (gifPlayPauseBtn) gifPlayPauseBtn.textContent = '▶️ 재생';
+
+      const trimHandle = e.target.closest('.nle-trim-handle');
+      const clipBlock = e.target.closest('.nle-clip-block');
+      gifNleTimeline.setPointerCapture(e.pointerId);
+
+      if (trimHandle) {
+        const idx = parseInt(trimHandle.dataset.idx, 10);
+        const side = trimHandle.dataset.trim; // 'left' | 'right'
+        if (idx >= 0 && idx < gifState.cuts.length) {
+          pushGifCutHistory();
+          gifState.activeCutIdx = idx;
+          nlePointerSession = {
+            pointerId: e.pointerId,
+            mode: side === 'left' ? 'trim-left' : 'trim-right',
+            clipIdx: idx,
+          };
+          syncGifTimelineUI();
+          return;
+        }
       }
+
+      if (clipBlock && !e.target.closest('.nle-playhead-head')) {
+        const idx = parseInt(clipBlock.dataset.clipIdx, 10);
+        if (idx >= 0 && idx < gifState.cuts.length) {
+          gifState.activeCutIdx = idx;
+          syncGifTimelineUI();
+        }
+      }
+
+      // 기본 동작: 재생선(Playhead) 즉시 이동 및 드래그 스크러빙
+      const newTime = clientXToVideoTime(e.clientX);
+      const underIdx = gifState.cuts.findIndex((c) => newTime >= c.start && newTime <= c.end);
+      if (underIdx >= 0 && underIdx !== gifState.activeCutIdx) {
+        gifState.activeCutIdx = underIdx;
+        syncGifTimelineUI();
+      }
+      gifSourceVideo.currentTime = newTime;
+      updateGifPlayheadUI();
+
+      nlePointerSession = {
+        pointerId: e.pointerId,
+        mode: 'scrub',
+      };
+    });
+
+    gifNleTimeline.addEventListener('pointermove', (e) => {
+      if (!nlePointerSession || e.pointerId !== nlePointerSession.pointerId) return;
+      const t = clientXToVideoTime(e.clientX);
+      const dur = gifState.duration || 10;
+
+      if (nlePointerSession.mode === 'scrub') {
+        gifSourceVideo.currentTime = t;
+        updateGifPlayheadUI();
+        return;
+      }
+
+      const idx = nlePointerSession.clipIdx;
+      const cut = gifState.cuts[idx];
+      if (!cut) return;
+
+      const minBound = idx > 0 ? gifState.cuts[idx - 1].end : 0;
+      const maxBound = idx < gifState.cuts.length - 1 ? gifState.cuts[idx + 1].start : dur;
+
+      if (nlePointerSession.mode === 'trim-left') {
+        cut.start = Math.max(minBound, Math.min(cut.end - 0.2, t));
+        gifSourceVideo.currentTime = cut.start;
+      } else if (nlePointerSession.mode === 'trim-right') {
+        cut.end = Math.min(maxBound, Math.max(cut.start + 0.2, t));
+        gifSourceVideo.currentTime = cut.end;
+      }
+
+      syncGifTimelineUI();
+      updateGifPlayheadUI();
+    });
+
+    const endNlePointer = (e) => {
+      if (nlePointerSession && e.pointerId === nlePointerSession.pointerId) {
+        nlePointerSession = null;
+      }
+    };
+    gifNleTimeline.addEventListener('pointerup', endNlePointer);
+    gifNleTimeline.addEventListener('pointercancel', endNlePointer);
+  }
+
+  // 컷편집 툴바 버튼 바인딩
+  if (gifSplitBtn) {
+    gifSplitBtn.addEventListener('click', splitGifClipAtPlayhead);
+  }
+  if (gifDeleteCutBtn) {
+    gifDeleteCutBtn.addEventListener('click', () => deleteGifCutByIndex(gifState.activeCutIdx));
+  }
+  if (gifKeepOnlyCutBtn) {
+    gifKeepOnlyCutBtn.addEventListener('click', keepOnlyActiveGifClip);
+  }
+  if (gifUndoBtn) {
+    gifUndoBtn.addEventListener('click', undoGifCutAction);
+  }
+  if (gifRedoBtn) {
+    gifRedoBtn.addEventListener('click', redoGifCutAction);
+  }
+  if (gifSidebarUndoBtn) {
+    gifSidebarUndoBtn.addEventListener('click', undoGifCutAction);
+  }
+  if (gifSidebarRedoBtn) {
+    gifSidebarRedoBtn.addEventListener('click', redoGifCutAction);
+  }
+  if (gifResetCutsBtn) {
+    gifResetCutsBtn.addEventListener('click', () => {
+      if (!gifState.duration || gifState.isEncoding) return;
+      pushGifCutHistory();
+      gifState.cuts = [{ start: 0, end: Number(gifState.duration.toFixed(2)) }];
+      gifState.activeCutIdx = 0;
+      syncGifTimelineUI();
+      showToast('🔄 모든 컷편집이 전체 영상 상태로 초기화되었습니다.');
     });
   }
 
-  if (gifRangeEnd) {
-    gifRangeEnd.addEventListener('input', () => {
-      gifState.endTime = parseFloat(gifRangeEnd.value) || 0.5;
-      syncGifTimelineUI('end');
-      if (gifSourceVideo && !gifState.isEncoding) {
-        gifSourceVideo.pause();
-        gifSourceVideo.currentTime = gifState.endTime;
-      }
+  if (gifStepBackBtn) {
+    gifStepBackBtn.addEventListener('click', () => {
+      if (!gifSourceVideo || gifState.isEncoding) return;
+      gifSourceVideo.pause();
+      gifSourceVideo.currentTime = Math.max(0, (gifSourceVideo.currentTime || 0) - 0.1);
+    });
+  }
+  if (gifStepFwdBtn) {
+    gifStepFwdBtn.addEventListener('click', () => {
+      if (!gifSourceVideo || gifState.isEncoding) return;
+      gifSourceVideo.pause();
+      gifSourceVideo.currentTime = Math.min(gifState.duration || 10, (gifSourceVideo.currentTime || 0) + 0.1);
     });
   }
 
+  // 빈 구간에 새 컷 추가 버튼
+  if (addGifCutBtn) {
+    addGifCutBtn.addEventListener('click', () => {
+      if (!gifState.duration || gifState.isEncoding) return;
+      const dur = gifState.duration;
+
+      // 비어 있는 삭제된 구간(Gap) 중 가장 큰 구간 찾기
+      const gaps = [];
+      let cursor = 0;
+      gifState.cuts.forEach((cut) => {
+        if (cut.start - cursor >= 0.3) gaps.push({ start: cursor, end: cut.start });
+        cursor = cut.end;
+      });
+      if (dur - cursor >= 0.3) gaps.push({ start: cursor, end: dur });
+
+      if (gaps.length === 0) {
+        showToast('현재 타임라인에 빈 구간이 없습니다. 먼저 [✂️ 여기서 자르기]로 클립을 분할하거나 모서리를 줄여보세요!');
+        return;
+      }
+
+      pushGifCutHistory();
+      const targetGap = gaps[0];
+      const newEnd = Math.min(targetGap.end, targetGap.start + 3.0);
+      gifState.cuts.push({ start: targetGap.start, end: newEnd });
+      normalizeCutsList();
+      const idx = gifState.cuts.findIndex((c) => Math.abs(c.start - targetGap.start) < 0.15);
+      if (idx >= 0) gifState.activeCutIdx = idx;
+      syncGifTimelineUI();
+      if (gifSourceVideo) {
+        gifSourceVideo.pause();
+        gifSourceVideo.currentTime = targetGap.start;
+      }
+      showToast('➕ 빈 구간에 새 컷이 추가되었습니다.');
+    });
+  }
+
+  // 좌측 숫자 입력칸 & 시작/종료점 지정 버튼 연동
   if (gifStartTimeInput) {
     gifStartTimeInput.addEventListener('change', () => {
-      gifState.startTime = parseFloat(gifStartTimeInput.value) || 0;
-      syncGifTimelineUI('start');
+      const cut = gifState.cuts[gifState.activeCutIdx];
+      if (!cut) return;
+      pushGifCutHistory();
+      const minBound = gifState.activeCutIdx > 0 ? gifState.cuts[gifState.activeCutIdx - 1].end : 0;
+      cut.start = Math.max(minBound, Math.min(cut.end - 0.2, parseFloat(gifStartTimeInput.value) || 0));
+      syncGifTimelineUI();
       if (gifSourceVideo && !gifState.isEncoding) {
-        gifSourceVideo.currentTime = gifState.startTime;
+        gifSourceVideo.currentTime = cut.start;
       }
     });
   }
 
   if (gifEndTimeInput) {
     gifEndTimeInput.addEventListener('change', () => {
-      gifState.endTime = parseFloat(gifEndTimeInput.value) || 1;
-      syncGifTimelineUI('end');
+      const cut = gifState.cuts[gifState.activeCutIdx];
+      if (!cut) return;
+      pushGifCutHistory();
+      const dur = gifState.duration || 10;
+      const maxBound =
+        gifState.activeCutIdx < gifState.cuts.length - 1 ? gifState.cuts[gifState.activeCutIdx + 1].start : dur;
+      cut.end = Math.min(maxBound, Math.max(cut.start + 0.2, parseFloat(gifEndTimeInput.value) || 1));
+      syncGifTimelineUI();
       if (gifSourceVideo && !gifState.isEncoding) {
-        gifSourceVideo.currentTime = gifState.endTime;
+        gifSourceVideo.currentTime = cut.end;
       }
     });
   }
 
   if (setGifStartNowBtn) {
     setGifStartNowBtn.addEventListener('click', () => {
-      if (!gifSourceVideo) return;
-      gifState.startTime = gifSourceVideo.currentTime || 0;
-      syncGifTimelineUI('start');
+      if (!gifSourceVideo || !gifState.cuts[gifState.activeCutIdx]) return;
+      const cut = gifState.cuts[gifState.activeCutIdx];
+      const cur = gifSourceVideo.currentTime || 0;
+      const minBound = gifState.activeCutIdx > 0 ? gifState.cuts[gifState.activeCutIdx - 1].end : 0;
+      if (cur >= cut.end - 0.15 || cur < minBound) {
+        showToast('선택된 컷의 종료 시간보다 앞선 위치에서 시작점을 지정해주세요.');
+        return;
+      }
+      pushGifCutHistory();
+      cut.start = Number(cur.toFixed(2));
+      syncGifTimelineUI();
     });
   }
 
   if (setGifEndNowBtn) {
     setGifEndNowBtn.addEventListener('click', () => {
-      if (!gifSourceVideo) return;
-      gifState.endTime = Math.max(0.2, gifSourceVideo.currentTime || 0.5);
-      syncGifTimelineUI('end');
+      if (!gifSourceVideo || !gifState.cuts[gifState.activeCutIdx]) return;
+      const cut = gifState.cuts[gifState.activeCutIdx];
+      const cur = gifSourceVideo.currentTime || 0;
+      const dur = gifState.duration || 10;
+      const maxBound =
+        gifState.activeCutIdx < gifState.cuts.length - 1 ? gifState.cuts[gifState.activeCutIdx + 1].start : dur;
+      if (cur <= cut.start + 0.15 || cur > maxBound) {
+        showToast('선택된 컷의 시작 시간보다 뒤쪽 위치에서 종료점을 지정해주세요.');
+        return;
+      }
+      pushGifCutHistory();
+      cut.end = Number(cur.toFixed(2));
+      syncGifTimelineUI();
     });
   }
 
@@ -3072,8 +3627,8 @@
       if (!gifSourceVideo || gifState.isEncoding) return;
       gifState.isLoopPreview = false;
       if (gifSourceVideo.paused) {
-        if (gifSourceVideo.currentTime < gifState.startTime || gifSourceVideo.currentTime >= gifState.endTime) {
-          gifSourceVideo.currentTime = gifState.startTime;
+        if (gifSourceVideo.currentTime >= (gifState.duration || 10) - 0.1) {
+          gifSourceVideo.currentTime = 0;
         }
         gifSourceVideo.play().then(() => {
           gifPlayPauseBtn.textContent = '⏸️ 일시정지';
@@ -3081,22 +3636,85 @@
         }).catch(() => {});
       } else {
         gifSourceVideo.pause();
-        gifPlayPauseBtn.textContent = '▶️ 재생 / 일시정지';
+        gifPlayPauseBtn.textContent = '▶️ 재생';
       }
     });
   }
 
   if (previewGifLoopBtn) {
     previewGifLoopBtn.addEventListener('click', () => {
-      if (!gifSourceVideo || gifState.isEncoding) return;
+      if (!gifSourceVideo || gifState.isEncoding || gifState.cuts.length === 0) return;
+      if (!gifSourceVideo.paused && gifState.isLoopPreview) {
+        gifSourceVideo.pause();
+        gifState.isLoopPreview = false;
+        if (gifPlayPauseBtn) gifPlayPauseBtn.textContent = '▶️ 재생';
+        return;
+      }
       gifState.isLoopPreview = true;
-      gifSourceVideo.currentTime = gifState.startTime;
+      gifState.previewCutIdx = 0;
+      gifState.activeCutIdx = 0;
+      syncGifTimelineUI();
+      gifSourceVideo.currentTime = gifState.cuts[0].start;
       gifSourceVideo.play().then(() => {
-        if (gifPlayPauseBtn) gifPlayPauseBtn.textContent = '⏸️ 구간 반복 중 (일시정지)';
+        if (gifPlayPauseBtn) {
+          gifPlayPauseBtn.textContent = `⏸️ 편집본 연속 재생 중`;
+        }
         startGifPreviewLoop();
       }).catch(() => {});
     });
   }
+
+  // 동영상 -> GIF 탭 전용 키보드 단축키 지원 (Ctrl+Z, Ctrl+Y, S: 자르기, Delete: 선택 컷 삭제, Space: 재생/일시정지)
+  window.addEventListener(
+    'keydown',
+    (e) => {
+      const gifTabEl = document.getElementById('tab-video-gif');
+      const isGifActive =
+        activeTabId === 'video-gif' || Boolean(gifTabEl && gifTabEl.classList.contains('active'));
+      if (!isGifActive || !gifState.file || gifState.isEncoding) return;
+
+      const target = e.target;
+      if (target && target.tagName) {
+        const tag = target.tagName.toLowerCase();
+        if (tag === 'textarea' || tag === 'select') return;
+        if (tag === 'input') {
+          const type = (target.type || '').toLowerCase();
+          if (type === 'text' || type === 'number' || type === 'url' || type === 'search') return;
+        }
+      }
+
+      const isCtrlOrMeta = e.ctrlKey || e.metaKey;
+      const code = e.code || '';
+      const key = (e.key || '').toLowerCase();
+
+      if (isCtrlOrMeta) {
+        const isZ = code === 'KeyZ' || key === 'z' || key === 'ㅋ';
+        const isY = code === 'KeyY' || key === 'y' || key === 'ㅛ';
+        if (isZ && !e.shiftKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          undoGifCutAction();
+        } else if (isY || (isZ && e.shiftKey)) {
+          e.preventDefault();
+          e.stopPropagation();
+          redoGifCutAction();
+        }
+        return;
+      }
+
+      if (code === 'KeyS' || key === 's' || key === 'ㄴ') {
+        e.preventDefault();
+        splitGifClipAtPlayhead();
+      } else if (key === 'delete' || key === 'backspace') {
+        e.preventDefault();
+        deleteGifCutByIndex(gifState.activeCutIdx);
+      } else if (code === 'Space' || key === ' ') {
+        e.preventDefault();
+        if (gifPlayPauseBtn) gifPlayPauseBtn.click();
+      }
+    },
+    true
+  );
 
   // 비율 프리셋 클릭
   if (gifRatioGrid) {
@@ -3463,6 +4081,15 @@
     startGifConvertBtn.addEventListener('click', async () => {
       if (!gifState.file || !gifSourceVideo || gifState.isEncoding) return;
 
+      const totalCutDur = getTotalGifCutsDuration(-1);
+      if (totalCutDur > GIF_MAX_DURATION + 0.1) {
+        showToast(
+          `현재 남은 컷의 합계가 ${totalCutDur.toFixed(1)}초입니다. 필요 없는 구간을 자르거나 삭제하여 15초 이하로 맞춰주세요!`,
+          'error'
+        );
+        return;
+      }
+
       gifSourceVideo.pause();
       if (gifState.rafId) {
         cancelAnimationFrame(gifState.rafId);
@@ -3500,10 +4127,30 @@
 
       const fps = parseInt(gifFpsSelect && gifFpsSelect.value, 10) || 12;
       const speed = parseFloat(gifSpeedSelect && gifSpeedSelect.value) || 1.0;
-      const durationSpan = Math.max(0.2, Math.min(GIF_MAX_DURATION, gifState.endTime - gifState.startTime));
       const stepSec = speed / fps;
-      const totalFrames = Math.max(2, Math.min(300, Math.ceil(durationSpan / stepSec)));
       const delayCs = Math.max(2, Math.round(100 / fps)); // 1/100초 단위
+
+      // 다중 컷(구간) 전체에서 추출할 프레임 타임스탬프 목록 생성
+      const frameList = [];
+      const activeCuts =
+        gifState.cuts && gifState.cuts.length > 0
+          ? gifState.cuts
+          : [{ start: gifState.startTime, end: gifState.endTime }];
+
+      for (let cIdx = 0; cIdx < activeCuts.length; cIdx++) {
+        const cut = activeCuts[cIdx];
+        const cutSpan = Math.max(0.2, cut.end - cut.start);
+        const cutFrames = Math.max(1, Math.ceil(cutSpan / stepSec));
+        for (let i = 0; i < cutFrames; i++) {
+          if (frameList.length >= 300) break;
+          const t = Math.min(cut.end, cut.start + i * stepSec);
+          frameList.push({ time: t, cutNum: cIdx + 1 });
+        }
+      }
+      if (frameList.length < 2) {
+        frameList.push({ time: activeCuts[0].end, cutNum: 1 });
+      }
+      const totalFrames = frameList.length;
 
       gifState.isEncoding = true;
       gifState.cancelRequested = false;
@@ -3550,10 +4197,12 @@
             throw new Error('USER_CANCELLED');
           }
 
-          const t = Math.min(gifState.endTime, gifState.startTime + f * stepSec);
+          const frameInfo = frameList[f];
+          const t = frameInfo.time;
           const pct = Math.round(((f + 1) / totalFrames) * 100);
           if (gifProgressStatus) {
-            gifProgressStatus.textContent = `GIF 프레임 추출 및 인코딩 중... (${f + 1} / ${totalFrames} 프레임 · ${outW}×${outH}px)`;
+            const cutLabel = activeCuts.length > 1 ? `[컷 ${frameInfo.cutNum}/${activeCuts.length}] ` : '';
+            gifProgressStatus.textContent = `${cutLabel}GIF 프레임 추출 및 인코딩 중... (${f + 1} / ${totalFrames} 프레임 · ${outW}×${outH}px)`;
           }
           if (gifProgressPercent) gifProgressPercent.textContent = `${pct}%`;
           if (gifProgressBar) gifProgressBar.style.width = `${pct}%`;
@@ -3596,7 +4245,7 @@
 
         if (gifResultPreviewImg) gifResultPreviewImg.src = gifState.resultBlobUrl;
         if (gifResultStatText) {
-          gifResultStatText.textContent = `${outW} × ${outH} px · ${totalFrames}프레임 (${fps} FPS) · 용량: ${formatBytes(gifBlob.size)}`;
+          gifResultStatText.textContent = `${outW} × ${outH} px · 총 ${activeCuts.length}컷 (${totalFrames}프레임, ${fps} FPS) · 용량: ${formatBytes(gifBlob.size)}`;
         }
         if (downloadGifResultBtn) {
           const baseName = getBaseName(gifState.file.name);

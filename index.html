@@ -6,7 +6,7 @@
   <title>V-인코더 | 이미지·동영상 올인원 편집/변환 & 유튜브 다운로드</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23e11d48'/%3E%3Cpath d='M15 17 L28 49 L35 49 L45 27 L36 27 L31.5 38 L23.5 17 Z' fill='%23ffffff'/%3E%3Ccircle cx='45' cy='18' r='5' fill='%23ffffff'/%3E%3C/svg%3E" />
   <link rel="alternate icon" href="favicon.svg" />
-  <link rel="stylesheet" href="style.css?v=20261013_4" />
+  <link rel="stylesheet" href="style.css?v=20261013_7" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -822,22 +822,42 @@
             GIF 구간 · 크롭 · 사이즈 설정
           </h2>
 
-          <!-- 1. 타임라인 구간 설정 (시작 ~ 종료 시간, 최대 15초) -->
+          <!-- 1. 선택된 컷 미세 조절 & 컷 목록 -->
           <div class="form-group">
             <div class="label-row">
-              <label>① 변환할 시간 구간 (최대 15초 제한)</label>
-              <span class="value-badge" id="gifDurationBadge">0.0초</span>
+              <label>① 컷편집 구간 목록 (합산 최대 15초)</label>
+              <span class="value-badge" id="gifDurationBadge">총 1컷 · 0.0초</span>
             </div>
-            <div class="pixel-input-row" style="margin-top:6px;">
+
+            <!-- 컷편집 빠른 실행취소/다시실행 -->
+            <div class="transform-btn-grid" style="margin-top:6px; margin-bottom:6px;">
+              <button type="button" id="gifSidebarUndoBtn" class="btn btn-outline btn-xs" disabled title="단축키: Ctrl + Z">
+                ↩️ 실행 취소 (Ctrl+Z)
+              </button>
+              <button type="button" id="gifSidebarRedoBtn" class="btn btn-outline btn-xs" disabled title="단축키: Ctrl + Y">
+                ↪️ 다시 실행 (Ctrl+Y)
+              </button>
+            </div>
+
+            <!-- 이어붙여질 컷 목록 -->
+            <div class="gif-cut-list" id="gifCutList"></div>
+            <button type="button" id="addGifCutBtn" class="btn btn-outline btn-xs btn-full" disabled>
+              ➕ 빈 구간에 새 컷 추가하기
+            </button>
+
+            <div class="label-row" style="margin-top:10px;">
+              <span class="pixel-col-label" id="gifActiveCutLabel" style="color:var(--accent);">🎬 선택된 컷: 컷 1</span>
+            </div>
+            <div class="pixel-input-row" style="margin-top:4px;">
               <div class="pixel-col">
-                <span class="pixel-col-label">시작 시간 (초)</span>
+                <span class="pixel-col-label">선택 컷 시작 (초)</span>
                 <div class="pixel-field">
                   <input type="number" id="gifStartTimeInput" min="0" step="0.1" value="0.0" />
                 </div>
               </div>
               <span class="pixel-x">~</span>
               <div class="pixel-col">
-                <span class="pixel-col-label">종료 시간 (초)</span>
+                <span class="pixel-col-label">선택 컷 종료 (초)</span>
                 <div class="pixel-field">
                   <input type="number" id="gifEndTimeInput" min="0.2" step="0.1" value="5.0" />
                 </div>
@@ -845,15 +865,12 @@
             </div>
             <div class="transform-btn-grid" style="margin-top:8px;">
               <button type="button" id="setGifStartNowBtn" class="btn btn-outline btn-xs" disabled>
-                ⏱️ 현재 위치를 시작점으로
+                ⏱️ 재생선 위치를 시작점으로
               </button>
               <button type="button" id="setGifEndNowBtn" class="btn btn-outline btn-xs" disabled>
-                ⏱️ 현재 위치를 종료점으로
+                ⏱️ 재생선 위치를 종료점으로
               </button>
             </div>
-            <button type="button" id="previewGifLoopBtn" class="btn btn-outline btn-sm btn-full" style="margin-top:6px;" disabled>
-              🔁 선택한 구간만 미리 재생해보기
-            </button>
           </div>
 
           <div class="divider"></div>
@@ -933,7 +950,7 @@
 
           <div class="action-stack">
             <button type="button" id="startGifConvertBtn" class="btn btn-primary btn-full" disabled>
-              🎞️ 선택한 구간 · 크기로 GIF 만들기
+              🎞️ 편집된 컷 · 크기로 GIF 만들기
             </button>
             <button type="button" id="cancelGifConvertBtn" class="btn btn-danger btn-full hidden">
               변환 중지
@@ -955,12 +972,12 @@
                 <line x1="2" y1="12" x2="22" y2="12"></line>
               </svg>
             </div>
-            <h3>GIF로 변환할 동영상 파일을 이곳에 드롭하거나 선택하세요</h3>
-            <p>MP4, MOV, WebM 지원 · 타임라인 바에서 구간을 고르고 원하는 비율(1:1 등)과 크기로 즉시 움짤을 만듭니다</p>
+            <h3>GIF로 컷편집·변환할 동영상 파일을 이곳에 드롭하거나 선택하세요</h3>
+            <p>MP4, MOV, WebM 지원 · 영상 편집기처럼 장면을 보며 분할(✂️)·삭제(🗑️)·되돌리기(Ctrl+Z)로 원하는 장면만 이어붙여 GIF를 만듭니다</p>
             <button type="button" class="btn btn-primary">동영상 파일 선택</button>
           </div>
 
-          <!-- GIF 편집 및 타임라인 작업 카드 -->
+          <!-- GIF 편집 및 NLE 컷편집 타임라인 카드 -->
           <div class="editor-stage-card hidden" id="gifStageCard">
             <div class="editor-info-bar">
               <span id="gifOrigInfo">원본: 0 × 0 px</span>
@@ -990,29 +1007,77 @@
               </div>
             </div>
 
-            <!-- 타임라인 구간 조절 바 (Play/Pause + 시작/종료 듀얼 슬라이더) -->
+            <!-- 🎬 캡컷/프리미어 스타일 비주얼 컷편집 타임라인 패널 -->
             <div class="gif-timeline-panel">
-              <div class="gif-timeline-header">
-                <div style="display:flex; align-items:center; gap:8px;">
-                  <button type="button" id="gifPlayPauseBtn" class="btn btn-outline btn-xs">
-                    ▶️ 재생 / 일시정지
+              <!-- 상단 컨트롤 & 컷편집 툴바 -->
+              <div class="nle-toolbar">
+                <div class="nle-toolbar-group">
+                  <button type="button" id="gifPlayPauseBtn" class="btn btn-outline btn-xs" title="현재 위치부터 재생/일시정지 (Space)">
+                    ▶️ 재생
                   </button>
-                  <span id="gifCurrentTimeText" class="timeline-time-label">현재: 00:00.0 / 전체: 00:00.0</span>
+                  <button type="button" id="previewGifLoopBtn" class="btn btn-primary btn-xs" disabled title="남긴 컷들만 순서대로 이어서 미리 재생">
+                    🔁 편집본 연속 미리보기
+                  </button>
+                  <button type="button" id="gifStepBackBtn" class="btn btn-outline btn-xs" title="0.1초 뒤로">
+                    ◀ -0.1s
+                  </button>
+                  <button type="button" id="gifStepFwdBtn" class="btn btn-outline btn-xs" title="0.1초 앞으로">
+                    +0.1s ▶
+                  </button>
+                  <span id="gifCurrentTimeText" class="timeline-time-label">00:00.0 / 00:00.0</span>
                 </div>
-                <span id="gifRangeSummaryText" class="timeline-range-badge">선택 구간: 0.0초 ~ 5.0초 (5.0초)</span>
+
+                <div class="nle-toolbar-group">
+                  <button type="button" id="gifSplitBtn" class="btn btn-outline btn-xs nle-btn-split" title="빨간 재생선 위치에서 클립을 둘로 자르기 (단축키: S)">
+                    ✂️ 여기서 자르기 (S)
+                  </button>
+                  <button type="button" id="gifDeleteCutBtn" class="btn btn-outline btn-xs nle-btn-delete" title="선택된 컷 구간 삭제 (단축키: Delete / Backspace)">
+                    🗑️ 선택 컷 삭제 (Del)
+                  </button>
+                  <button type="button" id="gifKeepOnlyCutBtn" class="btn btn-outline btn-xs" title="선택된 컷만 남기고 나머지 앞뒤 컷 모두 삭제">
+                    🎯 이 컷만 남기기
+                  </button>
+                  <span class="nle-divider"></span>
+                  <button type="button" id="gifUndoBtn" class="btn btn-outline btn-xs" disabled title="실행 취소 (Ctrl+Z)">
+                    ↩️ 실행 취소
+                  </button>
+                  <button type="button" id="gifRedoBtn" class="btn btn-outline btn-xs" disabled title="다시 실행 (Ctrl+Y)">
+                    ↪️ 다시 실행
+                  </button>
+                  <button type="button" id="gifResetCutsBtn" class="btn btn-outline btn-xs" title="모든 컷편집 초기화">
+                    🔄 초기화
+                  </button>
+                </div>
               </div>
 
-              <div class="dual-timeline-wrap">
-                <div class="dual-timeline-track">
-                  <div class="dual-timeline-highlight" id="gifTimelineHighlight"></div>
-                  <div class="dual-timeline-playhead" id="gifTimelinePlayhead"></div>
-                </div>
-                <input type="range" id="gifRangeStart" min="0" max="10" step="0.1" value="0" class="timeline-range-input range-start" />
-                <input type="range" id="gifRangeEnd" min="0" max="10" step="0.1" value="5" class="timeline-range-input range-end" />
+              <!-- 타임라인 상태 요약 헤더 -->
+              <div class="nle-status-row">
+                <span class="nle-guide-text">
+                  💡 타임라인을 클릭/드래그해 <strong>빨간 재생선</strong>을 이동한 뒤 <strong>[✂️ 여기서 자르기]</strong>로 나누고, 필요 없는 조각을 클릭해 <strong>[🗑️ 선택 컷 삭제]</strong>하거나 클립 양끝 모서리(<strong>[ ]</strong>)를 잡고 드래그하세요!
+                </span>
+                <span id="gifRangeSummaryText" class="timeline-range-badge">남은 컷 합계: 0.0초 / 최대 15초</span>
               </div>
-              <p class="editor-bottom-hint" style="margin-top:8px;">
-                💡 위 타임라인의 <strong>양쪽 바(시작·종료)</strong>를 움직여 GIF로 만들 구간(최대 15초)을 선택하고, 화면 위의 <strong>파란색 틀</strong>로 원하는 영역과 비율을 맞추세요.
-              </p>
+
+              <!-- 비주얼 필름스트립 + 클립 블록 타임라인 -->
+              <div class="nle-timeline-container" id="gifNleTimeline">
+                <!-- 시간 눈금자 (클릭/드래그 시 재생선 이동) -->
+                <div class="nle-time-ruler" id="gifTimeRuler"></div>
+
+                <!-- 필름스트립 썸네일 배경 + 클립 블록 레이어 -->
+                <div class="nle-track-area" id="gifNleTrack">
+                  <canvas id="gifFilmstripCanvas" class="nle-filmstrip-canvas"></canvas>
+                  <div class="nle-clips-layer" id="gifNleClipsLayer"></div>
+                </div>
+
+                <!-- 빨간색 재생선 (Playhead) -->
+                <div class="nle-playhead" id="gifNlePlayhead" style="left: 0%;">
+                  <div class="nle-playhead-head">▼</div>
+                  <div class="nle-playhead-line"></div>
+                </div>
+              </div>
+
+              <!-- 이어붙인 최종 시퀀스 미니 바 -->
+              <div class="nle-stitched-bar" id="gifStitchedSequenceBar"></div>
             </div>
 
             <!-- GIF 변환 진행률 패널 -->
@@ -1357,6 +1422,6 @@
   <!-- 토스트 알림 -->
   <div id="toastContainer" class="toast-container"></div>
 
-  <script src="app.js?v=20261013_5"></script>
+  <script src="app.js?v=20261013_7"></script>
 </body>
 </html>
