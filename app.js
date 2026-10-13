@@ -114,29 +114,106 @@
     });
   }
 
-  // 상단 4개 탭 전환
-  const navTabs = document.querySelectorAll('.nav-tab');
+  // 상단 3대 대분류(이미지 / 동영상 / 유튜브) 및 마우스 오버 하위 메뉴 전환
   const tabPanels = document.querySelectorAll('.tab-panel');
-  let activeTabId = 'img-compress';
+  const navDropdownItems = document.querySelectorAll('.nav-dropdown-item');
+  const navTriggerImage = document.getElementById('navTriggerImage');
+  const navTriggerVideo = document.getElementById('navTriggerVideo');
+  const navTriggerYt = document.getElementById('navTriggerYt');
+  const navImageCurrentLabel = document.getElementById('navImageCurrentLabel');
+  const navVideoCurrentLabel = document.getElementById('navVideoCurrentLabel');
 
-  function switchTab(targetTab) {
-    activeTabId = targetTab;
-    navTabs.forEach((btn) => {
-      const isMatch = btn.getAttribute('data-tab') === targetTab;
-      btn.classList.toggle('active', isMatch);
-      btn.setAttribute('aria-selected', isMatch ? 'true' : 'false');
+  let activeTabId = 'img-compress';
+  let activeEditSubtool = 'crop';
+  let lastImageTarget = 'img-compress';
+  let lastVideoTarget = 'video-compress';
+
+  function syncEditSubtoolUI(subtool) {
+    activeEditSubtool = subtool;
+    const btns = document.querySelectorAll('#editSubtoolSwitcher .subtool-btn');
+    const cropView = document.getElementById('subtool-crop');
+    const bgView = document.getElementById('subtool-bgremove');
+    btns.forEach((b) => b.classList.toggle('active', b.getAttribute('data-subtool') === subtool));
+    if (cropView) cropView.classList.toggle('active', subtool === 'crop');
+    if (bgView) bgView.classList.toggle('active', subtool === 'bgremove');
+  }
+
+  function switchTab(navTarget) {
+    let panelId = navTarget;
+    if (navTarget === 'img-crop') {
+      panelId = 'img-edit';
+      syncEditSubtoolUI('crop');
+    } else if (navTarget === 'img-bgremove') {
+      panelId = 'img-edit';
+      syncEditSubtoolUI('bgremove');
+    } else if (navTarget === 'img-edit') {
+      panelId = 'img-edit';
+      navTarget = activeEditSubtool === 'bgremove' ? 'img-bgremove' : 'img-crop';
+    }
+
+    activeTabId = panelId;
+
+    const isImageGroup = navTarget.startsWith('img-');
+    const isVideoGroup = navTarget.startsWith('video-');
+    const isYt = navTarget === 'yt-download';
+
+    if (isImageGroup) {
+      lastImageTarget = navTarget;
+      const labelMap = {
+        'img-compress': '압축',
+        'img-convert': '변환',
+        'img-crop': '자르기/리사이즈',
+        'img-bgremove': '배경제거'
+      };
+      if (navImageCurrentLabel && labelMap[navTarget]) {
+        navImageCurrentLabel.textContent = labelMap[navTarget];
+      }
+    } else if (isVideoGroup) {
+      lastVideoTarget = navTarget;
+      const labelMap = {
+        'video-compress': '압축',
+        'video-gif': 'GIF 변환',
+        'video-convert': '확장자 변환'
+      };
+      if (navVideoCurrentLabel && labelMap[navTarget]) {
+        navVideoCurrentLabel.textContent = labelMap[navTarget];
+      }
+    }
+
+    if (navTriggerImage) navTriggerImage.classList.toggle('active', isImageGroup);
+    if (navTriggerVideo) navTriggerVideo.classList.toggle('active', isVideoGroup);
+    if (navTriggerYt) navTriggerYt.classList.toggle('active', isYt);
+
+    navDropdownItems.forEach((item) => {
+      item.classList.toggle('active', item.getAttribute('data-nav-target') === navTarget);
     });
+
     tabPanels.forEach((panel) => {
-      panel.classList.toggle('active', panel.id === `tab-${targetTab}`);
+      panel.classList.toggle('active', panel.id === `tab-${panelId}`);
     });
   }
 
-  navTabs.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const targetTab = btn.getAttribute('data-tab');
-      if (targetTab) switchTab(targetTab);
+  navDropdownItems.forEach((item) => {
+    item.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const target = item.getAttribute('data-nav-target');
+      if (target) switchTab(target);
+      // 클릭 직후 드롭다운이 깔끔하게 닫히도록 포커스 해제
+      if (document.activeElement && document.activeElement.blur) {
+        document.activeElement.blur();
+      }
     });
   });
+
+  if (navTriggerImage) {
+    navTriggerImage.addEventListener('click', () => switchTab(lastImageTarget));
+  }
+  if (navTriggerVideo) {
+    navTriggerVideo.addEventListener('click', () => switchTab(lastVideoTarget));
+  }
+  if (navTriggerYt) {
+    navTriggerYt.addEventListener('click', () => switchTab('yt-download'));
+  }
 
   const brandLogo = document.getElementById('brandLogo');
   if (brandLogo) {
@@ -1367,18 +1444,12 @@
   /* ==========================================================================
      6. 탭 3: 이미지 편집 (Image Editor: 자르기/회전/규격맞춤 & 배경 제거)
      ========================================================================== */
-  let activeEditSubtool = 'crop';
   const subtoolBtns = document.querySelectorAll('#editSubtoolSwitcher .subtool-btn');
-  const subtoolCropView = document.getElementById('subtool-crop');
-  const subtoolBgView = document.getElementById('subtool-bgremove');
 
   subtoolBtns.forEach((btn) => {
     btn.addEventListener('click', () => {
-      subtoolBtns.forEach((b) => b.classList.remove('active'));
-      btn.classList.add('active');
-      activeEditSubtool = btn.getAttribute('data-subtool');
-      if (subtoolCropView) subtoolCropView.classList.toggle('active', activeEditSubtool === 'crop');
-      if (subtoolBgView) subtoolBgView.classList.toggle('active', activeEditSubtool === 'bgremove');
+      const sub = btn.getAttribute('data-subtool');
+      switchTab(sub === 'bgremove' ? 'img-bgremove' : 'img-crop');
     });
   });
 
@@ -2540,5 +2611,1495 @@
       loadBgRemoveImage(file);
     }
   });
+
+  /* ==========================================================================
+     [7] 탭 3-2: 동영상 → GIF 움짤 변환 (타임라인 구간 · 비율 크롭 · 사이즈 동시 조절)
+     ========================================================================== */
+  const gifVideoDropzone = document.getElementById('gifVideoDropzone');
+  const gifVideoFileInput = document.getElementById('gifVideoFileInput');
+  const gifStageCard = document.getElementById('gifStageCard');
+
+  const gifOrigInfo = document.getElementById('gifOrigInfo');
+  const gifBoxInfo = document.getElementById('gifBoxInfo');
+  const gifFinalInfo = document.getElementById('gifFinalInfo');
+  const gifSizeFloating = document.getElementById('gifSizeFloating');
+
+  const gifCanvasWrap = document.getElementById('gifCanvasWrap');
+  const gifPreviewCanvas = document.getElementById('gifPreviewCanvas');
+  const gifSourceVideo = document.getElementById('gifSourceVideo');
+  const gifCropBox = document.getElementById('gifCropBox');
+
+  const gifDurationBadge = document.getElementById('gifDurationBadge');
+  const gifStartTimeInput = document.getElementById('gifStartTimeInput');
+  const gifEndTimeInput = document.getElementById('gifEndTimeInput');
+  const setGifStartNowBtn = document.getElementById('setGifStartNowBtn');
+  const setGifEndNowBtn = document.getElementById('setGifEndNowBtn');
+  const previewGifLoopBtn = document.getElementById('previewGifLoopBtn');
+
+  const gifPlayPauseBtn = document.getElementById('gifPlayPauseBtn');
+  const gifCurrentTimeText = document.getElementById('gifCurrentTimeText');
+  const gifRangeSummaryText = document.getElementById('gifRangeSummaryText');
+  const gifTimelineHighlight = document.getElementById('gifTimelineHighlight');
+  const gifTimelinePlayhead = document.getElementById('gifTimelinePlayhead');
+  const gifRangeStart = document.getElementById('gifRangeStart');
+  const gifRangeEnd = document.getElementById('gifRangeEnd');
+
+  const gifKeepAspectInput = document.getElementById('gifKeepAspectInput');
+  const gifTargetW = document.getElementById('gifTargetW');
+  const gifTargetH = document.getElementById('gifTargetH');
+  const gifQuickSizeChips = document.getElementById('gifQuickSizeChips');
+  const gifForceExactSize = document.getElementById('gifForceExactSize');
+  const gifRatioGrid = document.getElementById('gifRatioGrid');
+
+  const gifFpsSelect = document.getElementById('gifFpsSelect');
+  const gifSpeedSelect = document.getElementById('gifSpeedSelect');
+
+  const startGifConvertBtn = document.getElementById('startGifConvertBtn');
+  const cancelGifConvertBtn = document.getElementById('cancelGifConvertBtn');
+  const changeGifVideoBtn = document.getElementById('changeGifVideoBtn');
+
+  const gifProgressPanel = document.getElementById('gifProgressPanel');
+  const gifProgressStatus = document.getElementById('gifProgressStatus');
+  const gifProgressPercent = document.getElementById('gifProgressPercent');
+  const gifProgressBar = document.getElementById('gifProgressBar');
+
+  const gifResultBox = document.getElementById('gifResultBox');
+  const gifResultStatText = document.getElementById('gifResultStatText');
+  const gifResultPreviewImg = document.getElementById('gifResultPreviewImg');
+  const downloadGifResultBtn = document.getElementById('downloadGifResultBtn');
+
+  const GIF_MAX_DURATION = 15.0; // 최대 15초 제한
+
+  let gifState = {
+    file: null,
+    videoUrl: null,
+    resultBlobUrl: null,
+    origW: 0,
+    origH: 0,
+    duration: 0,
+    dispW: 0,
+    dispH: 0,
+    scale: 1,
+    box: { x: 0, y: 0, w: 0, h: 0 },
+    ratio: 'full',
+    userTypedSize: false,
+    quickWidth: 480,
+    startTime: 0,
+    endTime: 5,
+    isLoopPreview: false,
+    isEncoding: false,
+    cancelRequested: false,
+    rafId: null,
+  };
+
+  function formatSecDetail(sec) {
+    if (!Number.isFinite(sec) || sec < 0) return '00:00.0';
+    const m = Math.floor(sec / 60);
+    const s = (sec % 60).toFixed(1);
+    return `${String(m).padStart(2, '0')}:${s.padStart(4, '0')}`;
+  }
+
+  function drawGifVideoFrame() {
+    if (!gifPreviewCanvas || !gifSourceVideo || !gifState.dispW || !gifState.dispH) return;
+    const ctx = gifPreviewCanvas.getContext('2d');
+    ctx.clearRect(0, 0, gifState.dispW, gifState.dispH);
+    try {
+      ctx.drawImage(gifSourceVideo, 0, 0, gifState.dispW, gifState.dispH);
+    } catch (_) {}
+  }
+
+  function updateGifPlayheadUI() {
+    if (!gifSourceVideo || !gifState.duration) return;
+    const cur = gifSourceVideo.currentTime || 0;
+    const dur = gifState.duration || 1;
+    const pct = Math.max(0, Math.min(100, (cur / dur) * 100));
+    if (gifTimelinePlayhead) {
+      gifTimelinePlayhead.style.left = `${pct}%`;
+    }
+    if (gifCurrentTimeText) {
+      gifCurrentTimeText.textContent = `현재: ${formatSecDetail(cur)} / 전체: ${formatSecDetail(dur)}`;
+    }
+  }
+
+  function startGifPreviewLoop() {
+    if (gifState.rafId) cancelAnimationFrame(gifState.rafId);
+    const tick = () => {
+      if (!gifSourceVideo || gifSourceVideo.paused || gifSourceVideo.ended || gifState.isEncoding) {
+        if (gifPlayPauseBtn && !gifState.isEncoding) {
+          gifPlayPauseBtn.textContent = '▶️ 재생 / 일시정지';
+        }
+        gifState.rafId = null;
+        return;
+      }
+      if (gifSourceVideo.currentTime >= gifState.endTime) {
+        if (gifState.isLoopPreview) {
+          gifSourceVideo.currentTime = gifState.startTime;
+        } else {
+          gifSourceVideo.pause();
+          gifSourceVideo.currentTime = gifState.startTime;
+          drawGifVideoFrame();
+          updateGifPlayheadUI();
+          if (gifPlayPauseBtn) gifPlayPauseBtn.textContent = '▶️ 재생 / 일시정지';
+          gifState.rafId = null;
+          return;
+        }
+      }
+      drawGifVideoFrame();
+      updateGifPlayheadUI();
+      gifState.rafId = requestAnimationFrame(tick);
+    };
+    gifState.rafId = requestAnimationFrame(tick);
+  }
+
+  function syncGifTimelineUI(changedSide) {
+    const dur = gifState.duration || 10;
+    let s = gifState.startTime;
+    let e = gifState.endTime;
+
+    s = Math.max(0, Math.min(dur - 0.2, s));
+    e = Math.max(0.2, Math.min(dur, e));
+
+    if (e - s < 0.2) {
+      if (changedSide === 'start') {
+        e = Math.min(dur, s + 0.2);
+        s = Math.max(0, e - 0.2);
+      } else {
+        s = Math.max(0, e - 0.2);
+        e = Math.min(dur, s + 0.2);
+      }
+    }
+
+    if (e - s > GIF_MAX_DURATION) {
+      if (changedSide === 'start') {
+        e = Math.min(dur, s + GIF_MAX_DURATION);
+      } else {
+        s = Math.max(0, e - GIF_MAX_DURATION);
+      }
+      showToast(`GIF 용량 및 속도 최적화를 위해 최대 구간은 ${GIF_MAX_DURATION}초로 제한됩니다.`);
+    }
+
+    gifState.startTime = Number(s.toFixed(1));
+    gifState.endTime = Number(e.toFixed(1));
+    const span = Number((gifState.endTime - gifState.startTime).toFixed(1));
+
+    if (gifStartTimeInput) gifStartTimeInput.value = gifState.startTime.toFixed(1);
+    if (gifEndTimeInput) gifEndTimeInput.value = gifState.endTime.toFixed(1);
+    if (gifRangeStart) gifRangeStart.value = String(gifState.startTime);
+    if (gifRangeEnd) gifRangeEnd.value = String(gifState.endTime);
+
+    if (gifDurationBadge) gifDurationBadge.textContent = `${span.toFixed(1)}초`;
+    if (gifRangeSummaryText) {
+      gifRangeSummaryText.textContent = `선택 구간: ${gifState.startTime.toFixed(1)}초 ~ ${gifState.endTime.toFixed(1)}초 (${span.toFixed(1)}초)`;
+    }
+
+    if (gifTimelineHighlight && dur > 0) {
+      const leftPct = (gifState.startTime / dur) * 100;
+      const widthPct = ((gifState.endTime - gifState.startTime) / dur) * 100;
+      gifTimelineHighlight.style.left = `${leftPct}%`;
+      gifTimelineHighlight.style.width = `${Math.max(1, widthPct)}%`;
+    }
+  }
+
+  function applyGifQuickSizeFromCropBox(baseSize) {
+    if (!gifState.origW || !gifState.box.w || !gifState.box.h) return;
+    const targetBase = baseSize || gifState.quickWidth || 480;
+    const aspect = gifState.box.w / gifState.box.h;
+    let outW, outH;
+    if (aspect >= 1) {
+      outW = targetBase;
+      outH = Math.max(16, Math.round(targetBase / aspect));
+    } else {
+      outH = targetBase;
+      outW = Math.max(16, Math.round(targetBase * aspect));
+    }
+    if (gifTargetW) gifTargetW.value = outW;
+    if (gifTargetH) gifTargetH.value = outH;
+  }
+
+  function updateGifCropBoxDOM(skipInputSync = false) {
+    const b = gifState.box;
+    if (!gifCropBox) return;
+    gifCropBox.style.left = `${b.x}px`;
+    gifCropBox.style.top = `${b.y}px`;
+    gifCropBox.style.width = `${b.w}px`;
+    gifCropBox.style.height = `${b.h}px`;
+
+    const realW = Math.max(1, Math.round(b.w / gifState.scale));
+    const realH = Math.max(1, Math.round(b.h / gifState.scale));
+
+    if (!skipInputSync && !gifState.userTypedSize) {
+      applyGifQuickSizeFromCropBox(gifState.quickWidth);
+    }
+
+    const customW = parseInt(gifTargetW && gifTargetW.value, 10);
+    const customH = parseInt(gifTargetH && gifTargetH.value, 10);
+    const hasCustomW = Number.isFinite(customW) && customW > 0;
+    const hasCustomH = Number.isFinite(customH) && customH > 0;
+
+    let finalW = realW;
+    let finalH = realH;
+    if (gifForceExactSize && gifForceExactSize.checked && (hasCustomW || hasCustomH)) {
+      if (hasCustomW && hasCustomH) {
+        finalW = customW;
+        finalH = customH;
+      } else if (hasCustomW) {
+        finalW = customW;
+        finalH = Math.max(1, Math.round((realH / realW) * customW));
+      } else if (hasCustomH) {
+        finalH = customH;
+        finalW = Math.max(1, Math.round((realW / realH) * customH));
+      }
+    }
+
+    if (gifSizeFloating) {
+      gifSizeFloating.textContent =
+        finalW !== realW || finalH !== realH
+          ? `${realW}×${realH} → ${finalW}×${finalH} px`
+          : `${realW} × ${realH} px`;
+    }
+    if (gifOrigInfo) gifOrigInfo.textContent = `원본: ${gifState.origW} × ${gifState.origH} px`;
+    if (gifBoxInfo) gifBoxInfo.textContent = `크롭 영역: ${realW} × ${realH} px`;
+    if (gifFinalInfo) gifFinalInfo.textContent = `최종 GIF 크기: ${finalW} × ${finalH} px`;
+  }
+
+  function applyGifRatioToCropBox(ratioStr) {
+    if (!gifState.dispW || !gifState.dispH) return;
+    gifState.ratio = ratioStr;
+
+    if (gifRatioGrid) {
+      gifRatioGrid.querySelectorAll('.chip-btn').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.ratio === ratioStr);
+      });
+    }
+
+    if (ratioStr === 'full') {
+      gifState.box = { x: 0, y: 0, w: gifState.dispW, h: gifState.dispH };
+      updateGifCropBoxDOM();
+      return;
+    }
+
+    if (ratioStr === 'free') {
+      updateGifCropBoxDOM();
+      return;
+    }
+
+    const parts = ratioStr.split(':').map(Number);
+    if (parts.length === 2 && parts[0] > 0 && parts[1] > 0) {
+      const targetRatio = parts[0] / parts[1];
+      const maxW = gifState.dispW;
+      const maxH = gifState.dispH;
+      let newW = maxW;
+      let newH = newW / targetRatio;
+      if (newH > maxH) {
+        newH = maxH;
+        newW = newH * targetRatio;
+      }
+      gifState.box = {
+        x: Math.round((maxW - newW) / 2),
+        y: Math.round((maxH - newH) / 2),
+        w: Math.round(newW),
+        h: Math.round(newH),
+      };
+      // 비율 프리셋(1:1 등)을 클릭하면 출력 픽셀 크기도 해당 비율에 맞춰 즉시 업데이트
+      gifState.userTypedSize = false;
+      updateGifCropBoxDOM();
+    }
+  }
+
+  function loadGifSourceVideo(file) {
+    if (!file || (!file.type.startsWith('video/') && !/\.(mp4|mov|webm|m4v|avi|mkv)$/i.test(file.name))) {
+      showToast('변환할 동영상 파일을 선택해주세요.');
+      return;
+    }
+
+    if (gifState.rafId) {
+      cancelAnimationFrame(gifState.rafId);
+      gifState.rafId = null;
+    }
+    if (gifState.videoUrl) {
+      URL.revokeObjectURL(gifState.videoUrl);
+    }
+
+    gifState.file = file;
+    gifState.videoUrl = URL.createObjectURL(file);
+    gifState.isEncoding = false;
+    gifState.cancelRequested = false;
+    gifState.userTypedSize = false;
+
+    gifSourceVideo.src = gifState.videoUrl;
+    gifSourceVideo.muted = true;
+    gifSourceVideo.load();
+
+    gifSourceVideo.onloadedmetadata = () => {
+      const vw = gifSourceVideo.videoWidth || 640;
+      const vh = gifSourceVideo.videoHeight || 360;
+      const dur = Number.isFinite(gifSourceVideo.duration) && gifSourceVideo.duration > 0 ? gifSourceVideo.duration : 10;
+
+      gifState.origW = vw;
+      gifState.origH = vh;
+      gifState.duration = dur;
+
+      const maxW = 660;
+      const maxH = 400;
+      const scale = Math.min(1, maxW / vw, maxH / vh);
+      gifState.scale = scale;
+      gifState.dispW = Math.max(1, Math.round(vw * scale));
+      gifState.dispH = Math.max(1, Math.round(vh * scale));
+
+      gifPreviewCanvas.width = gifState.dispW;
+      gifPreviewCanvas.height = gifState.dispH;
+      gifCanvasWrap.style.width = `${gifState.dispW}px`;
+      gifCanvasWrap.style.height = `${gifState.dispH}px`;
+
+      if (gifRangeStart) {
+        gifRangeStart.min = '0';
+        gifRangeStart.max = dur.toFixed(1);
+      }
+      if (gifRangeEnd) {
+        gifRangeEnd.min = '0.2';
+        gifRangeEnd.max = dur.toFixed(1);
+      }
+      if (gifStartTimeInput) gifStartTimeInput.max = dur.toFixed(1);
+      if (gifEndTimeInput) gifEndTimeInput.max = dur.toFixed(1);
+
+      gifState.startTime = 0;
+      gifState.endTime = Math.min(dur, 5.0);
+      syncGifTimelineUI('end');
+
+      gifState.ratio = 'full';
+      applyGifRatioToCropBox('full');
+
+      gifVideoDropzone.classList.add('hidden');
+      gifStageCard.classList.remove('hidden');
+      gifResultBox.classList.add('hidden');
+      gifProgressPanel.classList.add('hidden');
+
+      startGifConvertBtn.disabled = false;
+      changeGifVideoBtn.disabled = false;
+      setGifStartNowBtn.disabled = false;
+      setGifEndNowBtn.disabled = false;
+      previewGifLoopBtn.disabled = false;
+
+      gifSourceVideo.currentTime = 0;
+    };
+
+    gifSourceVideo.onseeked = () => {
+      if (!gifState.isEncoding) {
+        drawGifVideoFrame();
+        updateGifPlayheadUI();
+      }
+    };
+  }
+
+  if (gifVideoDropzone && gifVideoFileInput) {
+    setupDropzone(gifVideoDropzone, gifVideoFileInput, (files) => {
+      if (files && files[0]) loadGifSourceVideo(files[0]);
+    });
+  }
+
+  if (changeGifVideoBtn) {
+    changeGifVideoBtn.addEventListener('click', () => gifVideoFileInput && gifVideoFileInput.click());
+  }
+
+  // 타임라인 슬라이더 및 숫자 입력 연동
+  if (gifRangeStart) {
+    gifRangeStart.addEventListener('input', () => {
+      gifState.startTime = parseFloat(gifRangeStart.value) || 0;
+      syncGifTimelineUI('start');
+      if (gifSourceVideo && !gifState.isEncoding) {
+        gifSourceVideo.pause();
+        gifSourceVideo.currentTime = gifState.startTime;
+      }
+    });
+  }
+
+  if (gifRangeEnd) {
+    gifRangeEnd.addEventListener('input', () => {
+      gifState.endTime = parseFloat(gifRangeEnd.value) || 0.5;
+      syncGifTimelineUI('end');
+      if (gifSourceVideo && !gifState.isEncoding) {
+        gifSourceVideo.pause();
+        gifSourceVideo.currentTime = gifState.endTime;
+      }
+    });
+  }
+
+  if (gifStartTimeInput) {
+    gifStartTimeInput.addEventListener('change', () => {
+      gifState.startTime = parseFloat(gifStartTimeInput.value) || 0;
+      syncGifTimelineUI('start');
+      if (gifSourceVideo && !gifState.isEncoding) {
+        gifSourceVideo.currentTime = gifState.startTime;
+      }
+    });
+  }
+
+  if (gifEndTimeInput) {
+    gifEndTimeInput.addEventListener('change', () => {
+      gifState.endTime = parseFloat(gifEndTimeInput.value) || 1;
+      syncGifTimelineUI('end');
+      if (gifSourceVideo && !gifState.isEncoding) {
+        gifSourceVideo.currentTime = gifState.endTime;
+      }
+    });
+  }
+
+  if (setGifStartNowBtn) {
+    setGifStartNowBtn.addEventListener('click', () => {
+      if (!gifSourceVideo) return;
+      gifState.startTime = gifSourceVideo.currentTime || 0;
+      syncGifTimelineUI('start');
+    });
+  }
+
+  if (setGifEndNowBtn) {
+    setGifEndNowBtn.addEventListener('click', () => {
+      if (!gifSourceVideo) return;
+      gifState.endTime = Math.max(0.2, gifSourceVideo.currentTime || 0.5);
+      syncGifTimelineUI('end');
+    });
+  }
+
+  if (gifPlayPauseBtn) {
+    gifPlayPauseBtn.addEventListener('click', () => {
+      if (!gifSourceVideo || gifState.isEncoding) return;
+      gifState.isLoopPreview = false;
+      if (gifSourceVideo.paused) {
+        if (gifSourceVideo.currentTime < gifState.startTime || gifSourceVideo.currentTime >= gifState.endTime) {
+          gifSourceVideo.currentTime = gifState.startTime;
+        }
+        gifSourceVideo.play().then(() => {
+          gifPlayPauseBtn.textContent = '⏸️ 일시정지';
+          startGifPreviewLoop();
+        }).catch(() => {});
+      } else {
+        gifSourceVideo.pause();
+        gifPlayPauseBtn.textContent = '▶️ 재생 / 일시정지';
+      }
+    });
+  }
+
+  if (previewGifLoopBtn) {
+    previewGifLoopBtn.addEventListener('click', () => {
+      if (!gifSourceVideo || gifState.isEncoding) return;
+      gifState.isLoopPreview = true;
+      gifSourceVideo.currentTime = gifState.startTime;
+      gifSourceVideo.play().then(() => {
+        if (gifPlayPauseBtn) gifPlayPauseBtn.textContent = '⏸️ 구간 반복 중 (일시정지)';
+        startGifPreviewLoop();
+      }).catch(() => {});
+    });
+  }
+
+  // 비율 프리셋 클릭
+  if (gifRatioGrid) {
+    gifRatioGrid.addEventListener('click', (e) => {
+      const btn = e.target.closest('.chip-btn');
+      if (!btn) return;
+      applyGifRatioToCropBox(btn.dataset.ratio);
+    });
+  }
+
+  // 빠른 사이즈 칩 클릭 (320px, 480px, 640px)
+  if (gifQuickSizeChips) {
+    gifQuickSizeChips.addEventListener('click', (e) => {
+      const btn = e.target.closest('.chip-btn');
+      if (!btn) return;
+      gifQuickSizeChips.querySelectorAll('.chip-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      gifState.quickWidth = parseInt(btn.dataset.gifw, 10) || 480;
+      gifState.userTypedSize = false;
+      if (gifForceExactSize) gifForceExactSize.checked = true;
+      updateGifCropBoxDOM();
+    });
+  }
+
+  // 가로/세로 픽셀 직접 입력 시 연동
+  function syncGifCropBoxToTypedSize() {
+    if (!gifState.dispW || !gifState.dispH) return;
+    const tw = parseInt(gifTargetW.value, 10);
+    const th = parseInt(gifTargetH.value, 10);
+    gifState.userTypedSize = Boolean((Number.isFinite(tw) && tw > 0) || (Number.isFinite(th) && th > 0));
+    if (gifState.userTypedSize && gifForceExactSize) {
+      gifForceExactSize.checked = true;
+    }
+
+    if (Number.isFinite(tw) && tw > 0 && Number.isFinite(th) && th > 0 && !gifKeepAspectInput.checked) {
+      const targetRatio = tw / th;
+      const maxW = gifState.dispW;
+      const maxH = gifState.dispH;
+      let newW = maxW;
+      let newH = newW / targetRatio;
+      if (newH > maxH) {
+        newH = maxH;
+        newW = newH * targetRatio;
+      }
+      gifState.box = {
+        x: Math.round((maxW - newW) / 2),
+        y: Math.round((maxH - newH) / 2),
+        w: Math.round(newW),
+        h: Math.round(newH),
+      };
+    }
+    updateGifCropBoxDOM(true);
+  }
+
+  if (gifTargetW) {
+    gifTargetW.addEventListener('input', () => {
+      const w = parseInt(gifTargetW.value, 10);
+      if (gifKeepAspectInput && gifKeepAspectInput.checked && gifState.box.w > 0 && Number.isFinite(w) && w > 0) {
+        gifTargetH.value = Math.max(16, Math.round((w * gifState.box.h) / gifState.box.w));
+      }
+      syncGifCropBoxToTypedSize();
+    });
+  }
+
+  if (gifTargetH) {
+    gifTargetH.addEventListener('input', () => {
+      const h = parseInt(gifTargetH.value, 10);
+      if (gifKeepAspectInput && gifKeepAspectInput.checked && gifState.box.h > 0 && Number.isFinite(h) && h > 0) {
+        gifTargetW.value = Math.max(16, Math.round((h * gifState.box.w) / gifState.box.h));
+      }
+      syncGifCropBoxToTypedSize();
+    });
+  }
+
+  if (gifForceExactSize) {
+    gifForceExactSize.addEventListener('change', () => updateGifCropBoxDOM(true));
+  }
+
+  // GIF 크롭 박스 마우스 드래그 & 리사이즈 핸들러
+  let gifDragInfo = null;
+  if (gifCropBox) {
+    gifCropBox.addEventListener('pointerdown', (e) => {
+      if (!gifState.dispW || gifState.isEncoding) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const handleEl = e.target.closest('.crop-handle');
+      const mode = handleEl ? handleEl.dataset.handle : 'move';
+      gifCropBox.setPointerCapture(e.pointerId);
+      gifDragInfo = {
+        pointerId: e.pointerId,
+        mode,
+        startX: e.clientX,
+        startY: e.clientY,
+        startBox: { ...gifState.box },
+      };
+    });
+
+    gifCropBox.addEventListener('pointermove', (e) => {
+      if (!gifDragInfo || e.pointerId !== gifDragInfo.pointerId) return;
+      const dx = e.clientX - gifDragInfo.startX;
+      const dy = e.clientY - gifDragInfo.startY;
+      const sb = gifDragInfo.startBox;
+      const maxW = gifState.dispW;
+      const maxH = gifState.dispH;
+      const minSize = 24;
+
+      if (gifDragInfo.mode === 'move') {
+        const nx = Math.max(0, Math.min(maxW - sb.w, sb.x + dx));
+        const ny = Math.max(0, Math.min(maxH - sb.h, sb.y + dy));
+        gifState.box.x = Math.round(nx);
+        gifState.box.y = Math.round(ny);
+        updateGifCropBoxDOM(true);
+        return;
+      }
+
+      if (gifState.ratio === 'full') {
+        gifState.ratio = 'free';
+        if (gifRatioGrid) {
+          gifRatioGrid.querySelectorAll('.chip-btn').forEach((btn) => {
+            btn.classList.toggle('active', btn.dataset.ratio === 'free');
+          });
+        }
+      }
+
+      let { x, y, w, h } = sb;
+      const m = gifDragInfo.mode;
+
+      if (m.includes('e')) w = Math.max(minSize, Math.min(maxW - x, sb.w + dx));
+      if (m.includes('s')) h = Math.max(minSize, Math.min(maxH - y, sb.h + dy));
+      if (m.includes('w')) {
+        const maxLeftDx = sb.w - minSize;
+        const clampedDx = Math.max(-sb.x, Math.min(maxLeftDx, dx));
+        x = sb.x + clampedDx;
+        w = sb.w - clampedDx;
+      }
+      if (m.includes('n')) {
+        const maxTopDy = sb.h - minSize;
+        const clampedDy = Math.max(-sb.y, Math.min(maxTopDy, dy));
+        y = sb.y + clampedDy;
+        h = sb.h - clampedDy;
+      }
+
+      if (gifState.ratio !== 'free' && gifState.ratio !== 'full') {
+        const parts = gifState.ratio.split(':').map(Number);
+        if (parts.length === 2 && parts[0] > 0 && parts[1] > 0) {
+          const r = parts[0] / parts[1];
+          if (m === 'n' || m === 's') {
+            w = h * r;
+          } else {
+            h = w / r;
+          }
+          if (x + w > maxW) {
+            w = maxW - x;
+            h = w / r;
+          }
+          if (y + h > maxH) {
+            h = maxH - y;
+            w = h * r;
+          }
+        }
+      }
+
+      gifState.box = {
+        x: Math.round(x),
+        y: Math.round(y),
+        w: Math.max(minSize, Math.round(w)),
+        h: Math.max(minSize, Math.round(h)),
+      };
+      updateGifCropBoxDOM();
+    });
+
+    const endGifDrag = (e) => {
+      if (gifDragInfo && e.pointerId === gifDragInfo.pointerId) {
+        gifDragInfo = null;
+      }
+    };
+    gifCropBox.addEventListener('pointerup', endGifDrag);
+    gifCropBox.addEventListener('pointercancel', endGifDrag);
+  }
+
+  /* --------------------------------------------------------------------------
+     순수 JS GIF89a 애니메이션 인코더 (256컬러 팔레트 + Bayer 디더링 + 고속 LZW)
+     -------------------------------------------------------------------------- */
+  function createGifPalette256() {
+    const pal = new Uint8Array(256 * 3);
+    let idx = 0;
+    // 0..215: 6x6x6 표준 웹 세이프 큐브
+    for (let r = 0; r < 6; r++) {
+      for (let g = 0; g < 6; g++) {
+        for (let b = 0; b < 6; b++) {
+          pal[idx * 3] = r * 51;
+          pal[idx * 3 + 1] = g * 51;
+          pal[idx * 3 + 2] = b * 51;
+          idx++;
+        }
+      }
+    }
+    // 216..255: 40단계 정밀 그레이스케일 보강
+    for (let i = 0; i < 40; i++) {
+      const v = Math.round(((i + 0.5) / 40) * 255);
+      pal[idx * 3] = v;
+      pal[idx * 3 + 1] = v;
+      pal[idx * 3 + 2] = v;
+      idx++;
+    }
+    return pal;
+  }
+
+  const GIF_GLOBAL_PALETTE = createGifPalette256();
+  const BAYER_4X4 = [
+    [-7, 1, -5, 3],
+    [5, -3, 7, -1],
+    [-4, 4, -6, 2],
+    [8, 0, 6, -2],
+  ];
+
+  function quantizeRgbaToGifIndices(rgba, width, height, outIndices) {
+    let p = 0;
+    for (let y = 0; y < height; y++) {
+      const bayerRow = BAYER_4X4[y & 3];
+      for (let x = 0; x < width; x++) {
+        const i4 = p << 2;
+        const dither = bayerRow[x & 3];
+        const r = Math.max(0, Math.min(255, rgba[i4] + dither));
+        const g = Math.max(0, Math.min(255, rgba[i4 + 1] + dither));
+        const b = Math.max(0, Math.min(255, rgba[i4 + 2] + dither));
+
+        // 그레이스케일에 매우 가까운 픽셀은 40단계 정밀 그레이 팔레트와 비교
+        const maxDiff = Math.max(Math.abs(r - g), Math.abs(g - b), Math.abs(r - b));
+        const rq = Math.round(r / 51);
+        const gq = Math.round(g / 51);
+        const bq = Math.round(b / 51);
+        const cubeIdx = rq * 36 + gq * 6 + bq;
+
+        if (maxDiff <= 10) {
+          const cr = rq * 51;
+          const cg = gq * 51;
+          const cb = bq * 51;
+          const cubeErr = (r - cr) * (r - cr) + (g - cg) * (g - cg) + (b - cb) * (b - cb);
+
+          const lum = (r + g + b) / 3;
+          const gStep = Math.max(0, Math.min(39, Math.floor((lum / 256) * 40)));
+          const gv = GIF_GLOBAL_PALETTE[(216 + gStep) * 3];
+          const grayErr = (r - gv) * (r - gv) + (g - gv) * (g - gv) + (b - gv) * (b - gv);
+
+          outIndices[p] = grayErr < cubeErr ? 216 + gStep : cubeIdx;
+        } else {
+          outIndices[p] = cubeIdx;
+        }
+        p++;
+      }
+    }
+  }
+
+  function lzwEncodeGifFrame(indices, trieBuffer) {
+    const outBytes = [];
+    const minCodeSize = 8;
+    outBytes.push(minCodeSize);
+
+    const clearCode = 256;
+    const eoiCode = 257;
+
+    let codeSize = 9;
+    let maxCode = 512;
+    let nextCode = 258;
+
+    trieBuffer.fill(-1);
+
+    let curBits = 0;
+    let curVal = 0;
+    const subBlock = new Uint8Array(255);
+    let subLen = 0;
+
+    const flushSubBlock = () => {
+      if (subLen > 0) {
+        outBytes.push(subLen);
+        for (let i = 0; i < subLen; i++) {
+          outBytes.push(subBlock[i]);
+        }
+        subLen = 0;
+      }
+    };
+
+    const writeCode = (code) => {
+      curVal |= code << curBits;
+      curBits += codeSize;
+      while (curBits >= 8) {
+        subBlock[subLen++] = curVal & 0xff;
+        if (subLen === 255) flushSubBlock();
+        curVal >>= 8;
+        curBits -= 8;
+      }
+    };
+
+    writeCode(clearCode);
+
+    if (indices.length > 0) {
+      let prefix = indices[0];
+      for (let i = 1; i < indices.length; i++) {
+        const k = indices[i];
+        const key = (prefix << 8) | k;
+        const next = trieBuffer[key];
+        if (next !== -1) {
+          prefix = next;
+        } else {
+          writeCode(prefix);
+          trieBuffer[key] = nextCode;
+          if (nextCode === 4095) {
+            writeCode(clearCode);
+            codeSize = 9;
+            maxCode = 512;
+            nextCode = 258;
+            trieBuffer.fill(-1);
+          } else {
+            if (nextCode === maxCode) {
+              codeSize++;
+              maxCode = 1 << codeSize;
+            }
+            nextCode++;
+          }
+          prefix = k;
+        }
+      }
+      writeCode(prefix);
+    }
+
+    writeCode(eoiCode);
+    if (curBits > 0) {
+      subBlock[subLen++] = curVal & 0xff;
+      if (subLen === 255) flushSubBlock();
+    }
+    flushSubBlock();
+    outBytes.push(0x00); // Block terminator
+    return new Uint8Array(outBytes);
+  }
+
+  function seekVideoToTime(videoEl, timeSec) {
+    return new Promise((resolve) => {
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        videoEl.removeEventListener('seeked', finish);
+        resolve();
+      };
+      videoEl.addEventListener('seeked', finish);
+      const timer = setTimeout(finish, 1200);
+      try {
+        videoEl.currentTime = timeSec;
+      } catch (_) {
+        clearTimeout(timer);
+        finish();
+      }
+    });
+  }
+
+  if (cancelGifConvertBtn) {
+    cancelGifConvertBtn.addEventListener('click', () => {
+      gifState.cancelRequested = true;
+    });
+  }
+
+  if (startGifConvertBtn) {
+    startGifConvertBtn.addEventListener('click', async () => {
+      if (!gifState.file || !gifSourceVideo || gifState.isEncoding) return;
+
+      gifSourceVideo.pause();
+      if (gifState.rafId) {
+        cancelAnimationFrame(gifState.rafId);
+        gifState.rafId = null;
+      }
+
+      const b = gifState.box;
+      const sx = Math.max(0, Math.round(b.x / gifState.scale));
+      const sy = Math.max(0, Math.round(b.y / gifState.scale));
+      const sw = Math.max(1, Math.min(gifState.origW - sx, Math.round(b.w / gifState.scale)));
+      const sh = Math.max(1, Math.min(gifState.origH - sy, Math.round(b.h / gifState.scale)));
+
+      let outW = sw;
+      let outH = sh;
+      const customW = parseInt(gifTargetW && gifTargetW.value, 10);
+      const customH = parseInt(gifTargetH && gifTargetH.value, 10);
+      const hasCustomW = Number.isFinite(customW) && customW > 0;
+      const hasCustomH = Number.isFinite(customH) && customH > 0;
+
+      if (gifForceExactSize && gifForceExactSize.checked && (hasCustomW || hasCustomH)) {
+        if (hasCustomW && hasCustomH) {
+          outW = customW;
+          outH = customH;
+        } else if (hasCustomW) {
+          outW = customW;
+          outH = Math.max(1, Math.round((sh / sw) * customW));
+        } else if (hasCustomH) {
+          outH = customH;
+          outW = Math.max(1, Math.round((sw / sh) * customH));
+        }
+      }
+
+      outW = Math.max(16, Math.min(1920, outW));
+      outH = Math.max(16, Math.min(1920, outH));
+
+      const fps = parseInt(gifFpsSelect && gifFpsSelect.value, 10) || 12;
+      const speed = parseFloat(gifSpeedSelect && gifSpeedSelect.value) || 1.0;
+      const durationSpan = Math.max(0.2, Math.min(GIF_MAX_DURATION, gifState.endTime - gifState.startTime));
+      const stepSec = speed / fps;
+      const totalFrames = Math.max(2, Math.min(300, Math.ceil(durationSpan / stepSec)));
+      const delayCs = Math.max(2, Math.round(100 / fps)); // 1/100초 단위
+
+      gifState.isEncoding = true;
+      gifState.cancelRequested = false;
+      startGifConvertBtn.disabled = true;
+      cancelGifConvertBtn.classList.remove('hidden');
+      gifProgressPanel.classList.remove('hidden');
+      gifResultBox.classList.add('hidden');
+
+      const workCanvas = document.createElement('canvas');
+      workCanvas.width = outW;
+      workCanvas.height = outH;
+      const workCtx = workCanvas.getContext('2d', { willReadFrequently: true });
+      workCtx.imageSmoothingEnabled = true;
+      workCtx.imageSmoothingQuality = 'high';
+
+      const chunks = [];
+      // 1) GIF89a Header + Logical Screen Descriptor (13 bytes)
+      const header = new Uint8Array([
+        0x47, 0x49, 0x46, 0x38, 0x39, 0x61, // "GIF89a"
+        outW & 0xff, (outW >> 8) & 0xff,
+        outH & 0xff, (outH >> 8) & 0xff,
+        0xf7, // Global Color Table (256 colors)
+        0x00,
+        0x00,
+      ]);
+      chunks.push(header);
+      // 2) Global Color Table (768 bytes)
+      chunks.push(GIF_GLOBAL_PALETTE);
+      // 3) Netscape 2.0 Infinite Loop Extension (19 bytes)
+      chunks.push(
+        new Uint8Array([
+          0x21, 0xff, 0x0b,
+          0x4e, 0x45, 0x54, 0x53, 0x43, 0x41, 0x50, 0x45, 0x32, 0x2e, 0x30,
+          0x03, 0x01, 0x00, 0x00, 0x00,
+        ])
+      );
+
+      const indicesBuf = new Uint8Array(outW * outH);
+      const trieBuffer = new Int32Array(4096 * 256);
+
+      try {
+        for (let f = 0; f < totalFrames; f++) {
+          if (gifState.cancelRequested) {
+            throw new Error('USER_CANCELLED');
+          }
+
+          const t = Math.min(gifState.endTime, gifState.startTime + f * stepSec);
+          const pct = Math.round(((f + 1) / totalFrames) * 100);
+          if (gifProgressStatus) {
+            gifProgressStatus.textContent = `GIF 프레임 추출 및 인코딩 중... (${f + 1} / ${totalFrames} 프레임 · ${outW}×${outH}px)`;
+          }
+          if (gifProgressPercent) gifProgressPercent.textContent = `${pct}%`;
+          if (gifProgressBar) gifProgressBar.style.width = `${pct}%`;
+
+          await seekVideoToTime(gifSourceVideo, t);
+          drawGifVideoFrame();
+          updateGifPlayheadUI();
+
+          workCtx.clearRect(0, 0, outW, outH);
+          workCtx.drawImage(gifSourceVideo, sx, sy, sw, sh, 0, 0, outW, outH);
+          const imgData = workCtx.getImageData(0, 0, outW, outH);
+
+          quantizeRgbaToGifIndices(imgData.data, outW, outH, indicesBuf);
+          const compressedBlock = lzwEncodeGifFrame(indicesBuf, trieBuffer);
+
+          // Graphic Control Extension (8 bytes) + Image Descriptor (10 bytes)
+          const frameHeader = new Uint8Array([
+            0x21, 0xf9, 0x04, 0x04,
+            delayCs & 0xff, (delayCs >> 8) & 0xff,
+            0x00, 0x00,
+            0x2c,
+            0x00, 0x00, 0x00, 0x00,
+            outW & 0xff, (outW >> 8) & 0xff,
+            outH & 0xff, (outH >> 8) & 0xff,
+            0x00,
+          ]);
+          chunks.push(frameHeader);
+          chunks.push(compressedBlock);
+
+          // UI 스레드 양보
+          await new Promise((r) => setTimeout(r, 0));
+        }
+
+        // GIF Trailer (0x3B)
+        chunks.push(new Uint8Array([0x3b]));
+
+        const gifBlob = new Blob(chunks, { type: 'image/gif' });
+        if (gifState.resultBlobUrl) URL.revokeObjectURL(gifState.resultBlobUrl);
+        gifState.resultBlobUrl = URL.createObjectURL(gifBlob);
+
+        if (gifResultPreviewImg) gifResultPreviewImg.src = gifState.resultBlobUrl;
+        if (gifResultStatText) {
+          gifResultStatText.textContent = `${outW} × ${outH} px · ${totalFrames}프레임 (${fps} FPS) · 용량: ${formatBytes(gifBlob.size)}`;
+        }
+        if (downloadGifResultBtn) {
+          const baseName = getBaseName(gifState.file.name);
+          downloadGifResultBtn.href = gifState.resultBlobUrl;
+          downloadGifResultBtn.download = `${baseName}_${outW}x${outH}.gif`;
+        }
+
+        gifResultBox.classList.remove('hidden');
+        showToast(`GIF 변환 완료! (${outW}×${outH}px, ${formatBytes(gifBlob.size)})`);
+      } catch (err) {
+        if (err && err.message === 'USER_CANCELLED') {
+          showToast('GIF 변환이 취소되었습니다.');
+        } else {
+          console.error(err);
+          showToast('GIF 변환 중 오류가 발생했습니다.');
+        }
+      } finally {
+        gifState.isEncoding = false;
+        startGifConvertBtn.disabled = false;
+        cancelGifConvertBtn.classList.add('hidden');
+        gifProgressPanel.classList.add('hidden');
+      }
+    });
+  }
+
+  /* ==========================================================================
+     [8] 탭 3-3: 동영상 확장자 변환 · 오디오 추출 (MP4 ↔ MOV ↔ WebM · WAV)
+     ========================================================================== */
+  const videoConvertDropzone = document.getElementById('videoConvertDropzone');
+  const videoConvertFileInput = document.getElementById('videoConvertFileInput');
+  const videoConvertWorkCard = document.getElementById('videoConvertWorkCard');
+
+  const videoConvertFormatGrid = document.getElementById('videoConvertFormatGrid');
+  const videoConvertMethodGroup = document.getElementById('videoConvertMethodGroup');
+  const videoConvertMethodSelect = document.getElementById('videoConvertMethodSelect');
+  const videoConvertEncodeOpts = document.getElementById('videoConvertEncodeOpts');
+  const vconvResolution = document.getElementById('vconvResolution');
+  const vconvBitrate = document.getElementById('vconvBitrate');
+
+  const startVideoConvertBtn = document.getElementById('startVideoConvertBtn');
+  const cancelVideoConvertBtn = document.getElementById('cancelVideoConvertBtn');
+  const changeVideoConvertBtn = document.getElementById('changeVideoConvertBtn');
+
+  const vconvFileName = document.getElementById('vconvFileName');
+  const vconvMetaInfo = document.getElementById('vconvMetaInfo');
+  const vconvTargetBadge = document.getElementById('vconvTargetBadge');
+
+  const vconvProgressPanel = document.getElementById('vconvProgressPanel');
+  const vconvProgressStatus = document.getElementById('vconvProgressStatus');
+  const vconvProgressPercent = document.getElementById('vconvProgressPercent');
+  const vconvProgressBar = document.getElementById('vconvProgressBar');
+
+  const vconvOrigPlayer = document.getElementById('vconvOrigPlayer');
+  const vconvResultBox = document.getElementById('vconvResultBox');
+  const vconvResultTag = document.getElementById('vconvResultTag');
+  const vconvResultVideoPlayer = document.getElementById('vconvResultVideoPlayer');
+  const vconvResultAudioPlayer = document.getElementById('vconvResultAudioPlayer');
+  const vconvResultStatText = document.getElementById('vconvResultStatText');
+  const downloadVconvResultBtn = document.getElementById('downloadVconvResultBtn');
+
+  let vconvState = {
+    file: null,
+    origUrl: null,
+    resultUrl: null,
+    targetFmt: 'mp4',
+    origW: 0,
+    origH: 0,
+    duration: 0,
+    isConverting: false,
+    abortFn: null,
+  };
+
+  function updateVconvOptionVisibility() {
+    const fmt = vconvState.targetFmt;
+    if (vconvTargetBadge) {
+      vconvTargetBadge.textContent = `목표 포맷: ${fmt.toUpperCase()}`;
+    }
+    if (fmt === 'wav') {
+      if (videoConvertMethodGroup) videoConvertMethodGroup.classList.add('hidden');
+      if (videoConvertEncodeOpts) videoConvertEncodeOpts.classList.add('hidden');
+    } else {
+      if (videoConvertMethodGroup) videoConvertMethodGroup.classList.remove('hidden');
+      const method = videoConvertMethodSelect ? videoConvertMethodSelect.value : 'auto';
+      if (videoConvertEncodeOpts) {
+        videoConvertEncodeOpts.classList.toggle('hidden', method === 'remux');
+      }
+    }
+  }
+
+  if (videoConvertFormatGrid) {
+    videoConvertFormatGrid.addEventListener('click', (e) => {
+      const card = e.target.closest('.format-card');
+      if (!card) return;
+      videoConvertFormatGrid.querySelectorAll('.format-card').forEach((c) => c.classList.remove('active'));
+      card.classList.add('active');
+      vconvState.targetFmt = card.dataset.vfmt || 'mp4';
+      updateVconvOptionVisibility();
+    });
+  }
+
+  if (videoConvertMethodSelect) {
+    videoConvertMethodSelect.addEventListener('change', updateVconvOptionVisibility);
+  }
+
+  function loadVideoConvertFile(file) {
+    if (!file || (!file.type.startsWith('video/') && !/\.(mp4|mov|webm|m4v|avi|mkv)$/i.test(file.name))) {
+      showToast('변환할 동영상 파일을 선택해주세요.');
+      return;
+    }
+
+    if (vconvState.origUrl) URL.revokeObjectURL(vconvState.origUrl);
+    vconvState.file = file;
+    vconvState.origUrl = URL.createObjectURL(file);
+
+    // 입력 확장자가 .mov이면 기본 목표를 MP4로, .mp4이면 MOV로 스마트 추천
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    if (ext === 'mov' && vconvState.targetFmt === 'mov') {
+      vconvState.targetFmt = 'mp4';
+    } else if (ext === 'mp4' && vconvState.targetFmt === 'mp4') {
+      vconvState.targetFmt = 'mov';
+    }
+    if (videoConvertFormatGrid) {
+      videoConvertFormatGrid.querySelectorAll('.format-card').forEach((c) => {
+        c.classList.toggle('active', c.dataset.vfmt === vconvState.targetFmt);
+      });
+    }
+    updateVconvOptionVisibility();
+
+    if (vconvFileName) vconvFileName.textContent = file.name;
+    if (vconvMetaInfo) vconvMetaInfo.textContent = `원본 용량: ${formatBytes(file.size)} · 분석 중...`;
+
+    vconvOrigPlayer.src = vconvState.origUrl;
+    vconvOrigPlayer.onloadedmetadata = () => {
+      vconvState.origW = vconvOrigPlayer.videoWidth || 1280;
+      vconvState.origH = vconvOrigPlayer.videoHeight || 720;
+      vconvState.duration = vconvOrigPlayer.duration || 0;
+      if (vconvMetaInfo) {
+        vconvMetaInfo.textContent = `원본 용량: ${formatBytes(file.size)} · 해상도: ${vconvState.origW}×${vconvState.origH} · 길이: ${formatDuration(vconvState.duration)}`;
+      }
+    };
+
+    videoConvertDropzone.classList.add('hidden');
+    videoConvertWorkCard.classList.remove('hidden');
+    vconvResultBox.classList.add('hidden');
+    vconvProgressPanel.classList.add('hidden');
+    startVideoConvertBtn.disabled = false;
+    changeVideoConvertBtn.disabled = false;
+  }
+
+  if (videoConvertDropzone && videoConvertFileInput) {
+    setupDropzone(videoConvertDropzone, videoConvertFileInput, (files) => {
+      if (files && files[0]) loadVideoConvertFile(files[0]);
+    });
+  }
+
+  if (changeVideoConvertBtn) {
+    changeVideoConvertBtn.addEventListener('click', () => videoConvertFileInput && videoConvertFileInput.click());
+  }
+
+  // ISOBMFF (MP4 <-> MOV) 컨테이너 ftyp 헤더 In-Place 무손실 리먹싱 (stco/co64 오프셋 100% 보존)
+  async function tryLosslessIsoBmffRemux(file, targetFmt) {
+    if (targetFmt !== 'mp4' && targetFmt !== 'mov') return null;
+    const buf = await file.arrayBuffer();
+    if (buf.byteLength < 16) return null;
+
+    const view = new DataView(buf);
+    const boxSize = view.getUint32(0, false);
+    const boxType = String.fromCharCode(
+      view.getUint8(4),
+      view.getUint8(5),
+      view.getUint8(6),
+      view.getUint8(7)
+    );
+
+    if (boxType !== 'ftyp' || boxSize < 16 || boxSize > 512 || boxSize > buf.byteLength) {
+      return null;
+    }
+
+    const outBytes = new Uint8Array(buf.slice(0));
+    const writeFourCC = (offset, str) => {
+      for (let i = 0; i < 4; i++) {
+        outBytes[offset + i] = str.charCodeAt(i);
+      }
+    };
+
+    if (targetFmt === 'mov') {
+      // Apple QuickTime 컨테이너 브랜드 ('qt  ')
+      writeFourCC(8, 'qt  ');
+      outBytes[12] = 0x00;
+      outBytes[13] = 0x00;
+      outBytes[14] = 0x02;
+      outBytes[15] = 0x00;
+      for (let pos = 16; pos + 4 <= boxSize; pos += 4) {
+        writeFourCC(pos, 'qt  ');
+      }
+      return new Blob([outBytes], { type: 'video/quicktime' });
+    } else {
+      // 표준 MP4 컨테이너 브랜드 ('mp42', 'isom', 'iso2', 'avc1')
+      writeFourCC(8, 'mp42');
+      outBytes[12] = 0x00;
+      outBytes[13] = 0x00;
+      outBytes[14] = 0x00;
+      outBytes[15] = 0x00;
+      const mp4Brands = ['mp42', 'isom', 'iso2', 'avc1'];
+      let bIdx = 0;
+      for (let pos = 16; pos + 4 <= boxSize; pos += 4) {
+        writeFourCC(pos, mp4Brands[bIdx % mp4Brands.length]);
+        bIdx++;
+      }
+      return new Blob([outBytes], { type: 'video/mp4' });
+    }
+  }
+
+  // 동영상 -> WAV 16-bit PCM 무손실 오디오 추출기
+  async function extractWavFromVideoFile(file) {
+    const arrayBuffer = await file.arrayBuffer();
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    const audioCtx = new AudioCtx();
+    try {
+      const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+      const numChannels = Math.min(2, audioBuffer.numberOfChannels || 1);
+      const sampleRate = audioBuffer.sampleRate;
+      const numSamples = audioBuffer.length;
+      const bytesPerSample = 2;
+      const blockAlign = numChannels * bytesPerSample;
+      const dataByteLength = numSamples * blockAlign;
+      const wavBuffer = new ArrayBuffer(44 + dataByteLength);
+      const view = new DataView(wavBuffer);
+
+      const writeStr = (offset, str) => {
+        for (let i = 0; i < str.length; i++) {
+          view.setUint8(offset + i, str.charCodeAt(i));
+        }
+      };
+
+      writeStr(0, 'RIFF');
+      view.setUint32(4, 36 + dataByteLength, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true); // PCM chunk size
+      view.setUint16(20, 1, true); // PCM format = 1
+      view.setUint16(22, numChannels, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * blockAlign, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, 16, true); // 16-bit
+      writeStr(36, 'data');
+      view.setUint32(40, dataByteLength, true);
+
+      const channels = [];
+      for (let c = 0; c < numChannels; c++) {
+        channels.push(audioBuffer.getChannelData(c));
+      }
+
+      let offset = 44;
+      for (let i = 0; i < numSamples; i++) {
+        for (let c = 0; c < numChannels; c++) {
+          const s = Math.max(-1, Math.min(1, channels[c][i]));
+          view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+          offset += 2;
+        }
+      }
+
+      return new Blob([wavBuffer], { type: 'audio/wav' });
+    } finally {
+      try {
+        await audioCtx.close();
+      } catch (_) {}
+    }
+  }
+
+  // 호환성 재인코딩 변환 (MediaRecorder 기반)
+  function reencodeVideoToFormat(file, targetFmt, maxHeightSetting, bitrate) {
+    return new Promise((resolve, reject) => {
+      const tempVideo = document.createElement('video');
+      const tempUrl = URL.createObjectURL(file);
+      tempVideo.src = tempUrl;
+      tempVideo.playsInline = true;
+      tempVideo.crossOrigin = 'anonymous';
+
+      let recorder = null;
+      let audioCtx = null;
+      let animId = null;
+      let cancelled = false;
+
+      vconvState.abortFn = () => {
+        cancelled = true;
+        try {
+          tempVideo.pause();
+          if (recorder && recorder.state !== 'inactive') recorder.stop();
+        } catch (_) {}
+        reject(new Error('USER_CANCELLED'));
+      };
+
+      tempVideo.onloadedmetadata = async () => {
+        try {
+          const vw = tempVideo.videoWidth || 1280;
+          const vh = tempVideo.videoHeight || 720;
+          const dur = tempVideo.duration || 1;
+
+          let outW = vw;
+          let outH = vh;
+          if (maxHeightSetting !== 'keep') {
+            const maxH = parseInt(maxHeightSetting, 10) || 720;
+            if (vh > maxH) {
+              outH = maxH;
+              outW = Math.round((vw / vh) * maxH);
+            }
+          }
+          outW = Math.max(2, outW - (outW % 2));
+          outH = Math.max(2, outH - (outH % 2));
+
+          const canvas = document.createElement('canvas');
+          canvas.width = outW;
+          canvas.height = outH;
+          const ctx = canvas.getContext('2d');
+
+          const canvasStream = canvas.captureStream(30);
+          try {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContextClass();
+            const sourceNode = audioCtx.createMediaElementSource(tempVideo);
+            const destNode = audioCtx.createMediaStreamDestination();
+            sourceNode.connect(destNode);
+            destNode.stream.getAudioTracks().forEach((t) => canvasStream.addTrack(t));
+          } catch (_) {}
+
+          let mimeCandidates = [];
+          if (targetFmt === 'webm') {
+            mimeCandidates = [
+              'video/webm;codecs=vp9,opus',
+              'video/webm;codecs=vp8,opus',
+              'video/webm',
+            ];
+          } else {
+            mimeCandidates = [
+              'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+              'video/mp4;codecs=avc1',
+              'video/mp4',
+              'video/webm;codecs=H264',
+              'video/webm',
+            ];
+          }
+          const chosenMime =
+            mimeCandidates.find((m) => window.MediaRecorder && MediaRecorder.isTypeSupported(m)) || '';
+
+          const recOptions = { videoBitsPerSecond: bitrate };
+          if (chosenMime) recOptions.mimeType = chosenMime;
+
+          recorder = new MediaRecorder(canvasStream, recOptions);
+          const chunks = [];
+          recorder.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) chunks.push(e.data);
+          };
+
+          recorder.onstop = async () => {
+            if (animId) cancelAnimationFrame(animId);
+            URL.revokeObjectURL(tempUrl);
+            if (audioCtx) {
+              try {
+                await audioCtx.close();
+              } catch (_) {}
+            }
+            if (cancelled) return;
+
+            let rawBlob = new Blob(chunks, {
+              type: targetFmt === 'webm' ? 'video/webm' : targetFmt === 'mov' ? 'video/quicktime' : 'video/mp4',
+            });
+
+            if (targetFmt === 'mov') {
+              const remuxed = await tryLosslessIsoBmffRemux(rawBlob, 'mov');
+              if (remuxed) rawBlob = remuxed;
+            }
+            resolve(rawBlob);
+          };
+
+          const renderLoop = () => {
+            if (cancelled || tempVideo.paused || tempVideo.ended) return;
+            ctx.drawImage(tempVideo, 0, 0, outW, outH);
+            const pct = Math.min(99, Math.round((tempVideo.currentTime / dur) * 100));
+            if (vconvProgressPercent) vconvProgressPercent.textContent = `${pct}%`;
+            if (vconvProgressBar) vconvProgressBar.style.width = `${pct}%`;
+            animId = requestAnimationFrame(renderLoop);
+          };
+
+          tempVideo.onended = () => {
+            if (recorder && recorder.state !== 'inactive') recorder.stop();
+          };
+
+          recorder.start(250);
+          await tempVideo.play();
+          renderLoop();
+        } catch (err) {
+          URL.revokeObjectURL(tempUrl);
+          reject(err);
+        }
+      };
+
+      tempVideo.onerror = () => {
+        URL.revokeObjectURL(tempUrl);
+        reject(new Error('영상 파일을 디코딩할 수 없습니다.'));
+      };
+    });
+  }
+
+  if (cancelVideoConvertBtn) {
+    cancelVideoConvertBtn.addEventListener('click', () => {
+      if (vconvState.abortFn) vconvState.abortFn();
+    });
+  }
+
+  if (startVideoConvertBtn) {
+    startVideoConvertBtn.addEventListener('click', async () => {
+      if (!vconvState.file || vconvState.isConverting) return;
+
+      const file = vconvState.file;
+      const targetFmt = vconvState.targetFmt;
+      const method = videoConvertMethodSelect ? videoConvertMethodSelect.value : 'auto';
+      const resSetting = vconvResolution ? vconvResolution.value : 'keep';
+      const bitrate = parseInt(vconvBitrate ? vconvBitrate.value : '4000000', 10) || 4000000;
+
+      vconvState.isConverting = true;
+      startVideoConvertBtn.disabled = true;
+      cancelVideoConvertBtn.classList.remove('hidden');
+      vconvProgressPanel.classList.remove('hidden');
+      vconvResultBox.classList.add('hidden');
+
+      if (vconvProgressPercent) vconvProgressPercent.textContent = '10%';
+      if (vconvProgressBar) vconvProgressBar.style.width = '10%';
+
+      try {
+        let outBlob = null;
+        let usedModeLabel = '';
+
+        if (targetFmt === 'wav') {
+          if (vconvProgressStatus) vconvProgressStatus.textContent = '동영상에서 고음질 WAV 오디오 트랙 추출 중...';
+          if (vconvProgressPercent) vconvProgressPercent.textContent = '50%';
+          if (vconvProgressBar) vconvProgressBar.style.width = '50%';
+          outBlob = await extractWavFromVideoFile(file);
+          usedModeLabel = '무손실 WAV 오디오 추출 완료';
+        } else if (
+          (method === 'auto' || method === 'remux') &&
+          (targetFmt === 'mp4' || targetFmt === 'mov')
+        ) {
+          if (vconvProgressStatus) {
+            vconvProgressStatus.textContent = `${targetFmt.toUpperCase()} 컨테이너 무손실 고속 변환 중...`;
+          }
+          outBlob = await tryLosslessIsoBmffRemux(file, targetFmt);
+          if (outBlob) {
+            usedModeLabel = `${targetFmt.toUpperCase()} 초고속 무손실 컨테이너 변환 완료`;
+          } else if (method === 'remux') {
+            showToast('원본이 WebM 등이므로 호환성 재인코딩으로 자동 전환하여 변환합니다.');
+          }
+        }
+
+        if (!outBlob) {
+          if (vconvProgressStatus) {
+            vconvProgressStatus.textContent = `${targetFmt.toUpperCase()} 포맷으로 인코딩 변환 중... (영상 재생 시간만큼 소요)`;
+          }
+          outBlob = await reencodeVideoToFormat(file, targetFmt, resSetting, bitrate);
+          usedModeLabel = `${targetFmt.toUpperCase()} 인코딩 변환 완료`;
+        }
+
+        if (vconvProgressPercent) vconvProgressPercent.textContent = '100%';
+        if (vconvProgressBar) vconvProgressBar.style.width = '100%';
+
+        if (vconvState.resultUrl) URL.revokeObjectURL(vconvState.resultUrl);
+        vconvState.resultUrl = URL.createObjectURL(outBlob);
+
+        if (vconvResultTag) vconvResultTag.textContent = usedModeLabel;
+        if (targetFmt === 'wav') {
+          vconvResultVideoPlayer.classList.add('hidden');
+          vconvResultVideoPlayer.removeAttribute('src');
+          vconvResultAudioPlayer.classList.remove('hidden');
+          vconvResultAudioPlayer.src = vconvState.resultUrl;
+        } else {
+          vconvResultAudioPlayer.classList.add('hidden');
+          vconvResultAudioPlayer.removeAttribute('src');
+          vconvResultVideoPlayer.classList.remove('hidden');
+          vconvResultVideoPlayer.src = vconvState.resultUrl;
+        }
+
+        if (vconvResultStatText) {
+          vconvResultStatText.textContent = `변환 포맷: .${targetFmt} · 파일 크기: ${formatBytes(outBlob.size)}`;
+        }
+        if (downloadVconvResultBtn) {
+          const baseName = getBaseName(file.name);
+          downloadVconvResultBtn.href = vconvState.resultUrl;
+          downloadVconvResultBtn.download = `${baseName}_converted.${targetFmt}`;
+          downloadVconvResultBtn.textContent = `💾 변환된 .${targetFmt.toUpperCase()} 파일 다운로드`;
+        }
+
+        vconvResultBox.classList.remove('hidden');
+        showToast(`${usedModeLabel}! (${formatBytes(outBlob.size)})`);
+      } catch (err) {
+        if (err && err.message === 'USER_CANCELLED') {
+          showToast('동영상 변환이 취소되었습니다.');
+        } else {
+          console.error(err);
+          showToast('변환 처리 중 오류가 발생했습니다. (오디오 트랙 유무 또는 코덱을 확인해주세요)');
+        }
+      } finally {
+        vconvState.isConverting = false;
+        vconvState.abortFn = null;
+        startVideoConvertBtn.disabled = false;
+        cancelVideoConvertBtn.classList.add('hidden');
+        vconvProgressPanel.classList.add('hidden');
+      }
+    });
+  }
 })();
+
 

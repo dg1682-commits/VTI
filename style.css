@@ -155,11 +155,11 @@ body {
   color: var(--accent);
 }
 
-/* Main Navigation Tabs */
+/* Main Navigation Tabs & Hover Dropdown Menus */
 .main-nav {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   background-color: var(--bg-subtle);
   padding: 5px;
   border-radius: 12px;
@@ -193,6 +193,126 @@ body {
   color: var(--accent);
   box-shadow: var(--shadow-sm);
   font-weight: 700;
+}
+
+.nav-dropdown-group {
+  position: relative;
+}
+
+.nav-sub-label {
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background-color: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+.nav-tab.active .nav-sub-label {
+  background-color: var(--accent-soft);
+  color: var(--accent);
+}
+
+.nav-caret {
+  opacity: 0.65;
+  transition: transform 0.2s ease;
+}
+
+.nav-dropdown-group:hover .nav-caret,
+.nav-dropdown-group.open .nav-caret {
+  transform: rotate(180deg);
+}
+
+.nav-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 285px;
+  padding: 8px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(6px);
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+  z-index: 300;
+}
+
+/* 마우스가 버튼에서 하위 메뉴로 내려갈 때 끊기지 않도록 투명 브릿지 생성 */
+.nav-dropdown-menu::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: 0;
+  right: 0;
+  height: 12px;
+}
+
+.nav-dropdown-group:hover .nav-dropdown-menu,
+.nav-dropdown-group:focus-within .nav-dropdown-menu,
+.nav-dropdown-group.open .nav-dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.nav-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.nav-dropdown-item:hover {
+  background-color: var(--bg-hover);
+}
+
+.nav-dropdown-item.active {
+  background-color: var(--accent-soft);
+  border-color: rgba(225, 29, 72, 0.28);
+}
+
+.nav-dropdown-item .item-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.nav-dropdown-item .item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-dropdown-item .item-text strong {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.nav-dropdown-item.active .item-text strong {
+  color: var(--accent);
+}
+
+.nav-dropdown-item .item-text span {
+  font-size: 0.74rem;
+  color: var(--text-muted);
 }
 
 /* Theme Toggle Switch */
@@ -1382,7 +1502,8 @@ body {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
 }
 
-#cropPreviewCanvas {
+#cropPreviewCanvas,
+#gifPreviewCanvas {
   display: block;
   max-width: 100%;
   max-height: 560px;
@@ -1446,6 +1567,151 @@ body {
   text-align: center;
   font-size: 0.82rem;
   color: var(--text-muted);
+}
+
+/* Video -> GIF Dual Timeline & Result Box */
+.gif-timeline-panel {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+}
+
+.gif-timeline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.timeline-time-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.timeline-range-badge {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background-color: var(--accent-soft);
+  color: var(--accent);
+}
+
+.dual-timeline-wrap {
+  position: relative;
+  height: 32px;
+  display: flex;
+  align-items: center;
+}
+
+.dual-timeline-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 10px;
+  border-radius: 999px;
+  background-color: var(--border-strong);
+  overflow: hidden;
+}
+
+.dual-timeline-Highlight {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0%;
+  width: 50%;
+  background: linear-gradient(90deg, #e11d48, #f59e0b);
+  border-radius: 999px;
+}
+
+.dual-timeline-playhead {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 3px;
+  background-color: #10b981;
+  left: 0%;
+  pointer-events: none;
+}
+
+.timeline-range-input {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 10px;
+  margin: 0;
+  background: transparent;
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.timeline-range-input::-webkit-slider-thumb {
+  pointer-events: auto;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 22px;
+  border-radius: 5px;
+  background-color: #ffffff;
+  border: 2px solid var(--accent);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
+  cursor: ew-resize;
+}
+
+.timeline-range-input.range-end::-webkit-slider-thumb {
+  border-color: #2563eb;
+}
+
+.timeline-range-input::-moz-range-thumb {
+  pointer-events: auto;
+  width: 18px;
+  height: 22px;
+  border-radius: 5px;
+  background-color: #ffffff;
+  border: 2px solid var(--accent);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
+  cursor: ew-resize;
+}
+
+.gif-result-box {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-strong);
+}
+
+.gif-result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.gif-result-preview-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  max-height: 440px;
+  overflow: auto;
+}
+
+.gif-result-preview-wrap img {
+  max-width: 100%;
+  max-height: 400px;
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
 }
 
 /* Background Removal Canvas */
@@ -1532,7 +1798,8 @@ body {
   .main-nav {
     order: 3;
     width: 100%;
-    overflow-x: auto;
+    flex-wrap: wrap;
+    justify-content: center;
   }
   .workspace-grid,
   .yt-result-grid {

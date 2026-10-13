@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>V-인코더 | 이미지·동영상 압축/변환 & 유튜브 다운로드</title>
+  <title>V-인코더 | 이미지·동영상 올인원 편집/변환 & 유튜브 다운로드</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23e11d48'/%3E%3Cpath d='M15 17 L28 49 L35 49 L45 27 L36 27 L31.5 38 L23.5 17 Z' fill='%23ffffff'/%3E%3Ccircle cx='45' cy='18' r='5' fill='%23ffffff'/%3E%3C/svg%3E" />
   <link rel="alternate icon" href="favicon.svg" />
-  <link rel="stylesheet" href="style.css?v=20261013_3" />
+  <link rel="stylesheet" href="style.css?v=20261013_4" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -28,44 +28,90 @@
         </div>
       </div>
 
-      <!-- 상단 4개 메인 메뉴 탭 -->
-      <nav class="main-nav" role="tablist" aria-label="메인 기능 메뉴">
-        <button class="nav-tab active" role="tab" aria-selected="true" data-tab="img-compress">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-            <circle cx="8.5" cy="8.5" r="1.5"></circle>
-            <polyline points="21 15 16 10 5 21"></polyline>
-          </svg>
-          <span>이미지 압축</span>
-        </button>
+      <!-- 상단 3대 메인 메뉴 (마우스 올리면 하위 메뉴 자동 펼침) -->
+      <nav class="main-nav" role="navigation" aria-label="메인 기능 메뉴">
+        <!-- 1. 이미지 드롭다운 그룹 -->
+        <div class="nav-dropdown-group" data-group="image">
+          <button type="button" class="nav-tab nav-group-trigger active" id="navTriggerImage" data-default-target="img-compress">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+              <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+            <span>이미지</span>
+            <span class="nav-sub-label" id="navImageCurrentLabel">압축</span>
+            <svg class="nav-caret" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="nav-dropdown-menu">
+            <button type="button" class="nav-dropdown-item active" data-nav-target="img-compress">
+              <span class="item-icon">🗜️</span>
+              <div class="item-text">
+                <strong>이미지 압축</strong>
+                <span>JPG·PNG·WebP 고화질 용량 다이어트</span>
+              </div>
+            </button>
+            <button type="button" class="nav-dropdown-item" data-nav-target="img-convert">
+              <span class="item-icon">🔄</span>
+              <div class="item-text">
+                <strong>이미지 확장자 변환</strong>
+                <span>PNG · JPG · WebP · BMP · ICO · PDF 변환</span>
+              </div>
+            </button>
+            <button type="button" class="nav-dropdown-item" data-nav-target="img-crop">
+              <span class="item-icon">✂️</span>
+              <div class="item-text">
+                <strong>이미지 자르기 · 리사이즈 · 회전</strong>
+                <span>원하는 픽셀(px) 크기 맞춤 · 비율 크롭 · 회전</span>
+              </div>
+            </button>
+            <button type="button" class="nav-dropdown-item" data-nav-target="img-bgremove">
+              <span class="item-icon">🪄</span>
+              <div class="item-text">
+                <strong>이미지 배경 제거 (누끼)</strong>
+                <span>AI 자동 분리 · 마술봉 클릭 투명화 · 브러시</span>
+              </div>
+            </button>
+          </div>
+        </div>
 
-        <button class="nav-tab" role="tab" aria-selected="false" data-tab="img-convert">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="17 1 21 5 17 9"></polyline>
-            <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
-            <polyline points="7 23 3 19 7 15"></polyline>
-            <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
-          </svg>
-          <span>이미지 변환</span>
-        </button>
+        <!-- 2. 동영상 드롭다운 그룹 -->
+        <div class="nav-dropdown-group" data-group="video">
+          <button type="button" class="nav-tab nav-group-trigger" id="navTriggerVideo" data-default-target="video-compress">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="23 7 16 12 23 17 23 7"></polygon>
+              <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+            </svg>
+            <span>동영상</span>
+            <span class="nav-sub-label" id="navVideoCurrentLabel">압축</span>
+            <svg class="nav-caret" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="nav-dropdown-menu">
+            <button type="button" class="nav-dropdown-item" data-nav-target="video-compress">
+              <span class="item-icon">📉</span>
+              <div class="item-text">
+                <strong>동영상 용량 압축</strong>
+                <span>해상도·비트레이트·프레임 조절로 용량 축소</span>
+              </div>
+            </button>
+            <button type="button" class="nav-dropdown-item" data-nav-target="video-gif">
+              <span class="item-icon">🎞️</span>
+              <div class="item-text">
+                <strong>동영상 → GIF 움짤 변환</strong>
+                <span>타임라인 구간 선택 · 화면 비율 크롭 · 사이즈 조절</span>
+              </div>
+            </button>
+            <button type="button" class="nav-dropdown-item" data-nav-target="video-convert">
+              <span class="item-icon">🔁</span>
+              <div class="item-text">
+                <strong>동영상 확장자 변환 · 음원 추출</strong>
+                <span>MP4 ↔ MOV · WebM 변환 및 WAV 오디오 추출</span>
+              </div>
+            </button>
+          </div>
+        </div>
 
-        <button class="nav-tab" role="tab" aria-selected="false" data-tab="img-edit">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M6 2v14a2 2 0 0 0 2 2h14"></path>
-            <path d="M18 22V8a2 2 0 0 0-2-2H2"></path>
-          </svg>
-          <span>이미지 편집</span>
-        </button>
-
-        <button class="nav-tab" role="tab" aria-selected="false" data-tab="video-compress">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="23 7 16 12 23 17 23 7"></polygon>
-            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
-          </svg>
-          <span>동영상 압축</span>
-        </button>
-
-        <button class="nav-tab" role="tab" aria-selected="false" data-tab="yt-download">
+        <!-- 3. 유튜브 다운로드 단독 메뉴 -->
+        <button type="button" class="nav-tab" id="navTriggerYt" data-nav-target="yt-download">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"></path>
             <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon>
@@ -761,6 +807,383 @@
     </section>
 
     <!-- ==========================================
+         탭 3-2: 동영상 → GIF 움짤 변환 (타임라인 구간 · 비율 크롭 · 사이즈 동시 조절)
+         ========================================== -->
+    <section id="tab-video-gif" class="tab-panel" role="tabpanel">
+      <div class="section-header">
+        <div class="section-badge">타임라인 구간 선택 · 화면 비율 크롭 · 원하는 픽셀 사이즈 동시 변환</div>
+        <h1>동영상 → GIF 움짤 변환</h1>
+        <p>동영상에서 원하는 시간 구간(최대 15초)을 선택하고, 1:1 정사각형 등 원하는 비율로 화면을 잘라낸 뒤 지정한 픽셀 크기의 GIF로 한 번에 변환합니다.</p>
+      </div>
+
+      <div class="workspace-grid">
+        <aside class="settings-card">
+          <h2 class="card-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line></svg>
+            GIF 구간 · 크롭 · 사이즈 설정
+          </h2>
+
+          <!-- 1. 타임라인 구간 설정 (시작 ~ 종료 시간, 최대 15초) -->
+          <div class="form-group">
+            <div class="label-row">
+              <label>① 변환할 시간 구간 (최대 15초 제한)</label>
+              <span class="value-badge" id="gifDurationBadge">0.0초</span>
+            </div>
+            <div class="pixel-input-row" style="margin-top:6px;">
+              <div class="pixel-col">
+                <span class="pixel-col-label">시작 시간 (초)</span>
+                <div class="pixel-field">
+                  <input type="number" id="gifStartTimeInput" min="0" step="0.1" value="0.0" />
+                </div>
+              </div>
+              <span class="pixel-x">~</span>
+              <div class="pixel-col">
+                <span class="pixel-col-label">종료 시간 (초)</span>
+                <div class="pixel-field">
+                  <input type="number" id="gifEndTimeInput" min="0.2" step="0.1" value="5.0" />
+                </div>
+              </div>
+            </div>
+            <div class="transform-btn-grid" style="margin-top:8px;">
+              <button type="button" id="setGifStartNowBtn" class="btn btn-outline btn-xs" disabled>
+                ⏱️ 현재 위치를 시작점으로
+              </button>
+              <button type="button" id="setGifEndNowBtn" class="btn btn-outline btn-xs" disabled>
+                ⏱️ 현재 위치를 종료점으로
+              </button>
+            </div>
+            <button type="button" id="previewGifLoopBtn" class="btn btn-outline btn-sm btn-full" style="margin-top:6px;" disabled>
+              🔁 선택한 구간만 미리 재생해보기
+            </button>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- 2. 픽셀(px) 사이즈 지정 & 화면 비율 크롭 (한 번에 조절) -->
+          <div class="form-group">
+            <div class="label-row">
+              <label>② 출력 GIF 픽셀(px) 크기 지정</label>
+            </div>
+            <label class="checkbox-label" style="margin-bottom:8px; font-size:0.8rem; color:var(--text-secondary);">
+              <input type="checkbox" id="gifKeepAspectInput" />
+              <span>현재 틀 비율 유지하며 한쪽만 입력해 자동 계산</span>
+            </label>
+            <div class="pixel-input-row">
+              <div class="pixel-col">
+                <span class="pixel-col-label">가로 (W, px)</span>
+                <div class="pixel-field">
+                  <input type="number" id="gifTargetW" min="32" max="1920" placeholder="예: 480" />
+                </div>
+              </div>
+              <span class="pixel-x">×</span>
+              <div class="pixel-col">
+                <span class="pixel-col-label">세로 (H, px)</span>
+                <div class="pixel-field">
+                  <input type="number" id="gifTargetH" min="32" max="1920" placeholder="예: 480" />
+                </div>
+              </div>
+            </div>
+            <div class="preset-chips" id="gifQuickSizeChips" style="margin-top:8px;">
+              <button type="button" class="chip-btn" data-gifw="320">320px (가벼움)</button>
+              <button type="button" class="chip-btn active" data-gifw="480">480px (추천)</button>
+              <button type="button" class="chip-btn" data-gifw="640">640px (고화질)</button>
+            </div>
+            <label class="checkbox-label" style="margin-top:10px; font-size:0.82rem;">
+              <input type="checkbox" id="gifForceExactSize" checked />
+              <span>저장 시 위 입력한 픽셀(px) 크기로 정확히 맞춰 저장</span>
+            </label>
+          </div>
+
+          <!-- 3. 동영상 화면 자르기 틀 비율 -->
+          <div class="form-group">
+            <label>③ 화면 자르기 틀 비율 (16:9 → 1:1 정사각 등)</label>
+            <div class="ratio-grid" id="gifRatioGrid">
+              <button type="button" class="chip-btn active" data-ratio="full">전체 (안 자름)</button>
+              <button type="button" class="chip-btn" data-ratio="free">자유 비율</button>
+              <button type="button" class="chip-btn" data-ratio="1:1">1:1 (정사각)</button>
+              <button type="button" class="chip-btn" data-ratio="16:9">16:9 (와이드)</button>
+              <button type="button" class="chip-btn" data-ratio="4:3">4:3 (표준)</button>
+              <button type="button" class="chip-btn" data-ratio="9:16">9:16 (세로)</button>
+            </div>
+          </div>
+
+          <!-- 4. 프레임(FPS) 및 배속 -->
+          <div class="form-group">
+            <div class="pixel-input-row" style="gap:10px;">
+              <div class="pixel-col">
+                <span class="pixel-col-label">프레임 속도 (FPS)</span>
+                <select id="gifFpsSelect" class="form-select">
+                  <option value="10">10 FPS (저용량)</option>
+                  <option value="12" selected>12 FPS (추천)</option>
+                  <option value="15">15 FPS (부드러움)</option>
+                  <option value="20">20 FPS (고프레임)</option>
+                </select>
+              </div>
+              <div class="pixel-col">
+                <span class="pixel-col-label">재생 배속</span>
+                <select id="gifSpeedSelect" class="form-select">
+                  <option value="0.75">0.75x (느리게)</option>
+                  <option value="1" selected>1.0x (기본)</option>
+                  <option value="1.25">1.25x (약간 빠르게)</option>
+                  <option value="1.5">1.5x (빠르게)</option>
+                  <option value="2">2.0x (2배속)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="action-stack">
+            <button type="button" id="startGifConvertBtn" class="btn btn-primary btn-full" disabled>
+              🎞️ 선택한 구간 · 크기로 GIF 만들기
+            </button>
+            <button type="button" id="cancelGifConvertBtn" class="btn btn-danger btn-full hidden">
+              변환 중지
+            </button>
+            <button type="button" id="changeGifVideoBtn" class="btn btn-outline btn-full" disabled>
+              다른 동영상 선택
+            </button>
+          </div>
+        </aside>
+
+        <div class="content-area">
+          <div class="dropzone" id="gifVideoDropzone">
+            <input type="file" id="gifVideoFileInput" accept="video/*" hidden />
+            <div class="dropzone-icon">
+              <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
+                <line x1="7" y1="2" x2="7" y2="22"></line>
+                <line x1="17" y1="2" x2="17" y2="22"></line>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+              </svg>
+            </div>
+            <h3>GIF로 변환할 동영상 파일을 이곳에 드롭하거나 선택하세요</h3>
+            <p>MP4, MOV, WebM 지원 · 타임라인 바에서 구간을 고르고 원하는 비율(1:1 등)과 크기로 즉시 움짤을 만듭니다</p>
+            <button type="button" class="btn btn-primary">동영상 파일 선택</button>
+          </div>
+
+          <!-- GIF 편집 및 타임라인 작업 카드 -->
+          <div class="editor-stage-card hidden" id="gifStageCard">
+            <div class="editor-info-bar">
+              <span id="gifOrigInfo">원본: 0 × 0 px</span>
+              <span class="arrow-sep">|</span>
+              <span id="gifBoxInfo">크롭 영역: 0 × 0 px</span>
+              <span class="arrow-sep">→</span>
+              <strong id="gifFinalInfo" class="accent-text">최종 GIF 크기: 0 × 0 px</strong>
+            </div>
+
+            <!-- 동영상 화면 + 드래그 가능한 크롭 박스 -->
+            <div class="crop-viewport" id="gifViewport">
+              <div class="crop-canvas-wrap" id="gifCanvasWrap">
+                <canvas id="gifPreviewCanvas"></canvas>
+                <video id="gifSourceVideo" playsinline muted hidden></video>
+                <div class="crop-box" id="gifCropBox">
+                  <div class="crop-grid-lines"></div>
+                  <div class="crop-size-floating" id="gifSizeFloating">0 × 0</div>
+                  <span class="crop-handle handle-nw" data-handle="nw"></span>
+                  <span class="crop-handle handle-n" data-handle="n"></span>
+                  <span class="crop-handle handle-ne" data-handle="ne"></span>
+                  <span class="crop-handle handle-e" data-handle="e"></span>
+                  <span class="crop-handle handle-se" data-handle="se"></span>
+                  <span class="crop-handle handle-s" data-handle="s"></span>
+                  <span class="crop-handle handle-sw" data-handle="sw"></span>
+                  <span class="crop-handle handle-w" data-handle="w"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 타임라인 구간 조절 바 (Play/Pause + 시작/종료 듀얼 슬라이더) -->
+            <div class="gif-timeline-panel">
+              <div class="gif-timeline-header">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <button type="button" id="gifPlayPauseBtn" class="btn btn-outline btn-xs">
+                    ▶️ 재생 / 일시정지
+                  </button>
+                  <span id="gifCurrentTimeText" class="timeline-time-label">현재: 00:00.0 / 전체: 00:00.0</span>
+                </div>
+                <span id="gifRangeSummaryText" class="timeline-range-badge">선택 구간: 0.0초 ~ 5.0초 (5.0초)</span>
+              </div>
+
+              <div class="dual-timeline-wrap">
+                <div class="dual-timeline-track">
+                  <div class="dual-timeline-highlight" id="gifTimelineHighlight"></div>
+                  <div class="dual-timeline-playhead" id="gifTimelinePlayhead"></div>
+                </div>
+                <input type="range" id="gifRangeStart" min="0" max="10" step="0.1" value="0" class="timeline-range-input range-start" />
+                <input type="range" id="gifRangeEnd" min="0" max="10" step="0.1" value="5" class="timeline-range-input range-end" />
+              </div>
+              <p class="editor-bottom-hint" style="margin-top:8px;">
+                💡 위 타임라인의 <strong>양쪽 바(시작·종료)</strong>를 움직여 GIF로 만들 구간(최대 15초)을 선택하고, 화면 위의 <strong>파란색 틀</strong>로 원하는 영역과 비율을 맞추세요.
+              </p>
+            </div>
+
+            <!-- GIF 변환 진행률 패널 -->
+            <div class="progress-panel hidden" id="gifProgressPanel" style="margin-top:14px;">
+              <div class="progress-label-row">
+                <span id="gifProgressStatus">GIF 프레임 추출 및 인코딩 준비 중...</span>
+                <strong id="gifProgressPercent">0%</strong>
+              </div>
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="gifProgressBar" style="width: 0%"></div>
+              </div>
+            </div>
+
+            <!-- 생성된 GIF 결과 미리보기 및 다운로드 -->
+            <div class="gif-result-box hidden" id="gifResultBox">
+              <div class="gif-result-header">
+                <span class="video-tag tag-success">🎉 GIF 움짤 생성 완료</span>
+                <strong id="gifResultStatText" class="accent-text"></strong>
+              </div>
+              <div class="gif-result-preview-wrap checkerboard-bg">
+                <img id="gifResultPreviewImg" alt="생성된 GIF 미리보기" />
+              </div>
+              <a id="downloadGifResultBtn" class="btn btn-success btn-full" download="converted.gif" style="margin-top:12px;">
+                💾 생성된 GIF 움짤 다운로드
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         탭 3-3: 동영상 확장자 변환 · 오디오 추출 (MP4 ↔ MOV ↔ WebM · WAV)
+         ========================================== -->
+    <section id="tab-video-convert" class="tab-panel" role="tabpanel">
+      <div class="section-header">
+        <div class="section-badge">MP4 ↔ MOV 초고속 무손실 변환 · WebM 변환 · WAV 오디오 추출</div>
+        <h1>동영상 확장자 변환 · 오디오 추출</h1>
+        <p>아이폰 MOV 영상을 MP4로 바꾸거나 MP4를 MOV, WebM으로 변환하고, 영상에서 고음질 오디오(WAV)만 빠르게 추출합니다.</p>
+      </div>
+
+      <div class="workspace-grid">
+        <aside class="settings-card">
+          <h2 class="card-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+            변환 포맷 및 방식 설정
+          </h2>
+
+          <div class="form-group">
+            <label>① 변환할 목표 확장자 선택</label>
+            <div class="format-grid" id="videoConvertFormatGrid">
+              <button type="button" class="format-card active" data-vfmt="mp4">
+                <strong>MP4</strong>
+                <span>표준 호환 영상 (.mp4)</span>
+              </button>
+              <button type="button" class="format-card" data-vfmt="mov">
+                <strong>MOV</strong>
+                <span>애플 QuickTime (.mov)</span>
+              </button>
+              <button type="button" class="format-card" data-vfmt="webm">
+                <strong>WebM</strong>
+                <span>고효율 웹 영상 (.webm)</span>
+              </button>
+              <button type="button" class="format-card" data-vfmt="wav">
+                <strong>WAV 음원</strong>
+                <span>소리만 무손실 추출 (.wav)</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group" id="videoConvertMethodGroup">
+            <label for="videoConvertMethodSelect">② 변환 처리 방식</label>
+            <select id="videoConvertMethodSelect" class="form-select">
+              <option value="auto" selected>⚡ 스마트 자동 (MP4↔MOV는 1초 무손실 변환 / 외 인코딩)</option>
+              <option value="remux">⚡ 초고속 무손실 컨테이너 변환 (화질 100% 그대로 · 1초 완료)</option>
+              <option value="reencode">🔄 호환성 재인코딩 변환 (코덱 재생성 · 해상도 조절 적용)</option>
+            </select>
+            <p class="form-hint" id="videoConvertMethodHint">
+              ※ <strong>스마트 자동</strong> 선택 시 MP4 ↔ MOV 간 변환은 화질 저하 없이 1초 만에 컨테이너 헤더를 변환합니다.
+            </p>
+          </div>
+
+          <div class="form-group" id="videoConvertEncodeOpts">
+            <label for="vconvResolution">재인코딩 시 해상도 (크기)</label>
+            <select id="vconvResolution" class="form-select">
+              <option value="keep" selected>원본 해상도 그대로 유지</option>
+              <option value="1080">1080p (Full HD)</option>
+              <option value="720">720p (HD)</option>
+              <option value="480">480p (SD)</option>
+            </select>
+
+            <label for="vconvBitrate" style="margin-top:10px; display:block;">재인코딩 시 화질 (비트레이트)</label>
+            <select id="vconvBitrate" class="form-select">
+              <option value="4000000" selected>고화질 (4.0 Mbps · 선명함 유지)</option>
+              <option value="2500000">표준 화질 (2.5 Mbps · 균형)</option>
+              <option value="1500000">절약 화질 (1.5 Mbps · 용량 축소)</option>
+            </select>
+          </div>
+
+          <div class="action-stack">
+            <button type="button" id="startVideoConvertBtn" class="btn btn-primary btn-full" disabled>
+              🔁 선택한 포맷으로 변환 시작
+            </button>
+            <button type="button" id="cancelVideoConvertBtn" class="btn btn-danger btn-full hidden">
+              변환 중지
+            </button>
+            <button type="button" id="changeVideoConvertBtn" class="btn btn-outline btn-full" disabled>
+              다른 동영상 선택
+            </button>
+          </div>
+        </aside>
+
+        <div class="content-area">
+          <div class="dropzone" id="videoConvertDropzone">
+            <input type="file" id="videoConvertFileInput" accept="video/*" hidden />
+            <div class="dropzone-icon">
+              <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="17 1 21 5 17 9"></polyline>
+                <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                <polyline points="7 23 3 19 7 15"></polyline>
+                <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+              </svg>
+            </div>
+            <h3>확장자를 변환할 동영상 파일을 이곳에 드롭하거나 선택하세요</h3>
+            <p>MOV ↔ MP4 1초 무손실 변환, WebM 비디오 변환, 동영상에서 WAV 오디오 추출을 모두 지원합니다</p>
+            <button type="button" class="btn btn-primary">동영상 파일 선택</button>
+          </div>
+
+          <div class="video-work-card hidden" id="videoConvertWorkCard">
+            <div class="video-info-header">
+              <div>
+                <h3 id="vconvFileName">video.mov</h3>
+                <p id="vconvMetaInfo">원본 용량: 0 MB · 해상도: - · 길이: -</p>
+              </div>
+              <span class="badge-accent" id="vconvTargetBadge">목표 포맷: MP4</span>
+            </div>
+
+            <div class="progress-panel hidden" id="vconvProgressPanel">
+              <div class="progress-label-row">
+                <span id="vconvProgressStatus">동영상 변환 처리 중...</span>
+                <strong id="vconvProgressPercent">0%</strong>
+              </div>
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="vconvProgressBar" style="width: 0%"></div>
+              </div>
+            </div>
+
+            <div class="video-compare-grid">
+              <div class="video-box">
+                <span class="video-tag">원본 동영상</span>
+                <video id="vconvOrigPlayer" controls playsinline></video>
+              </div>
+              <div class="video-box hidden" id="vconvResultBox">
+                <span class="video-tag tag-success" id="vconvResultTag">변환 완료</span>
+                <video id="vconvResultVideoPlayer" controls playsinline></video>
+                <audio id="vconvResultAudioPlayer" controls class="hidden" style="width:100%; margin: 20px 0;"></audio>
+                <div class="video-result-actions">
+                  <div class="result-stat-text" id="vconvResultStatText"></div>
+                  <a id="downloadVconvResultBtn" class="btn btn-success btn-full" download="converted.mp4">
+                    💾 변환된 파일 다운로드
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
          탭 4: 유튜브 다운로드 (YouTube Downloader)
          ========================================== -->
     <section id="tab-yt-download" class="tab-panel" role="tabpanel">
@@ -935,6 +1358,6 @@
   <!-- 토스트 알림 -->
   <div id="toastContainer" class="toast-container"></div>
 
-  <script src="app.js?v=20261013_3"></script>
+  <script src="app.js?v=20261013_4"></script>
 </body>
 </html>
